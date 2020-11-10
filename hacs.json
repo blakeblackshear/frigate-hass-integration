@@ -1,0 +1,11 @@
+{
+    "name": "Blueprint",
+    "hacs": "0.24.0",
+    "domains": [
+        "binary_sensor",
+        "sensor",
+        "switch"
+    ],
+    "iot_class": "Cloud Polling",
+    "homeassistant": "0.115.0"
+}

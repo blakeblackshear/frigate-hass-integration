@@ -1,0 +1,31 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+	"image": "ludeeus/container:integration",
+	"context": "..",
+	"appPort": [
+		"9123:8123"
+	],
+	"postCreateCommand": "container install",
+	"runArgs": [
+		"-v",
+		"${env:HOME}${env:USERPROFILE}/.ssh:/tmp/.ssh"
+	],
+	"extensions": [
+		"ms-python.python",
+		"github.vscode-pull-request-github",
+		"tabnine.tabnine-vscode"
+	],
+	"settings": {
+		"files.eol": "\n",
+		"editor.tabSize": 4,
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"python.pythonPath": "/usr/bin/python3",
+		"python.linting.pylintEnabled": true,
+		"python.linting.enabled": true,
+		"python.formatting.provider": "black",
+		"editor.formatOnPaste": false,
+		"editor.formatOnSave": true,
+		"editor.formatOnType": true,
+		"files.trimTrailingWhitespace": true
+	}
+}

@@ -1,0 +1,13 @@
+{
+  "domain": "blueprint",
+  "name": "Blueprint",
+  "documentation": "https://github.com/custom-components/blueprint",
+  "dependencies": [],
+  "config_flow": true,
+  "codeowners": [
+    "@ludeeus"
+  ],
+  "requirements": [
+    "sampleclient"
+  ]
+}

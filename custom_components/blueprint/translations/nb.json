@@ -1,0 +1,32 @@
+{
+    "config": {
+        "title": "Blueprint",
+        "step": {
+            "user": {
+                "title": "Blueprint",
+                "description": "Hvis du trenger hjep til konfigurasjon ta en titt her: https://github.com/custom-components/blueprint",
+                "data": {
+                    "username": "Brukernavn",
+                    "password": "Passord"
+                }
+            }
+        },
+        "error": {
+            "auth": "Brukernavn/Passord er feil."
+        },
+        "abort": {
+            "single_instance_allowed": "Du kan konfigurere Blueprint kun en gang."
+        }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "binary_sensor": "Binær sensor aktivert",
+                    "sensor": "Sensor aktivert",
+                    "switch": "Bryter aktivert"
+                }
+            }
+        }
+    }
+}
