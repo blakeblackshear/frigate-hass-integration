@@ -1,10 +1,10 @@
 """BlueprintEntity class"""
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from custom_components.blueprint.const import DOMAIN, NAME, VERSION
+from .const import DOMAIN, NAME, VERSION
 
 
-class BlueprintEntity(CoordinatorEntity):
+class FrigateEntity(CoordinatorEntity):
     def __init__(self, coordinator, config_entry):
         super().__init__(coordinator)
         self.config_entry = config_entry
@@ -27,6 +27,6 @@ class BlueprintEntity(CoordinatorEntity):
     def device_state_attributes(self):
         """Return the state attributes."""
         return {
-            "time": str(self.coordinator.data.get("time")),
-            "static": self.coordinator.data.get("static"),
+            "id": str(self.coordinator.data.get("id")),
+            "integration": DOMAIN,
         }

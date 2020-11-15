@@ -1,0 +1,30 @@
+{
+    "config": {
+        "title": "Frigate",
+        "step": {
+            "user": {
+                "title": "Frigate",
+                "description": "Enter the host of your frigate instance.",
+                "data": {
+                    "host": "Host",
+                    "name": "Name"
+                }
+            }
+        },
+        "error": {
+            "auth": "Unable to connect to Frigate."
+        },
+        "abort": {
+            "single_instance_allowed": "Only a single configuration of Frigate is allowed."
+        }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "sensor": "Sensor enabled"
+                }
+            }
+        }
+    }
+}

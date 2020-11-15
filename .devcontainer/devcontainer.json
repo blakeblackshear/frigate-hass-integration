@@ -1,9 +1,10 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
-	"image": "ludeeus/container:integration",
+	"name": "Frigate integration development",
+	"image": "homeassistant/home-assistant:stable",
 	"context": "..",
 	"appPort": [
-		"9123:8123"
+		"8123:8123"
 	],
 	"postCreateCommand": "container install",
 	"runArgs": [
@@ -13,13 +14,15 @@
 	"extensions": [
 		"ms-python.python",
 		"github.vscode-pull-request-github",
-		"tabnine.tabnine-vscode"
+		"ryanluker.vscode-coverage-gutters",
+		"ms-python.vscode-pylance"
 	],
 	"settings": {
 		"files.eol": "\n",
 		"editor.tabSize": 4,
 		"terminal.integrated.shell.linux": "/bin/bash",
 		"python.pythonPath": "/usr/bin/python3",
+		"python.analysis.autoSearchPaths": false,
 		"python.linting.pylintEnabled": true,
 		"python.linting.enabled": true,
 		"python.formatting.provider": "black",

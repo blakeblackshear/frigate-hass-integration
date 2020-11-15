@@ -1,7 +1,6 @@
 default_config:
 
 logger:
-  default: error
+  default: info
   logs:
-    custom_components.blueprint: debug
-
+    custom_components.frigate: debug

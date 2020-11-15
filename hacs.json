@@ -1,11 +1,11 @@
 {
-    "name": "Blueprint",
-    "hacs": "0.24.0",
+    "hacs": "1.6.0",
+    "name": "Frigate",
     "domains": [
-        "binary_sensor",
+        "media_browser",
         "sensor",
-        "switch"
+        "camera"
     ],
-    "iot_class": "Cloud Polling",
+    "iot_class": "Local Push",
     "homeassistant": "0.115.0"
 }
