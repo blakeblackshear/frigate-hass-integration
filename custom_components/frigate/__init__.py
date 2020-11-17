@@ -47,6 +47,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     session = async_get_clientsession(hass)
     client = FrigateApiClient(frigate_host, session)
 
+    config = await client.async_get_config()
+
+    hass.data[DOMAIN]["config"] = config
+
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_refresh()
 
