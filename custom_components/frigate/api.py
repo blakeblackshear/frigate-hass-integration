@@ -134,21 +134,7 @@ class ClipsProxy(HomeAssistantView):
             allow_redirects=False,
             data=data,
         ) as result:
-            headers = result.headers
-
-            # Simple request
-            if (
-                hdrs.CONTENT_LENGTH in result.headers
-                and int(result.headers.get(hdrs.CONTENT_LENGTH, 0)) < 4194000
-            ):
-                # Return Response
-                body = await result.read()
-                return web.Response(
-                    headers=headers,
-                    status=result.status,
-                    content_type=result.content_type,
-                    body=body,
-                )
+            headers = _response_header(result)
 
             # Stream response
             response = web.StreamResponse(status=result.status, headers=headers)
@@ -204,5 +190,24 @@ def _init_header(
     if not forward_proto:
         forward_proto = request.url.scheme
     headers[hdrs.X_FORWARDED_PROTO] = forward_proto
+
+    return headers
+
+
+def _response_header(response: aiohttp.ClientResponse) -> Dict[str, str]:
+    """Create response header."""
+    headers = {}
+
+    for name, value in response.headers.items():
+        if name in (
+            hdrs.TRANSFER_ENCODING,
+            # Removing Content-Length header for streaming responses
+            #   prevents seeking from working for mp4 files
+            # hdrs.CONTENT_LENGTH,
+            hdrs.CONTENT_TYPE,
+            hdrs.CONTENT_ENCODING,
+        ):
+            continue
+        headers[name] = value
 
     return headers
