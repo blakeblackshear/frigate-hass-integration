@@ -36,9 +36,16 @@ class FrigateApiClient:
         url = urllib.parse.urljoin(self._host, "/stats")
         return await self.api_wrapper("get", url)
 
-    async def async_get_events(self) -> dict:
+    async def async_get_events(self, camera=None, label=None, zone=None, after=None, before=None, limit: int = None) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/events")
+        params = {"camera": camera, "label": label, "zone": zone, "after": after, "before": before, "limit": limit}
+        params = urllib.parse.urlencode({k: v for k, v in params.items() if not v is None and not v == ''})
+        url = urllib.parse.urljoin(self._host, f"/events?{params}")
+        return await self.api_wrapper("get", url)
+
+    async def async_get_event_summary(self) -> dict:
+        """Get data from the API."""
+        url = urllib.parse.urljoin(self._host, "/events/summary")
         return await self.api_wrapper("get", url)
 
     async def async_get_config(self) -> dict:
