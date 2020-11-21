@@ -22,6 +22,7 @@ from homeassistant.components.media_source.models import (
     PlayMedia,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.util.dt import DEFAULT_TIME_ZONE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import FrigateApiClient
@@ -78,8 +79,8 @@ class FrigateSource(MediaSource):
             identifier = {
                 "original": "",
                 "name": "",
-                "after": None,
-                "before": None,
+                "after": "",
+                "before": "",
                 "camera": "",
                 "label": "",
                 "zone": ""
@@ -113,36 +114,27 @@ class FrigateSource(MediaSource):
         """Browse media."""
 
         if identifier["original"] == "":
-            base = BrowseMediaSource(
-                domain=DOMAIN,
-                identifier="",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title="Frigate",
-                can_play=False,
-                can_expand=True,
-                thumbnail=None,
-                children=self._build_item_response(events),
-            )
-            base.children.extend(self._build_date_sources(identifier))
+            title = "Frigate"
         else:
-            base = BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=identifier["original"],
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title=identifier["name"].replace("_", " ").title(),
-                can_play=False,
-                can_expand=True,
-                thumbnail=None,
-                children=self._build_item_response(events)
-            )
-            if identifier["camera"] == '':
-                base.children.extend(self._build_camera_sources(identifier))
-            if identifier["label"] == '':
-                base.children.extend(self._build_label_sources(identifier))
+            title = identifier["name"].replace("_", " ").title()
+
+        base = BrowseMediaSource(
+            domain=DOMAIN,
+            identifier="",
+            media_class=MEDIA_CLASS_DIRECTORY,
+            children_media_class=MEDIA_CLASS_VIDEO,
+            media_content_type=None,
+            title=title,
+            can_play=False,
+            can_expand=True,
+            thumbnail=None,
+            children=self._build_item_response(events),
+        )
+        base.children.extend(self._build_date_sources(identifier))
+        if identifier["camera"] == '':
+            base.children.extend(self._build_camera_sources(identifier))
+        if identifier["label"] == '':
+            base.children.extend(self._build_label_sources(identifier))
         return base
 
     def _build_item_response(
@@ -201,11 +193,14 @@ class FrigateSource(MediaSource):
     def _build_date_sources(
         self, identifier
     ) -> BrowseMediaSource:
-        start_of_today = int(dt.datetime.combine(dt.datetime.today(), dt.time.min).timestamp())
-        start_of_yesterday = int(dt.datetime.combine(dt.datetime.today() - dt.timedelta(days=1), dt.time.min).timestamp())
-        start_of_month = int(dt.datetime.combine(dt.datetime.today().replace(day=1), dt.time.min).timestamp())
-        start_of_last_month = int(dt.datetime.combine(dt.datetime.today().replace(day=1) + relativedelta(months=+1), dt.time.min).timestamp())
-        start_of_year = int(dt.datetime.combine(dt.datetime.today().replace(month=1, day=1), dt.time.min).timestamp())
+        if identifier['before'] != '' or identifier['after'] != '':
+            return []
+
+        start_of_today = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today(), dt.time.min)).timestamp())
+        start_of_yesterday = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today() - dt.timedelta(days=1), dt.time.min)).timestamp())
+        start_of_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(day=1), dt.time.min)).timestamp())
+        start_of_last_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(day=1) + relativedelta(months=+1), dt.time.min)).timestamp())
+        start_of_year = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(month=1, day=1), dt.time.min)).timestamp())
         sources = [
             BrowseMediaSource(
                 domain=DOMAIN,
