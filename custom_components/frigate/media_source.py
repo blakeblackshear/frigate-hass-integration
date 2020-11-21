@@ -75,6 +75,8 @@ class FrigateSource(MediaSource):
                 self.summary_data = await self.client.async_get_event_summary()
                 self.cameras = list(set([d["camera"] for d in self.summary_data]))
                 self.labels = list(set([d["label"] for d in self.summary_data]))
+                for d in self.summary_data:
+                    d['timestamp'] = int(DEFAULT_TIME_ZONE.localize(dt.datetime.strptime(d['day'], '%Y-%m-%d')).timestamp())
 
             identifier = {
                 "original": "",
@@ -103,7 +105,7 @@ class FrigateSource(MediaSource):
             camera=identifier["camera"],
             label=identifier["label"],
             zone=identifier["zone"],
-            limit=25
+            limit=50
         )
 
         return self._browse_media(identifier, events)
@@ -116,7 +118,7 @@ class FrigateSource(MediaSource):
         if identifier["original"] == "":
             title = "Frigate"
         else:
-            title = identifier["name"].replace("_", " ").title()
+            title = ' > '.join([s for s in identifier["name"].replace("_", " ").split('.') if s != '']).title()
 
         base = BrowseMediaSource(
             domain=DOMAIN,
@@ -157,38 +159,52 @@ class FrigateSource(MediaSource):
     def _build_camera_sources(
         self, identifier
     ) -> BrowseMediaSource:
-        return [
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"{identifier['name']} > {c}/{identifier['after']}/{identifier['before']}/{c}/{identifier['label']}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title=c.replace("_", " ").title(),
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
+        sources = []
+        for c in self.cameras:
+            after = int(identifier['after']) if not identifier['after'] == '' else None
+            before = int(identifier['before']) if not identifier['before'] == '' else None
+            count = self._count_by(after=after, before=before, camera=c, label=identifier['label'])
+            if count == 0:
+                continue
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.{c}/{identifier['after']}/{identifier['before']}/{c}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"{c.replace('_', ' ').title()} ({count})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
             )
-            for c in self.cameras
-        ]
+        return sources
 
     def _build_label_sources(
         self, identifier
     ) -> BrowseMediaSource:
-        return [
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"{identifier['name']} > {l}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{l}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title=l.replace("_", " ").title(),
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
+        sources = []
+        for l in self.labels:
+            after = int(identifier['after']) if not identifier['after'] == '' else None
+            before = int(identifier['before']) if not identifier['before'] == '' else None
+            count = self._count_by(after=after, before=before, camera=identifier['camera'], label=l)
+            if count == 0:
+                continue
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.{l}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{l}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"{l.replace('_', ' ').title()} ({count})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
             )
-            for l in self.labels
-        ]
+        return sources
 
     def _build_date_sources(
         self, identifier
@@ -196,81 +212,101 @@ class FrigateSource(MediaSource):
         if identifier['before'] != '' or identifier['after'] != '':
             return []
 
+        sources = []
+
         start_of_today = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today(), dt.time.min)).timestamp())
         start_of_yesterday = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today() - dt.timedelta(days=1), dt.time.min)).timestamp())
         start_of_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(day=1), dt.time.min)).timestamp())
         start_of_last_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(day=1) + relativedelta(months=+1), dt.time.min)).timestamp())
         start_of_year = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(month=1, day=1), dt.time.min)).timestamp())
-        sources = [
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"today/{start_of_today}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title="Today",
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
-            ),
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"yesterday/{start_of_yesterday}/{start_of_today}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title="Yesterday",
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
-            ),
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"this_month/{start_of_month}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title="This Month",
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
-            ),
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"last_month/{start_of_last_month}/{start_of_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title="Last Month",
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
-            ),
-            BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"this_year/{start_of_year}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
-                media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=None,
-                title="This Year",
-                can_play=False,
-                can_expand=True,
-                thumbnail=None
+
+        count_today = self._count_by(after=start_of_today, camera=identifier['camera'], label=identifier['label'])
+        count_yesterday = self._count_by(after=start_of_yesterday, before=start_of_today, camera=identifier['camera'], label=identifier['label'])
+        count_this_month = self._count_by(after=start_of_month, camera=identifier['camera'], label=identifier['label'])
+        count_last_month = self._count_by(after=start_of_last_month, before=start_of_month, camera=identifier['camera'], label=identifier['label'])
+        count_this_year = self._count_by(after=start_of_year, camera=identifier['camera'], label=identifier['label'])
+
+        if count_today > 0:
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.today/{start_of_today}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"Today ({count_today})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
             )
-        ]
-        # determine which of the following make sense based on the current identifier
-        # and the summary data
-        # today, yesterday, this month, last month, this year, last year
 
-        # determine the number of events within each of the above buckets, filtered by (camera, label)
+        if count_yesterday > 0:
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.yesterday/{start_of_yesterday}/{start_of_today}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"Yesterday ({count_yesterday})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+            )
 
-        # if num of events for current identifier 25 or less, no further drill down needed (probably do this in parent function)
+        if count_this_month > count_today + count_yesterday:
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.this_month/{start_of_month}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"This Month ({count_this_month})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+            )
 
-        # if num of events
+        if count_last_month > 0:
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.last_month/{start_of_last_month}/{start_of_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"Last Month ({count_last_month})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+            )
+
+        if count_this_year > count_this_month + count_last_month:
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.this_year/{start_of_year}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title="This Year",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+            )
 
         return sources
 
-    def _count_by(self, group: str, after: int, before: int, camera=None, label=None):
-        # group should be day, week, month, or year
-        events_today = sum([d['count'] for d in self.summary_data if d['day'] == dt.datetime.now().strftime('%Y-%m-%d')])
-        return {}
+    def _count_by(self, after=None, before=None, camera='', label=''):
+        return sum([d['count'] for d in self.summary_data if (
+            (after is None or d['timestamp'] >= after) and
+            (before is None or d['timestamp'] < before) and
+            (camera == '' or d['camera'] == camera) and
+            (label == '' or d['label'] == label)
+        )])
