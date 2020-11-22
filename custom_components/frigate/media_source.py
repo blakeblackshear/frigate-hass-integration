@@ -30,6 +30,9 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 MIME_TYPE = "video/mp4"
+ITEM_LIMIT = 50
+SECONDS_IN_DAY = 60 * 60 * 24
+SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
 
 
 class IncompatibleMediaSource(MediaSourceError):
@@ -105,7 +108,7 @@ class FrigateSource(MediaSource):
             camera=identifier["camera"],
             label=identifier["label"],
             zone=identifier["zone"],
-            limit=50
+            limit=ITEM_LIMIT
         )
 
         return self._browse_media(identifier, events)
@@ -132,6 +135,8 @@ class FrigateSource(MediaSource):
             thumbnail=None,
             children=self._build_item_response(events),
         )
+        # if there are more than limit size in the range, render day folders instead
+        # if there are more than the limit in the current folder add a way to view more
         base.children.extend(self._build_date_sources(identifier))
         if identifier["camera"] == '':
             base.children.extend(self._build_camera_sources(identifier))
@@ -209,9 +214,6 @@ class FrigateSource(MediaSource):
     def _build_date_sources(
         self, identifier
     ) -> BrowseMediaSource:
-        if identifier['before'] != '' or identifier['after'] != '':
-            return []
-
         sources = []
 
         start_of_today = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today(), dt.time.min)).timestamp())
@@ -225,6 +227,62 @@ class FrigateSource(MediaSource):
         count_this_month = self._count_by(after=start_of_month, camera=identifier['camera'], label=identifier['label'])
         count_last_month = self._count_by(after=start_of_last_month, before=start_of_month, camera=identifier['camera'], label=identifier['label'])
         count_this_year = self._count_by(after=start_of_year, camera=identifier['camera'], label=identifier['label'])
+
+        # if a date range has already been selected
+        if identifier['before'] != '' or identifier['after'] != '':
+            before = int(dt.datetime.now().timestamp()) if identifier['before'] == '' else int(identifier['before'])
+            after = int(dt.datetime.now().timestamp()) if identifier['after'] == '' else int(identifier['after'])
+
+            # if we are looking at years, split into months
+            if before - after > SECONDS_IN_MONTH:
+                current = after
+                while (current < before):
+                    current_date = dt.datetime.fromtimestamp(current)
+                    start_of_current_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date().replace(day=1), dt.time.min)).timestamp())
+                    start_of_next_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date().replace(day=1) + relativedelta(months=+1), dt.time.min)).timestamp())
+                    count_current = self._count_by(after=start_of_current_month, before=start_of_next_month, camera=identifier['camera'], label=identifier['label'])
+                    sources.append(
+                        BrowseMediaSource(
+                            domain=DOMAIN,
+                            identifier=f"{identifier['name']}.{current_date.strftime('%Y-%m')}/{start_of_current_month}/{start_of_next_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                            media_class=MEDIA_CLASS_DIRECTORY,
+                            children_media_class=MEDIA_CLASS_VIDEO,
+                            media_content_type=None,
+                            title=f"{current_date.strftime('%Y-%m')} ({count_current})",
+                            can_play=False,
+                            can_expand=True,
+                            thumbnail=None
+                        )
+                    )
+                    current = current + SECONDS_IN_MONTH
+                return sources
+
+            # if we are looking at a month, split into days
+            if before - after > SECONDS_IN_DAY:
+                current = after
+                while (current < before):
+                    current_date = dt.datetime.fromtimestamp(current)
+                    start_of_current_day = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date(), dt.time.min)).timestamp())
+                    start_of_next_day = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date() + dt.timedelta(days=1), dt.time.min)).timestamp())
+                    count_current = self._count_by(after=start_of_current_day, before=start_of_next_day, camera=identifier['camera'], label=identifier['label'])
+                    if count_current > 0:
+                        sources.append(
+                            BrowseMediaSource(
+                                domain=DOMAIN,
+                                identifier=f"{identifier['name']}.{current_date.strftime('%Y-%m-%d')}/{start_of_current_day}/{start_of_next_day}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                                media_class=MEDIA_CLASS_DIRECTORY,
+                                children_media_class=MEDIA_CLASS_VIDEO,
+                                media_content_type=None,
+                                title=f"{current_date.strftime('%Y-%m-%d')} ({count_current})",
+                                can_play=False,
+                                can_expand=True,
+                                thumbnail=None
+                            )
+                        )
+                    current = current + SECONDS_IN_DAY
+                return sources
+
+            return sources
 
         if count_today > 0:
             sources.append(
