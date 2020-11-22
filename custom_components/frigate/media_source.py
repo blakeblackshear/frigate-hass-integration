@@ -108,7 +108,7 @@ class FrigateSource(MediaSource):
             camera=identifier["camera"],
             label=identifier["label"],
             zone=identifier["zone"],
-            limit=ITEM_LIMIT
+            limit=10000 if identifier['name'].endswith('.all') else ITEM_LIMIT
         )
 
         return self._browse_media(identifier, events)
@@ -118,10 +118,14 @@ class FrigateSource(MediaSource):
     ) -> BrowseMediaSource:
         """Browse media."""
 
+        after = int(identifier['after']) if not identifier['after'] == '' else None
+        before = int(identifier['before']) if not identifier['before'] == '' else None
+        count = self._count_by(after=after, before=before, camera=identifier['camera'], label=identifier['label'])
+
         if identifier["original"] == "":
-            title = "Frigate"
+            title = f"Frigate ({count})"
         else:
-            title = ' > '.join([s for s in identifier["name"].replace("_", " ").split('.') if s != '']).title()
+            title = f"{' > '.join([s for s in identifier['name'].replace('_', ' ').split('.') if s != '']).title()} ({count})"
 
         base = BrowseMediaSource(
             domain=DOMAIN,
@@ -133,15 +137,47 @@ class FrigateSource(MediaSource):
             can_play=False,
             can_expand=True,
             thumbnail=None,
-            children=self._build_item_response(events),
+            children=[]
         )
-        # if there are more than limit size in the range, render day folders instead
-        # if there are more than the limit in the current folder add a way to view more
-        base.children.extend(self._build_date_sources(identifier))
+
+        event_items = self._build_item_response(events)
+
+        drilldown_sources = []
+        drilldown_sources.extend(self._build_date_sources(identifier))
         if identifier["camera"] == '':
-            base.children.extend(self._build_camera_sources(identifier))
+            drilldown_sources.extend(self._build_camera_sources(identifier))
         if identifier["label"] == '':
-            base.children.extend(self._build_label_sources(identifier))
+            drilldown_sources.extend(self._build_label_sources(identifier))
+
+        # if you are at the limit, but not at the root
+        if len(event_items) == ITEM_LIMIT and not identifier["original"] == "":
+            # only render if > 10% is represented in view
+            if ITEM_LIMIT / float(count) > .1:
+                base.children.extend(event_items)
+        else:
+            base.children.extend(event_items)
+
+        # only show the drill down options if there are more than 10 events
+        # and there is more than 1 drilldown or when you arent showing any events
+        if len(events) > 10 and (len(drilldown_sources) > 1 or len(base.children) == 0):
+            base.children.extend(drilldown_sources)
+
+        # add an all source if there are no drilldowns available and you are at the item limit
+        if len(drilldown_sources) == 0 and not identifier['name'].endswith('.all') and len(event_items) == ITEM_LIMIT:
+            base.children.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.all/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"All ({count})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+            )
+
         return base
 
     def _build_item_response(
@@ -248,7 +284,7 @@ class FrigateSource(MediaSource):
                             media_class=MEDIA_CLASS_DIRECTORY,
                             children_media_class=MEDIA_CLASS_VIDEO,
                             media_content_type=None,
-                            title=f"{current_date.strftime('%Y-%m')} ({count_current})",
+                            title=f"{current_date.strftime('%B')} ({count_current})",
                             can_play=False,
                             can_expand=True,
                             thumbnail=None
@@ -273,7 +309,7 @@ class FrigateSource(MediaSource):
                                 media_class=MEDIA_CLASS_DIRECTORY,
                                 children_media_class=MEDIA_CLASS_VIDEO,
                                 media_content_type=None,
-                                title=f"{current_date.strftime('%Y-%m-%d')} ({count_current})",
+                                title=f"{current_date.strftime('%B %d')} ({count_current})",
                                 can_play=False,
                                 can_expand=True,
                                 thumbnail=None
