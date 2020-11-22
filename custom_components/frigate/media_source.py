@@ -68,8 +68,6 @@ class FrigateSource(MediaSource):
     ) -> BrowseMediaSource:
         """Return media."""
 
-        _LOGGER.info(f"Browsing identifier: {item.identifier}")
-
         identifier = None
         if item.identifier is None:
             # if the summary data is old, refresh
