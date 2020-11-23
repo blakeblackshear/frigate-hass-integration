@@ -250,11 +250,14 @@ class FrigateSource(MediaSource):
     ) -> BrowseMediaSource:
         sources = []
 
-        start_of_today = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today(), dt.time.min)).timestamp())
-        start_of_yesterday = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today() - dt.timedelta(days=1), dt.time.min)).timestamp())
-        start_of_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(day=1), dt.time.min)).timestamp())
-        start_of_last_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(day=1) + relativedelta(months=+1), dt.time.min)).timestamp())
-        start_of_year = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(dt.datetime.today().replace(month=1, day=1), dt.time.min)).timestamp())
+        now = dt.datetime.now(DEFAULT_TIME_ZONE)
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        start_of_today = int(today.timestamp())
+        start_of_yesterday = start_of_today - SECONDS_IN_DAY
+        start_of_month = int(today.replace(day=1).timestamp())
+        start_of_last_month = int((today.replace(day=1) + relativedelta(months=-1)).timestamp())
+        start_of_year = int(today.replace(month=1, day=1).timestamp())
 
         count_today = self._count_by(after=start_of_today, camera=identifier['camera'], label=identifier['label'])
         count_yesterday = self._count_by(after=start_of_yesterday, before=start_of_today, camera=identifier['camera'], label=identifier['label'])
@@ -271,9 +274,9 @@ class FrigateSource(MediaSource):
             if before - after > SECONDS_IN_MONTH:
                 current = after
                 while (current < before):
-                    current_date = dt.datetime.fromtimestamp(current)
-                    start_of_current_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date().replace(day=1), dt.time.min)).timestamp())
-                    start_of_next_month = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date().replace(day=1) + relativedelta(months=+1), dt.time.min)).timestamp())
+                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).date()
+                    start_of_current_month = int(dt.datetime.combine(current_date.replace(day=1), dt.time.min).timestamp())
+                    start_of_next_month = int(dt.datetime.combine(current_date.replace(day=1) + relativedelta(months=+1), dt.time.min).timestamp())
                     count_current = self._count_by(after=start_of_current_month, before=start_of_next_month, camera=identifier['camera'], label=identifier['label'])
                     sources.append(
                         BrowseMediaSource(
@@ -295,9 +298,9 @@ class FrigateSource(MediaSource):
             if before - after > SECONDS_IN_DAY:
                 current = after
                 while (current < before):
-                    current_date = dt.datetime.fromtimestamp(current)
-                    start_of_current_day = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date(), dt.time.min)).timestamp())
-                    start_of_next_day = int(DEFAULT_TIME_ZONE.localize(dt.datetime.combine(current_date.date() + dt.timedelta(days=1), dt.time.min)).timestamp())
+                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).date()
+                    start_of_current_day = int(dt.datetime.combine(current_date, dt.time.min).timestamp())
+                    start_of_next_day = int(dt.datetime.combine(current_date + dt.timedelta(days=1), dt.time.min).timestamp())
                     count_current = self._count_by(after=start_of_current_day, before=start_of_next_day, camera=identifier['camera'], label=identifier['label'])
                     if count_current > 0:
                         sources.append(
