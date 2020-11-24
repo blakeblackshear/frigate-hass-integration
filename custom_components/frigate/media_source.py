@@ -76,6 +76,7 @@ class FrigateSource(MediaSource):
                 self.summary_data = await self.client.async_get_event_summary()
                 self.cameras = list(set([d["camera"] for d in self.summary_data]))
                 self.labels = list(set([d["label"] for d in self.summary_data]))
+                self.zones = list(set([zone for d in self.summary_data for zone in d["zones"]]))
                 for d in self.summary_data:
                     d['timestamp'] = int(DEFAULT_TIME_ZONE.localize(dt.datetime.strptime(d['day'], '%Y-%m-%d')).timestamp())
 
@@ -118,7 +119,7 @@ class FrigateSource(MediaSource):
 
         after = int(identifier['after']) if not identifier['after'] == '' else None
         before = int(identifier['before']) if not identifier['before'] == '' else None
-        count = self._count_by(after=after, before=before, camera=identifier['camera'], label=identifier['label'])
+        count = self._count_by(after=after, before=before, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
 
         if identifier["original"] == "":
             title = f"Frigate ({count})"
@@ -140,13 +141,6 @@ class FrigateSource(MediaSource):
 
         event_items = self._build_item_response(events)
 
-        drilldown_sources = []
-        drilldown_sources.extend(self._build_date_sources(identifier))
-        if identifier["camera"] == '':
-            drilldown_sources.extend(self._build_camera_sources(identifier))
-        if identifier["label"] == '':
-            drilldown_sources.extend(self._build_label_sources(identifier))
-
         # if you are at the limit, but not at the root
         if len(event_items) == ITEM_LIMIT and not identifier["original"] == "":
             # only render if > 10% is represented in view
@@ -155,13 +149,22 @@ class FrigateSource(MediaSource):
         else:
             base.children.extend(event_items)
 
+        drilldown_sources = []
+        drilldown_sources.extend(self._build_date_sources(identifier, len(base.children)))
+        if identifier["camera"] == '':
+            drilldown_sources.extend(self._build_camera_sources(identifier, len(base.children)))
+        if identifier["label"] == '':
+            drilldown_sources.extend(self._build_label_sources(identifier, len(base.children)))
+        if identifier["zone"] == '':
+            drilldown_sources.extend(self._build_zone_sources(identifier, len(base.children)))
+
         # only show the drill down options if there are more than 10 events
         # and there is more than 1 drilldown or when you arent showing any events
         if len(events) > 10 and (len(drilldown_sources) > 1 or len(base.children) == 0):
             base.children.extend(drilldown_sources)
 
         # add an all source if there are no drilldowns available and you are at the item limit
-        if len(drilldown_sources) == 0 and not identifier['name'].endswith('.all') and len(event_items) == ITEM_LIMIT:
+        if len(base.children) == len(event_items) and not identifier['name'].endswith('.all') and len(event_items) == ITEM_LIMIT:
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -196,14 +199,14 @@ class FrigateSource(MediaSource):
         ]
 
     def _build_camera_sources(
-        self, identifier
+        self, identifier, shown_event_count
     ) -> BrowseMediaSource:
         sources = []
         for c in self.cameras:
             after = int(identifier['after']) if not identifier['after'] == '' else None
             before = int(identifier['before']) if not identifier['before'] == '' else None
-            count = self._count_by(after=after, before=before, camera=c, label=identifier['label'])
-            if count == 0:
+            count = self._count_by(after=after, before=before, camera=c, label=identifier['label'], zone=identifier['zone'])
+            if count == 0 or count == shown_event_count:
                 continue
             sources.append(
                 BrowseMediaSource(
@@ -221,14 +224,14 @@ class FrigateSource(MediaSource):
         return sources
 
     def _build_label_sources(
-        self, identifier
+        self, identifier, shown_event_count
     ) -> BrowseMediaSource:
         sources = []
         for l in self.labels:
             after = int(identifier['after']) if not identifier['after'] == '' else None
             before = int(identifier['before']) if not identifier['before'] == '' else None
-            count = self._count_by(after=after, before=before, camera=identifier['camera'], label=l)
-            if count == 0:
+            count = self._count_by(after=after, before=before, camera=identifier['camera'], label=l, zone=identifier['zone'])
+            if count == 0 or count == shown_event_count:
                 continue
             sources.append(
                 BrowseMediaSource(
@@ -245,8 +248,33 @@ class FrigateSource(MediaSource):
             )
         return sources
 
+    def _build_zone_sources(
+        self, identifier, shown_event_count
+    ) -> BrowseMediaSource:
+        sources = []
+        for z in self.zones:
+            after = int(identifier['after']) if not identifier['after'] == '' else None
+            before = int(identifier['before']) if not identifier['before'] == '' else None
+            count = self._count_by(after=after, before=before, camera=identifier['camera'], label=identifier['label'], zone=z)
+            if count == 0 or count == shown_event_count:
+                continue
+            sources.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['name']}.{z}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{z}",
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=f"{z.replace('_', ' ').title()} ({count})",
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+            )
+        return sources
+
     def _build_date_sources(
-        self, identifier
+        self, identifier, shown_event_count
     ) -> BrowseMediaSource:
         sources = []
 
@@ -259,25 +287,25 @@ class FrigateSource(MediaSource):
         start_of_last_month = int((today.replace(day=1) + relativedelta(months=-1)).timestamp())
         start_of_year = int(today.replace(month=1, day=1).timestamp())
 
-        count_today = self._count_by(after=start_of_today, camera=identifier['camera'], label=identifier['label'])
-        count_yesterday = self._count_by(after=start_of_yesterday, before=start_of_today, camera=identifier['camera'], label=identifier['label'])
-        count_this_month = self._count_by(after=start_of_month, camera=identifier['camera'], label=identifier['label'])
-        count_last_month = self._count_by(after=start_of_last_month, before=start_of_month, camera=identifier['camera'], label=identifier['label'])
-        count_this_year = self._count_by(after=start_of_year, camera=identifier['camera'], label=identifier['label'])
+        count_today = self._count_by(after=start_of_today, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
+        count_yesterday = self._count_by(after=start_of_yesterday, before=start_of_today, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
+        count_this_month = self._count_by(after=start_of_month, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
+        count_last_month = self._count_by(after=start_of_last_month, before=start_of_month, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
+        count_this_year = self._count_by(after=start_of_year, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
 
         # if a date range has already been selected
         if identifier['before'] != '' or identifier['after'] != '':
-            before = int(dt.datetime.now().timestamp()) if identifier['before'] == '' else int(identifier['before'])
-            after = int(dt.datetime.now().timestamp()) if identifier['after'] == '' else int(identifier['after'])
+            before = int(now.timestamp()) if identifier['before'] == '' else int(identifier['before'])
+            after = int(now.timestamp()) if identifier['after'] == '' else int(identifier['after'])
 
             # if we are looking at years, split into months
             if before - after > SECONDS_IN_MONTH:
                 current = after
                 while (current < before):
-                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).date()
-                    start_of_current_month = int(dt.datetime.combine(current_date.replace(day=1), dt.time.min).timestamp())
-                    start_of_next_month = int(dt.datetime.combine(current_date.replace(day=1) + relativedelta(months=+1), dt.time.min).timestamp())
-                    count_current = self._count_by(after=start_of_current_month, before=start_of_next_month, camera=identifier['camera'], label=identifier['label'])
+                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    start_of_current_month = int(current_date.timestamp())
+                    start_of_next_month = int((current_date + relativedelta(months=+1)).timestamp())
+                    count_current = self._count_by(after=start_of_current_month, before=start_of_next_month, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
                     sources.append(
                         BrowseMediaSource(
                             domain=DOMAIN,
@@ -298,10 +326,10 @@ class FrigateSource(MediaSource):
             if before - after > SECONDS_IN_DAY:
                 current = after
                 while (current < before):
-                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).date()
-                    start_of_current_day = int(dt.datetime.combine(current_date, dt.time.min).timestamp())
-                    start_of_next_day = int(dt.datetime.combine(current_date + dt.timedelta(days=1), dt.time.min).timestamp())
-                    count_current = self._count_by(after=start_of_current_day, before=start_of_next_day, camera=identifier['camera'], label=identifier['label'])
+                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    start_of_current_day = int(current_date.timestamp())
+                    start_of_next_day = start_of_current_day + SECONDS_IN_DAY
+                    count_current = self._count_by(after=start_of_current_day, before=start_of_next_day, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
                     if count_current > 0:
                         sources.append(
                             BrowseMediaSource(
@@ -321,7 +349,7 @@ class FrigateSource(MediaSource):
 
             return sources
 
-        if count_today > 0:
+        if count_today > shown_event_count:
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -336,7 +364,7 @@ class FrigateSource(MediaSource):
                 )
             )
 
-        if count_yesterday > 0:
+        if count_yesterday > shown_event_count:
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -351,7 +379,7 @@ class FrigateSource(MediaSource):
                 )
             )
 
-        if count_this_month > count_today + count_yesterday:
+        if count_this_month > count_today + count_yesterday and count_this_month > shown_event_count:
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -366,7 +394,7 @@ class FrigateSource(MediaSource):
                 )
             )
 
-        if count_last_month > 0:
+        if count_last_month > shown_event_count:
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -381,7 +409,7 @@ class FrigateSource(MediaSource):
                 )
             )
 
-        if count_this_year > count_this_month + count_last_month:
+        if count_this_year > count_this_month + count_last_month and count_this_year > shown_event_count:
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -398,10 +426,11 @@ class FrigateSource(MediaSource):
 
         return sources
 
-    def _count_by(self, after=None, before=None, camera='', label=''):
+    def _count_by(self, after=None, before=None, camera='', label='', zone=''):
         return sum([d['count'] for d in self.summary_data if (
             (after is None or d['timestamp'] >= after) and
             (before is None or d['timestamp'] < before) and
             (camera == '' or d['camera'] == camera) and
-            (label == '' or d['label'] == label)
+            (label == '' or d['label'] == label) and
+            (zone == '' or zone in d['zones'])
         )])
