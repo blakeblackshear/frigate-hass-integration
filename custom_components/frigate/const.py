@@ -7,7 +7,7 @@ VERSION = "0.0.1"
 ISSUE_URL = "https://github.com/blakeblackshear/frigate-hass-integration/issues"
 
 # Icons
-ICON = "mdi:format-quote-close"
+ICON = "mdi:speedometer"
 
 # Device classes
 BINARY_SENSOR_DEVICE_CLASS = "connectivity"
