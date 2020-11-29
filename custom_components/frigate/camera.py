@@ -4,7 +4,9 @@ from typing import Dict
 import urllib.parse
 import logging
 
+from homeassistant.core import callback
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
+from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.helpers.aiohttp_client import (
@@ -28,7 +30,10 @@ async def async_setup_entry(
 
     entities = [FrigateCamera(hass, entry, name, camera) for name, camera in config['cameras'].items()]
 
-    async_add_entities(entities)
+    camera_objects = [(cam_name, obj) for cam_name, cam_config in config["cameras"].items() for obj in cam_config["objects"]["track"]]
+    mqtt_entities = [FrigateMqttSnapshots(hass, entry, config, cam_name, obj_name) for cam_name, obj_name in camera_objects]
+
+    async_add_entities(entities + mqtt_entities)
 
 
 class FrigateCamera(Camera):
@@ -102,3 +107,93 @@ class FrigateCamera(Camera):
         if not self.available:
             return None
         return self._stream_source
+
+
+class FrigateMqttSnapshots(Camera):
+    """Frigate Motion Sensor class."""
+
+    def __init__(self, hass, entry, frigate_config, cam_name, obj_name):
+        super().__init__()
+        self.hass = hass
+        self._entry = entry
+        self._frigate_config = frigate_config
+        self._cam_name = cam_name
+        self._obj_name = obj_name
+        self._last_image = None
+        self._available = False
+        self._sub_state = None
+        self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}/snapshot"
+        self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+
+    async def async_added_to_hass(self):
+        """Subscribe mqtt events."""
+        await super().async_added_to_hass()
+        await self._subscribe_topics()
+
+    async def _subscribe_topics(self):
+        """(Re)Subscribe to topics."""
+        @callback
+        def state_message_received(msg):
+            """Handle a new received MQTT state message."""
+            self._last_image = msg.payload
+
+        @callback
+        def availability_message_received(msg):
+            """Handle a new received MQTT availability message."""
+            payload = msg.payload
+
+            if payload == "online":
+                self._available = True
+            elif payload == "offline":
+                self._available = False
+            else:
+                _LOGGER.info(f"Invalid payload received for {self.name}")
+                return
+
+            self.async_write_ha_state()
+
+        self._sub_state = await async_subscribe_topics(
+            self.hass,
+            self._sub_state,
+            {
+                "state_topic": {
+                    "topic": self._topic,
+                    "msg_callback": state_message_received,
+                    "qos": 0,
+                    "encoding": None
+                },
+                "availability_topic": {
+                    "topic": self._availability_topic,
+                    "msg_callback": availability_message_received,
+                    "qos": 0,
+                }
+            },
+        )
+
+    @property
+    def unique_id(self):
+        """Return a unique ID to use for this entity."""
+        return f"{DOMAIN}_{self._cam_name}_{self._obj_name}_snapshot"
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._entry.entry_id)},
+            "name": NAME,
+            "model": VERSION,
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        friendly_camera_name = self._cam_name.replace('_', ' ')
+        return f"{friendly_camera_name} {self._obj_name}".title()
+
+    async def async_camera_image(self):
+        """Return image response."""
+        return self._last_image
+
+    @property
+    def available(self) -> bool:
+        return self._available
