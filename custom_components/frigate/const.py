@@ -8,6 +8,11 @@ ISSUE_URL = "https://github.com/blakeblackshear/frigate-hass-integration/issues"
 
 # Icons
 ICON = "mdi:speedometer"
+PERSON_ICON = "mdi:shield-account"
+CAR_ICON = "mdi:shield-car"
+DOG_ICON = "mdi:dog-side"
+CAT_ICON = "mdi:cat-side"
+OTHER_ICON = "mdi:shield-alert"
 
 # Device classes
 BINARY_SENSOR_DEVICE_CLASS = "connectivity"
@@ -17,7 +22,7 @@ BINARY_SENSOR = "binary_sensor"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
-PLATFORMS = [SENSOR, CAMERA]
+PLATFORMS = [BINARY_SENSOR, SENSOR, CAMERA]
 
 
 # Configuration and options
