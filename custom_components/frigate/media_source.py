@@ -33,6 +33,8 @@ MIME_TYPE = "video/mp4"
 ITEM_LIMIT = 50
 SECONDS_IN_DAY = 60 * 60 * 24
 SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
+CLIPS_ROOT = "clips//////"
+RECORDINGS_ROOT = "recordings////"
 
 
 class IncompatibleMediaSource(MediaSourceError):
@@ -61,58 +63,96 @@ class FrigateSource(MediaSource):
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
-        return PlayMedia(f"/api/frigate/clips/{item.identifier}.mp4", MIME_TYPE)
+        if item.identifer.startswith('clips'):
+            return PlayMedia(f"/api/frigate/clips/{item.identifier}.mp4", MIME_TYPE)
+        else:
+            return PlayMedia(f"/api/frigate/recordings/{item.identifier}.mp4", MIME_TYPE)
 
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: Tuple[str] = MEDIA_MIME_TYPES
     ) -> BrowseMediaSource:
         """Return media."""
 
-        identifier = None
         if item.identifier is None:
-            # if the summary data is old, refresh
-            if self.last_summary_refresh is None or dt.datetime.now().timestamp() - self.last_summary_refresh > 60:
-                self.last_summary_refresh = dt.datetime.now().timestamp()
-                self.summary_data = await self.client.async_get_event_summary()
-                self.cameras = list(set([d["camera"] for d in self.summary_data]))
-                self.labels = list(set([d["label"] for d in self.summary_data]))
-                self.zones = list(set([zone for d in self.summary_data for zone in d["zones"]]))
-                for d in self.summary_data:
-                    d['timestamp'] = int(DEFAULT_TIME_ZONE.localize(dt.datetime.strptime(d['day'], '%Y-%m-%d')).timestamp())
+            return BrowseMediaSource(
+                domain=DOMAIN,
+                identifier="",
+                media_class=MEDIA_CLASS_DIRECTORY,
+                children_media_class=MEDIA_CLASS_VIDEO,
+                media_content_type=None,
+                title="Frigate",
+                can_play=False,
+                can_expand=True,
+                thumbnail=None,
+                children=[
+                    BrowseMediaSource(
+                        domain=DOMAIN,
+                        identifier=CLIPS_ROOT,
+                        media_class=MEDIA_CLASS_DIRECTORY,
+                        children_media_class=MEDIA_CLASS_VIDEO,
+                        media_content_type=None,
+                        title="Clips",
+                        can_play=False,
+                        can_expand=True,
+                        thumbnail=None,
+                        children=[]
+                    ),
+                    BrowseMediaSource(
+                        domain=DOMAIN,
+                        identifier=RECORDINGS_ROOT,
+                        media_class=MEDIA_CLASS_DIRECTORY,
+                        children_media_class=MEDIA_CLASS_VIDEO,
+                        media_content_type=None,
+                        title="Recordings",
+                        can_play=False,
+                        can_expand=True,
+                        thumbnail=None,
+                        children=[]
+                    )
+                ]
+            )
 
-            identifier = {
-                "original": "",
-                "name": "",
-                "after": "",
-                "before": "",
-                "camera": "",
-                "label": "",
-                "zone": ""
-            }
-        else:
+        elif item.identifier.startswith('clips'):
+            identifier = None
+            _LOGGER.debug(f"item.identifier: {item.identifier}")
+            if item.identifier == CLIPS_ROOT:
+                # if the summary data is old, refresh
+                if self.last_summary_refresh is None or dt.datetime.now().timestamp() - self.last_summary_refresh > 60:
+                    _LOGGER.debug(f"refreshing summary data")
+                    self.last_summary_refresh = dt.datetime.now().timestamp()
+                    self.summary_data = await self.client.async_get_event_summary()
+                    self.cameras = list(set([d["camera"] for d in self.summary_data]))
+                    self.labels = list(set([d["label"] for d in self.summary_data]))
+                    self.zones = list(set([zone for d in self.summary_data for zone in d["zones"]]))
+                    for d in self.summary_data:
+                        d['timestamp'] = int(DEFAULT_TIME_ZONE.localize(dt.datetime.strptime(d['day'], '%Y-%m-%d')).timestamp())
+
             identifier_parts = item.identifier.split("/")
             identifier = {
                 "original": item.identifier,
-                "name": identifier_parts[0],
-                "after": identifier_parts[1],
-                "before": identifier_parts[2],
-                "camera": identifier_parts[3],
-                "label": identifier_parts[4],
-                "zone": identifier_parts[5]
+                "name": identifier_parts[1],
+                "after": identifier_parts[2],
+                "before": identifier_parts[3],
+                "camera": identifier_parts[4],
+                "label": identifier_parts[5],
+                "zone": identifier_parts[6]
             }
 
-        events = await self.client.async_get_events(
-            after=identifier["after"],
-            before=identifier["before"],
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
-            limit=10000 if identifier['name'].endswith('.all') else ITEM_LIMIT
-        )
+            events = await self.client.async_get_events(
+                after=identifier["after"],
+                before=identifier["before"],
+                camera=identifier["camera"],
+                label=identifier["label"],
+                zone=identifier["zone"],
+                limit=10000 if identifier['name'].endswith('.all') else ITEM_LIMIT
+            )
 
-        return self._browse_media(identifier, events)
+            return self._browse_clips(identifier, events)
 
-    def _browse_media(
+        elif item.identifier.startswith('recordings'):
+            return []
+
+    def _browse_clips(
         self, identifier, events
     ) -> BrowseMediaSource:
         """Browse media."""
@@ -121,14 +161,14 @@ class FrigateSource(MediaSource):
         before = int(identifier['before']) if not identifier['before'] == '' else None
         count = self._count_by(after=after, before=before, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
 
-        if identifier["original"] == "":
-            title = f"Frigate ({count})"
+        if identifier["original"] == CLIPS_ROOT:
+            title = f"Clips ({count})"
         else:
             title = f"{' > '.join([s for s in identifier['name'].replace('_', ' ').split('.') if s != '']).title()} ({count})"
 
         base = BrowseMediaSource(
             domain=DOMAIN,
-            identifier="",
+            identifier=identifier["original"],
             media_class=MEDIA_CLASS_DIRECTORY,
             children_media_class=MEDIA_CLASS_VIDEO,
             media_content_type=None,
@@ -139,7 +179,7 @@ class FrigateSource(MediaSource):
             children=[]
         )
 
-        event_items = self._build_item_response(events)
+        event_items = self._build_clip_response(events)
 
         # if you are at the limit, but not at the root
         if len(event_items) == ITEM_LIMIT and not identifier["original"] == "":
@@ -168,7 +208,7 @@ class FrigateSource(MediaSource):
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.all/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.all/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -181,13 +221,13 @@ class FrigateSource(MediaSource):
 
         return base
 
-    def _build_item_response(
+    def _build_clip_response(
         self, events
     ) -> BrowseMediaSource:
         return [
             BrowseMediaSource(
                 domain=DOMAIN,
-                identifier=f"{event['camera']}-{event['id']}",
+                identifier=f"clips/{event['camera']}-{event['id']}",
                 media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_TYPE_VIDEO,
                 title=f"{event['label']} {int(event['top_score']*100)}%".capitalize(),
@@ -211,7 +251,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.{c}/{identifier['after']}/{identifier['before']}/{c}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.{c}/{identifier['after']}/{identifier['before']}/{c}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -236,7 +276,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.{l}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{l}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.{l}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{l}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -261,7 +301,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.{z}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{z}",
+                    identifier=f"clips/{identifier['name']}.{z}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{z}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -309,7 +349,7 @@ class FrigateSource(MediaSource):
                     sources.append(
                         BrowseMediaSource(
                             domain=DOMAIN,
-                            identifier=f"{identifier['name']}.{current_date.strftime('%Y-%m')}/{start_of_current_month}/{start_of_next_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                            identifier=f"clips/{identifier['name']}.{current_date.strftime('%Y-%m')}/{start_of_current_month}/{start_of_next_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                             media_class=MEDIA_CLASS_DIRECTORY,
                             children_media_class=MEDIA_CLASS_VIDEO,
                             media_content_type=None,
@@ -334,7 +374,7 @@ class FrigateSource(MediaSource):
                         sources.append(
                             BrowseMediaSource(
                                 domain=DOMAIN,
-                                identifier=f"{identifier['name']}.{current_date.strftime('%Y-%m-%d')}/{start_of_current_day}/{start_of_next_day}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                                identifier=f"clips/{identifier['name']}.{current_date.strftime('%Y-%m-%d')}/{start_of_current_day}/{start_of_next_day}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                                 media_class=MEDIA_CLASS_DIRECTORY,
                                 children_media_class=MEDIA_CLASS_VIDEO,
                                 media_content_type=None,
@@ -353,7 +393,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.today/{start_of_today}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.today/{start_of_today}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -368,7 +408,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.yesterday/{start_of_yesterday}/{start_of_today}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.yesterday/{start_of_yesterday}/{start_of_today}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -383,7 +423,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.this_month/{start_of_month}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.this_month/{start_of_month}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -398,7 +438,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.last_month/{start_of_last_month}/{start_of_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.last_month/{start_of_last_month}/{start_of_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
@@ -413,7 +453,7 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['name']}.this_year/{start_of_year}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.this_year/{start_of_year}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=None,
