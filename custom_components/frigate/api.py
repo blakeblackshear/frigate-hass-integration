@@ -45,6 +45,11 @@ class FrigateApiClient:
         url = urllib.parse.urljoin(self._host, "/config")
         return await self.api_wrapper("get", url)
 
+    async def async_get_recordings_folder(self, path) -> dict:
+        """Get data from the API."""
+        url = urllib.parse.urljoin(self._host, f"/recordings/{path}/")
+        return await self.api_wrapper("get", url)
+
     async def api_wrapper(
         self, method: str, url: str, data: dict = {}, headers: dict = {}
     ) -> dict:

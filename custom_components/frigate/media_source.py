@@ -63,10 +63,7 @@ class FrigateSource(MediaSource):
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
-        if item.identifer.startswith('clips'):
-            return PlayMedia(f"/api/frigate/clips/{item.identifier}.mp4", MIME_TYPE)
-        else:
-            return PlayMedia(f"/api/frigate/recordings/{item.identifier}.mp4", MIME_TYPE)
+        return PlayMedia(f"/api/frigate/{item.identifier}", MIME_TYPE)
 
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: Tuple[str] = MEDIA_MIME_TYPES
@@ -150,7 +147,23 @@ class FrigateSource(MediaSource):
             return self._browse_clips(identifier, events)
 
         elif item.identifier.startswith('recordings'):
-            return []
+            identifier_parts = item.identifier.split("/")
+            identifier = {
+                "original": item.identifier,
+                "year_month": identifier_parts[1],
+                "day": identifier_parts[2],
+                "hour": identifier_parts[3],
+                "camera": identifier_parts[4]
+            }
+
+            if identifier['camera'] == "":
+                path = "/".join([s for s in item.identifier.split('/')[1:] if s != ""])
+                folders = await self.client.async_get_recordings_folder(path)
+                return self._browse_recording_folders(identifier, folders)
+
+            path = "/".join([s for s in item.identifier.split('/')[1:] if s != ""])
+            recordings = await self.client.async_get_recordings_folder(path)
+            return self._browse_recordings(identifier, recordings)
 
     def _browse_clips(
         self, identifier, events
@@ -227,7 +240,7 @@ class FrigateSource(MediaSource):
         return [
             BrowseMediaSource(
                 domain=DOMAIN,
-                identifier=f"clips/{event['camera']}-{event['id']}",
+                identifier=f"clips/{event['camera']}-{event['id']}.mp4",
                 media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_TYPE_VIDEO,
                 title=f"{event['label']} {int(event['top_score']*100)}%".capitalize(),
@@ -474,3 +487,96 @@ class FrigateSource(MediaSource):
             (label == '' or d['label'] == label) and
             (zone == '' or zone in d['zones'])
         )])
+
+    def _create_recordings_folder_identifier(self, identifier, folder):
+        identifier_fragments = [s for s in identifier["original"].split('/') if s != ""] + [folder["name"]]
+        identifier_fragments += [''] * (5 - len(identifier_fragments))
+        return '/'.join(identifier_fragments)
+
+    def _generate_recording_title(self, identifier, folder=None):
+        if identifier["camera"] != "":
+            if folder is None:
+                return identifier["camera"].replace("_", " ").title()
+            else:
+                minute_seconds = folder["name"].replace(".mp4", "")
+                return dt.datetime.strptime(f"{identifier['hour']}.{minute_seconds}", '%H.%M.%S').strftime('%-I:%M:%S %p')
+
+        if identifier["hour"] != "":
+            if folder is None:
+                return dt.datetime.strptime(f"{identifier['hour']}.00.00", '%H.%M.%S').strftime('%-I:%M:%S %p')
+            else:
+                return folder["name"].replace("_", " ").title()
+
+        if identifier["day"] != "":
+            if folder is None:
+                return dt.datetime.strptime(f"{identifier['year_month']}-{identifier['day']}", '%Y-%m-%d').strftime('%B %d')
+            else:
+                return dt.datetime.strptime(f"{folder['name']}.00.00", '%H.%M.%S').strftime('%-I:%M:%S %p')
+
+        if identifier["year_month"] != "":
+            if folder is None:
+                return dt.datetime.strptime(f"{identifier['year_month']}", '%Y-%m').strftime('%B %Y')
+            else:
+                return dt.datetime.strptime(f"{identifier['year_month']}-{folder['name']}", '%Y-%m-%d').strftime('%B %d')
+
+        if folder is None:
+            return [s for s in identifier["original"].split('/') if s != ""][-1].title()
+        else:
+            return dt.datetime.strptime(f"{folder['name']}", '%Y-%m').strftime('%B %Y')
+
+    def _browse_recording_folders(self, identifier, folders):
+        base = BrowseMediaSource(
+            domain=DOMAIN,
+            identifier=identifier["original"],
+            media_class=MEDIA_CLASS_DIRECTORY,
+            children_media_class=MEDIA_CLASS_VIDEO,
+            media_content_type=None,
+            title=self._generate_recording_title(identifier),
+            can_play=False,
+            can_expand=True,
+            thumbnail=None,
+            children=[
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=self._create_recordings_folder_identifier(identifier, folder),
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=None,
+                    title=self._generate_recording_title(identifier, folder),
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None
+                )
+                for folder in folders if not folder['name'].endswith('.mp4')
+            ]
+        )
+
+        return base
+
+    def _browse_recordings(self, identifier, recordings):
+        base = BrowseMediaSource(
+            domain=DOMAIN,
+            identifier=identifier["original"],
+            media_class=MEDIA_CLASS_DIRECTORY,
+            children_media_class=MEDIA_CLASS_VIDEO,
+            media_content_type=None,
+            title=self._generate_recording_title(identifier),
+            can_play=False,
+            can_expand=True,
+            thumbnail=None,
+            children=[
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{identifier['original']}/{recording['name']}",
+                    media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=MEDIA_TYPE_VIDEO,
+                    title=self._generate_recording_title(identifier, recording),
+                    can_play=True,
+                    can_expand=False,
+                    thumbnail=None,
+                )
+                for recording in recordings
+            ]
+        )
+
+        return base
