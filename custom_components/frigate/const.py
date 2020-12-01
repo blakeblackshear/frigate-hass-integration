@@ -14,15 +14,12 @@ DOG_ICON = "mdi:dog-side"
 CAT_ICON = "mdi:cat-side"
 OTHER_ICON = "mdi:shield-alert"
 
-# Device classes
-BINARY_SENSOR_DEVICE_CLASS = "connectivity"
-
 # Platforms
 BINARY_SENSOR = "binary_sensor"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
-PLATFORMS = [BINARY_SENSOR, SENSOR, CAMERA]
+PLATFORMS = [SENSOR, CAMERA]
 
 
 # Configuration and options
