@@ -57,7 +57,7 @@ class FrigateApiClient:
         try:
             async with async_timeout.timeout(TIMEOUT, loop=asyncio.get_event_loop()):
                 if method == "get":
-                    response = await self._session.get(url, headers=headers)
+                    response = await self._session.get(url, headers=headers, raise_for_status=True)
                     return await response.json()
 
                 elif method == "put":
@@ -75,6 +75,7 @@ class FrigateApiClient:
                 url,
                 exception,
             )
+            raise
 
         except (KeyError, TypeError) as exception:
             _LOGGER.error(
@@ -82,11 +83,14 @@ class FrigateApiClient:
                 url,
                 exception,
             )
+            raise
         except (aiohttp.ClientError, socket.gaierror) as exception:
             _LOGGER.error(
                 "Error fetching information from %s - %s",
                 url,
                 exception,
             )
+            raise
         except Exception as exception:  # pylint: disable=broad-except
             _LOGGER.error("Something really wrong happend! - %s", exception)
+            raise
