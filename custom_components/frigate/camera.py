@@ -48,7 +48,7 @@ class FrigateCamera(Camera):
         self._name = name
         _LOGGER.debug(f"Adding camera {name}")
         self._config = config
-        self._latest_url = urllib.parse.urljoin(self._host, f"/{self._name}/latest.jpg")
+        self._latest_url = urllib.parse.urljoin(self._host, f"/{self._name}/latest.jpg?h=277")
         parsed_host = urllib.parse.urlparse(self._host).hostname
         self._stream_source = f"rtmp://{parsed_host}/live/{self._name}"
 
