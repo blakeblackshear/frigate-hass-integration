@@ -6,26 +6,21 @@
                 "title": "Frigate",
                 "description": "Enter the host of your frigate instance.",
                 "data": {
-                    "host": "Host",
-                    "name": "Name"
+                    "host": "Host"
                 }
+            },
+            "discovery_confirm": {
+                "title": "Frigate",
+                "description": "Do you want to add Frigate (`{host}`) to Home Assistant?"
             }
         },
         "error": {
-            "auth": "Unable to connect to Frigate."
+            "auth": "Unable to connect to Frigate.",
+            "mqtt": "MQTT is required for this integration."
         },
         "abort": {
-            "single_instance_allowed": "Only a single configuration of Frigate is allowed."
-        }
-    },
-    "options": {
-        "step": {
-            "user": {
-                "data": {
-                    "sensor": "Sensor enabled",
-                    "camera": "Camera enabled"
-                }
-            }
+            "single_instance_allowed": "Only a single configuration of Frigate is allowed.",
+            "mqtt_required": "MQTT is required for this integration."
         }
     }
 }

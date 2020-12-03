@@ -2,10 +2,19 @@
   "domain": "frigate",
   "name": "Frigate",
   "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
-  "dependencies": [],
+  "dependencies": [
+    "http"
+  ],
+  "after_dependencies": [
+    "zeroconf",
+    "mqtt"
+  ],
   "config_flow": true,
   "codeowners": [
     "blakeblackshear"
   ],
-  "requirements": []
+  "requirements": [],
+  "zeroconf": [
+    "_frigate._tcp.local."
+  ]
 }
