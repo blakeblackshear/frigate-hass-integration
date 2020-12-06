@@ -195,7 +195,7 @@ class FrigateSource(MediaSource):
         event_items = self._build_clip_response(events)
 
         # if you are at the limit, but not at the root
-        if len(event_items) == ITEM_LIMIT and not identifier["original"] == "":
+        if len(event_items) == ITEM_LIMIT and not identifier["original"] == CLIPS_ROOT:
             # only render if > 10% is represented in view
             if ITEM_LIMIT / float(count) > .1:
                 base.children.extend(event_items)
