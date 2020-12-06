@@ -6,15 +6,11 @@
     "http"
   ],
   "after_dependencies": [
-    "zeroconf",
     "mqtt"
   ],
   "config_flow": true,
   "codeowners": [
     "blakeblackshear"
   ],
-  "requirements": [],
-  "zeroconf": [
-    "_frigate._tcp.local."
-  ]
+  "requirements": []
 }

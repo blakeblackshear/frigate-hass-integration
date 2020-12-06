@@ -10,7 +10,7 @@ import logging
 from .api import FrigateApiClient
 from .const import (
     DOMAIN,
-    PLATFORMS,
+    PLATFORMS
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -47,42 +47,15 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self._show_config_form(user_input)
 
-    async def async_step_discovery_confirm(self, user_input=None):
-        """Handle user-confirmation of discovered node."""
-        self._errors = {}
-
-        # Ensure mqtt
-        if not 'mqtt' in self.hass.config.components:
-            self._errors["base"] = "mqtt"
-
-        discovery_data = {"host": f"http://{self._host}:{self._port}"}
-        if user_input is not None:
-            valid = await self._valid(discovery_data)
-            if valid:
-                return self.async_create_entry(
-                    title="Frigate", data=discovery_data
-                )
-        return self.async_show_form(
-            step_id="discovery_confirm", description_placeholders=discovery_data, errors=self._errors
-        )
-
-    async def async_step_zeroconf(self, discovery_info: DiscoveryInfoType):
-        """Handle zeroconf discovery."""
-        # Check if already configured
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
-
-        self._host = discovery_info[CONF_HOST]
-        self._port = discovery_info[CONF_PORT]
-
-        return await self.async_step_discovery_confirm()
-
     async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
         """Show the configuration form to edit location data."""
+        default_host = "http://ccab4aaf-frigate:5000"
+        if not user_input is None:
+            default_host = user_input.get("host", "http://ccab4aaf-frigate:5000")
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
-                {vol.Required("host"): str}
+                {vol.Required("host", default=default_host): str}
             ),
             errors=self._errors,
         )
