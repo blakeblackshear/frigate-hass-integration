@@ -7,7 +7,7 @@ Provides the following:
 - Sensor entities
 - Camera entities
 
-# Information on Frigate (Available as an Addon)
+## Information on Frigate (Available as an Addon)
 A complete and local NVR designed for HomeAssistant with AI object detection. Uses OpenCV and Tensorflow to perform realtime object detection locally for IP cameras.
 
 Use of a [Google Coral Accelerator](https://coral.ai/products/) is optional, but highly recommended. The Coral will outperform even the best CPUs and can process 100+ FPS with very little overhead.
