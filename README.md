@@ -6,4 +6,4 @@ Provides the following:
 - Camera entities
 
 ## Installation
-Copy `custom_components/frigate` to your `custom_components` folder in HomeAssistant.
+Copy `custom_components/frigate` to your `custom_components` folder in HomeAssistant. Also available via HACS.

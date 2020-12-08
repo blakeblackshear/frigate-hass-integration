@@ -1,40 +1,21 @@
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]][license]
+[Frigate NVR Custom Component](https://github.com/blakeblackshear/frigate-hass-integration) for homeassistant
 
-[![hacs][hacsbadge]][hacs]
-[![Project Maintenance][maintenance-shield]][user_profile]
+This is a custom component to integrate [Frigate](https://github.com/blakeblackshear/frigate) into to [Homeassistant](https://home-assistant.io).
 
-_Component to integrate with [frigate][frigate]._
+Provides the following:
+- Rich media browser with thumbnails and navigation
+- Sensor entities
+- Camera entities
 
-**This component will set up the following platforms.**
+# Information on Frigate (Available as an Addon)
+A complete and local NVR designed for HomeAssistant with AI object detection. Uses OpenCV and Tensorflow to perform realtime object detection locally for IP cameras.
 
-Platform | Description
--- | --
-`media_browser` | Rich media browser for Frigate recordings.
-`sensor` | Sensors for monitoring frigate performance.
-`camera` | Frigate camera entities.
+Use of a [Google Coral Accelerator](https://coral.ai/products/) is optional, but highly recommended. The Coral will outperform even the best CPUs and can process 100+ FPS with very little overhead.
 
-![example][exampleimg]
-
-{% if not installed %}
-## Installation
-
-1. Click install.
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Frigate".
-
-{% endif %}
-
-
-## Configuration is done in the UI
-
-<!---->
-
-***
-
-[frigate]: https://github.com/blakeblackshear/frigate
-[commits]: https://github.com/blakeblackshear/frigate/commits/master
-[hacs]: https://hacs.xyz
-[exampleimg]: frigate.png
-[license]: https://github.com/blakeblackshear/frigate/blob/main/LICENSE
-[releases]: https://github.com/blakeblackshear/frigate/releases
-[user_profile]: https://github.com/blakeblackshear
+- Designed to minimize resource use and maximize performance by only looking for objects when and where it is necessary
+- Leverages multiprocessing heavily with an emphasis on realtime over processing every frame
+- Uses a very low overhead motion detection to determine where to run object detection
+- Object detection with TensorFlow runs in separate processes for maximum FPS
+- Communicates over MQTT for easy integration into other systems
+- 24/7 recording
+- Re-streaming via RTMP to reduce the number of connections to your camera
