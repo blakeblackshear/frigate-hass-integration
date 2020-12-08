@@ -51,6 +51,7 @@ class FrigateCamera(Camera):
         self._latest_url = urllib.parse.urljoin(self._host, f"/{self._name}/latest.jpg?h=277")
         parsed_host = urllib.parse.urlparse(self._host).hostname
         self._stream_source = f"rtmp://{parsed_host}/live/{self._name}"
+        self._stream_enabled = self._config["rtmp"]["enabled"]
 
     @property
     def unique_id(self):
@@ -80,6 +81,8 @@ class FrigateCamera(Camera):
     @property
     def supported_features(self) -> int:
         """Return supported features of this camera."""
+        if not self._stream_enabled:
+            return 0
         return SUPPORT_STREAM
 
     # @ property
@@ -104,7 +107,7 @@ class FrigateCamera(Camera):
 
     async def stream_source(self) -> str:
         """Return the source of the stream."""
-        if not self.available:
+        if not self._stream_enabled:
             return None
         return self._stream_source
 
