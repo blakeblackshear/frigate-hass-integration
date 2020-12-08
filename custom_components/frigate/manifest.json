@@ -11,7 +11,7 @@
   ],
   "config_flow": true,
   "codeowners": [
-    "blakeblackshear"
+    "@blakeblackshear"
   ],
   "requirements": []
 }
