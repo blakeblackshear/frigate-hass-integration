@@ -217,7 +217,11 @@ class FrigateSource(MediaSource):
             base.children.extend(drilldown_sources)
 
         # add an all source if there are no drilldowns available and you are at the item limit
-        if len(base.children) == len(event_items) and not identifier['name'].endswith('.all') and len(event_items) == ITEM_LIMIT:
+        if (
+            (len(base.children) == 0 or len(base.children) == len(event_items)) and
+            not identifier['name'].endswith('.all') and
+            len(event_items) == ITEM_LIMIT
+        ):
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
