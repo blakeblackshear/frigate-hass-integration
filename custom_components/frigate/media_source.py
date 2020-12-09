@@ -247,7 +247,7 @@ class FrigateSource(MediaSource):
                 identifier=f"clips/{event['camera']}-{event['id']}.mp4",
                 media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_TYPE_VIDEO,
-                title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime('%m/%d/%Y %I:%M %p')} {event['label'].capitalize()} {int(event['top_score']*100)}% | {int(event['end_time']-event['start_time'])}s",
+                title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime('%x %I:%M %p')} {event['label'].capitalize()} {int(event['top_score']*100)}% | {int(event['end_time']-event['start_time'])}s",
                 can_play=True,
                 can_expand=False,
                 thumbnail=f"data:image/jpeg;base64,{event['thumbnail']}",
