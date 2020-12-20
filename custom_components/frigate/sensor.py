@@ -2,7 +2,7 @@
 import logging
 from .const import (
     DEFAULT_NAME, DOMAIN, PERSON_ICON, CAR_ICON, DOG_ICON, CAT_ICON,
-    OTHER_ICON, ICON, SENSOR, NAME, VERSION
+    OTHER_ICON, ICON, SENSOR, NAME, VERSION, FPS, MS
 )
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -80,6 +80,11 @@ class FrigateFpsSensor(CoordinatorEntity):
             return None
 
     @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement of the sensor."""
+        return FPS
+
+    @property
     def icon(self):
         """Return the icon of the sensor."""
         return ICON
@@ -122,6 +127,11 @@ class DetectorSpeedSensor(CoordinatorEntity):
             return None
 
     @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement of the sensor."""
+        return MS
+
+    @property
     def icon(self):
         """Return the icon of the sensor."""
         return ICON
@@ -155,6 +165,11 @@ class CameraFpsSensor(CoordinatorEntity):
         """Return the name of the sensor."""
         friendly_camera_name = self.camera_name.replace('_', ' ')
         return f"{friendly_camera_name} {self.fps_type} FPS".title()
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement of the sensor."""
+        return FPS
 
     @property
     def state(self):
@@ -264,6 +279,11 @@ class FrigateObjectCountSensor(Entity):
     def state(self):
         """Return true if the binary sensor is on."""
         return self._state
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement of the sensor."""
+        return "objects"
 
     @property
     def icon(self):

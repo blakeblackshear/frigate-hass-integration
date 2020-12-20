@@ -21,6 +21,9 @@ SWITCH = "switch"
 CAMERA = "camera"
 PLATFORMS = [SENSOR, CAMERA]
 
+# Unit of measurement
+FPS = "fps"
+MS = "ms"
 
 # Configuration and options
 CONF_ENABLED = "enabled"
