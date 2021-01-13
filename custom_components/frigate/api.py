@@ -25,7 +25,7 @@ class FrigateApiClient:
 
     async def async_get_stats(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/stats")
+        url = urllib.parse.urljoin(self._host, "/api/stats")
         return await self.api_wrapper("get", url)
 
     async def async_get_events(self, camera=None, label=None, zone=None, after=None, before=None, limit: int = None) -> dict:
