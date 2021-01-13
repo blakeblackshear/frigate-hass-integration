@@ -32,22 +32,22 @@ class FrigateApiClient:
         """Get data from the API."""
         params = {"camera": camera, "label": label, "zone": zone, "after": after, "before": before, "limit": limit}
         params = urllib.parse.urlencode({k: v for k, v in params.items() if not v is None and not v == ''})
-        url = urllib.parse.urljoin(self._host, f"/events?{params}")
+        url = urllib.parse.urljoin(self._host, f"/api/events?{params}")
         return await self.api_wrapper("get", url)
 
     async def async_get_event_summary(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/events/summary")
+        url = urllib.parse.urljoin(self._host, "/api/events/summary")
         return await self.api_wrapper("get", url)
 
     async def async_get_config(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/config")
+        url = urllib.parse.urljoin(self._host, "/api/config")
         return await self.api_wrapper("get", url)
 
     async def async_get_recordings_folder(self, path) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, f"/recordings/{path}/")
+        url = urllib.parse.urljoin(self._host, f"/api/recordings/{path}/")
         return await self.api_wrapper("get", url)
 
     async def api_wrapper(
