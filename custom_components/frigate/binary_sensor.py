@@ -44,17 +44,6 @@ class FrigateMotionSensor(BinarySensorEntity):
         self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}"
         self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
 
-        # if self._obj_name == 'person':
-        #     self._icon = PERSON_ICON
-        # elif self._obj_name == 'car':
-        #     self._icon = CAR_ICON
-        # elif self._obj_name == 'dog':
-        #     self._icon = DOG_ICON
-        # elif self._obj_name == 'cat':
-        #     self._icon = CAT_ICON
-        # else:
-        #     self._icon = OTHER_ICON
-
     async def async_added_to_hass(self):
         """Subscribe mqtt events."""
         await super().async_added_to_hass()
@@ -128,11 +117,6 @@ class FrigateMotionSensor(BinarySensorEntity):
     def is_on(self):
         """Return true if the binary sensor is on."""
         return self._is_on
-
-    # @property
-    # def icon(self):
-    #     """Return the icon of the sensor."""
-    #     return self._icon
 
     @property
     def device_class(self):
