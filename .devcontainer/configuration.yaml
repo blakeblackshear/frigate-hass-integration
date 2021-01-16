@@ -4,3 +4,7 @@ logger:
   default: error
   logs:
     custom_components.frigate: debug
+    homeassistant.components.mqtt: error
+
+downloader:
+  download_dir: www

@@ -149,11 +149,11 @@ class RecordingsProxy(HomeAssistantView):
             return response
 
 
-class NotificationImage(HomeAssistantView):
+class NotificationProxy(HomeAssistantView):
     """Hass.io view to handle base part."""
 
-    url = r"/api/frigate/notifications/{event_id}.jpg"
-    name = "api:frigate:notification:image"
+    url = "/api/frigate/notifications/{event_id}/{path:.*}"
+    name = "api:frigate:notification"
     requires_auth = False
 
     def __init__(self, host: str, websession: aiohttp.ClientSession):
@@ -161,16 +161,26 @@ class NotificationImage(HomeAssistantView):
         self._host = host
         self._websession = websession
 
-    def _create_url(self, event_id: str) -> str:
+    def _create_url(self, event_id: str, path: str) -> str:
         """Create URL to service."""
-        return urllib.parse.urljoin(self._host, f"/events/{event_id}/snapshot.jpg")
+        if path == "thumbnail.jpg":
+            return urllib.parse.urljoin(self._host, f"/api/events/{event_id}/thumbnail.jpg")
+
+        camera = path.split("/")[0]
+        if path.endswith("snapshot.jpg"):
+            return urllib.parse.urljoin(self._host, f"/clips/{camera}-{event_id}.jpg")
+        if path.endswith("clip.mp4"):
+            return urllib.parse.urljoin(self._host, f"/clips/{camera}-{event_id}.mp4")
+
+        raise ValueError
 
     async def _handle(
-        self, request: web.Request, event_id: str
+        self, request: web.Request, event_id: str, path: str
     ) -> Union[web.Response, web.StreamResponse, web.WebSocketResponse]:
         """Route data to service."""
         try:
-            return await self._handle_request(request, event_id)
+            url = self._create_url(event_id, path)
+            return await self._handle_request(request, url)
 
         except aiohttp.ClientError as err:
             _LOGGER.debug("Reverse proxy error with %s: %s", event_id, err)
@@ -185,10 +195,9 @@ class NotificationImage(HomeAssistantView):
     options = _handle
 
     async def _handle_request(
-        self, request: web.Request, event_id: str
+        self, request: web.Request, url: str
     ) -> Union[web.Response, web.StreamResponse]:
         """Handle route for request."""
-        url = self._create_url(event_id)
         data = await request.read()
         source_header = _init_header(request)
 
