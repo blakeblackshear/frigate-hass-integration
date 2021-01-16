@@ -11,7 +11,7 @@ ICON = "mdi:speedometer"
 PERSON_ICON = "mdi:shield-account"
 CAR_ICON = "mdi:shield-car"
 DOG_ICON = "mdi:dog-side"
-CAT_ICON = "mdi:cat-side"
+CAT_ICON = "mdi:cat"
 OTHER_ICON = "mdi:shield-alert"
 
 # Platforms
