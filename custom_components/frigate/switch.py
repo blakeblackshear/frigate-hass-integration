@@ -144,5 +144,14 @@ class FrigateSwitch(SwitchEntity):
         )
 
     @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        if self._switch_name == "snapshots":
+            return "mdi:image-multiple"
+        if self._switch_name == "clips":
+            return "mdi:filmstrip-box-multiple"
+        return "hass:motion-sensor"
+
+    @property
     def available(self) -> bool:
         return self._available
