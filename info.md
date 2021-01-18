@@ -6,6 +6,7 @@ Provides the following:
 - Rich media browser with thumbnails and navigation
 - Sensor entities
 - Camera entities
+- Switch entities
 
 ## Information on Frigate (Available as an Addon)
 A complete and local NVR designed for HomeAssistant with AI object detection. Uses OpenCV and Tensorflow to perform realtime object detection locally for IP cameras.

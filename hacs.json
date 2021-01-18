@@ -4,7 +4,9 @@
     "domains": [
         "media_browser",
         "sensor",
-        "camera"
+        "camera",
+        "binary_sensor",
+        "switch"
     ],
     "iot_class": "Local Push",
     "homeassistant": "0.115.0"
