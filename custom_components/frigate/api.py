@@ -25,24 +25,26 @@ class FrigateApiClient:
 
     async def async_get_stats(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/stats")
+        url = urllib.parse.urljoin(self._host, "/api/stats")
         return await self.api_wrapper("get", url)
 
     async def async_get_events(self, camera=None, label=None, zone=None, after=None, before=None, limit: int = None) -> dict:
         """Get data from the API."""
-        params = {"camera": camera, "label": label, "zone": zone, "after": after, "before": before, "limit": limit}
+        params = {"camera": camera, "label": label, "zone": zone, "after": after, "before": before, "limit": limit, "has_clip": 1}
         params = urllib.parse.urlencode({k: v for k, v in params.items() if not v is None and not v == ''})
-        url = urllib.parse.urljoin(self._host, f"/events?{params}")
+        url = urllib.parse.urljoin(self._host, f"/api/events?{params}")
         return await self.api_wrapper("get", url)
 
     async def async_get_event_summary(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/events/summary")
+        params = {"has_clip": 1}
+        params = urllib.parse.urlencode({k: v for k, v in params.items() if not v is None and not v == ''})
+        url = urllib.parse.urljoin(self._host, f"/api/events/summary?{params}")
         return await self.api_wrapper("get", url)
 
     async def async_get_config(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/config")
+        url = urllib.parse.urljoin(self._host, "/api/config")
         return await self.api_wrapper("get", url)
 
     async def async_get_recordings_folder(self, path) -> dict:

@@ -15,7 +15,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import FrigateApiClient
-from .views import ClipsProxy, RecordingsProxy, NotificationImage
+from .views import ClipsProxy, RecordingsProxy, NotificationProxy
 
 from .const import (
     DOMAIN,
@@ -45,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     websession = hass.helpers.aiohttp_client.async_get_clientsession()
     hass.http.register_view(ClipsProxy(frigate_host, websession))
     hass.http.register_view(RecordingsProxy(frigate_host, websession))
-    hass.http.register_view(NotificationImage(frigate_host, websession))
+    hass.http.register_view(NotificationProxy(frigate_host, websession))
 
     # setup api polling
     session = async_get_clientsession(hass)
