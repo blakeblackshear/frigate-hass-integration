@@ -165,10 +165,10 @@ class NotificationProxy(HomeAssistantView):
         """Create URL to service."""
         if path == "thumbnail.jpg":
             return urllib.parse.urljoin(self._host, f"/api/events/{event_id}/thumbnail.jpg")
+        if path == "snapshot.jpg":
+            return urllib.parse.urljoin(self._host, f"/api/events/{event_id}/snapshot.jpg")
 
         camera = path.split("/")[0]
-        if path.endswith("snapshot.jpg"):
-            return urllib.parse.urljoin(self._host, f"/clips/{camera}-{event_id}.jpg")
         if path.endswith("clip.mp4"):
             return urllib.parse.urljoin(self._host, f"/clips/{camera}-{event_id}.mp4")
 
