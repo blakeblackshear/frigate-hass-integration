@@ -38,7 +38,8 @@ async def async_setup_entry(hass, entry, async_add_devices):
     zone_objects = []
     for cam, obj in camera_objects:
         for zone_name in frigate_config["cameras"][cam]["zones"]:
-            zone_objects.append((f"{cam}_{zone_name}", obj))
+            zone_objects.append((zone_name, obj))
+    zone_objects = list(set(zone_objects))
 
     devices.extend([
         FrigateObjectCountSensor(hass, entry, frigate_config, cam_name, obj)
