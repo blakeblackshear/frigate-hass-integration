@@ -15,7 +15,7 @@ from homeassistant.helpers.aiohttp_client import (
 )
 
 from .const import (
-    DOMAIN, NAME, VERSION
+    DOMAIN, NAME, VERSION, STATE_DETECTED, STATE_IDLE
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -200,3 +200,10 @@ class FrigateMqttSnapshots(Camera):
     @property
     def available(self) -> bool:
         return self._available
+
+    @property
+    def state(self):
+        """Return the camera state."""
+        if self._last_image is None:
+            return STATE_IDLE
+        return STATE_DETECTED
