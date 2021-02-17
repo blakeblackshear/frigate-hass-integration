@@ -50,12 +50,15 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
         """Show the configuration form to edit location data."""
         default_host = "http://ccab4aaf-frigate:5000"
+        default_rtmpport = "1935"
         if not user_input is None:
             default_host = user_input.get("host", "http://ccab4aaf-frigate:5000")
+            default_host = user_inpust.get("rtmpport", "1935")
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
-                {vol.Required("host", default=default_host): str}
+                {vol.Required("host", default=default_host): str},
+                {vol.Required("rtmpport", default=default_rtmpport): str}
             ),
             errors=self._errors,
         )
