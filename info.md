@@ -1,6 +1,6 @@
-[Frigate NVR Custom Component](https://github.com/blakeblackshear/frigate-hass-integration) for homeassistant
+[Frigate NVR Custom Component](https://github.com/blakeblackshear/frigate-hass-integration) for Home Assistant
 
-This is a custom component to integrate [Frigate](https://github.com/blakeblackshear/frigate) into to [Homeassistant](https://home-assistant.io).
+This is a custom component to integrate [Frigate](https://github.com/blakeblackshear/frigate) into to [Home Assistant](https://home-assistant.io).
 
 Provides the following:
 - Rich media browser with thumbnails and navigation
@@ -9,7 +9,7 @@ Provides the following:
 - Switch entities
 
 ## Information on Frigate (Available as an Addon)
-A complete and local NVR designed for HomeAssistant with AI object detection. Uses OpenCV and Tensorflow to perform realtime object detection locally for IP cameras.
+A complete and local NVR designed for Home Assistant with AI object detection. Uses OpenCV and Tensorflow to perform realtime object detection locally for IP cameras.
 
 Use of a [Google Coral Accelerator](https://coral.ai/products/) is optional, but highly recommended. The Coral will outperform even the best CPUs and can process 100+ FPS with very little overhead.
 
