@@ -98,7 +98,7 @@ class FrigateFpsSensor(CoordinatorEntity):
     def state(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            return self.coordinator.data.get("detection_fps")
+            return round(self.coordinator.data.get("detection_fps"))
         else:
             return None
 
@@ -145,9 +145,11 @@ class DetectorSpeedSensor(CoordinatorEntity):
     def state(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            return self.coordinator.data["detectors"][self.detector_name][
-                "inference_speed"
-            ]
+            return round(
+                self.coordinator.data["detectors"][self.detector_name][
+                    "inference_speed"
+                ]
+            )
         else:
             return None
 
@@ -200,7 +202,9 @@ class CameraFpsSensor(CoordinatorEntity):
     def state(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            return self.coordinator.data[self.camera_name][f"{self.fps_type}_fps"]
+            return round(
+                self.coordinator.data[self.camera_name][f"{self.fps_type}_fps"]
+            )
         else:
             return None
 
