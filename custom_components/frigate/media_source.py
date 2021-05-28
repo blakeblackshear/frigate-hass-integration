@@ -122,7 +122,7 @@ class FrigateSource(MediaSource):
                     self.labels = list(set([d["label"] for d in self.summary_data]))
                     self.zones = list(set([zone for d in self.summary_data for zone in d["zones"]]))
                     for d in self.summary_data:
-                        d['timestamp'] = int(DEFAULT_TIME_ZONE.localize(dt.datetime.strptime(d['day'], '%Y-%m-%d')).timestamp())
+                        d['timestamp'] = int(dt.datetime.strptime(d['day'], '%Y-%m-%d').astimezone(DEFAULT_TIME_ZONE).timestamp())
 
             identifier_parts = item.identifier.split("/")
             identifier = {
@@ -359,7 +359,7 @@ class FrigateSource(MediaSource):
             if before - after > SECONDS_IN_MONTH:
                 current = after
                 while (current < before):
-                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    current_date = dt.datetime.fromtimestamp(current).astimezone(DEFAULT_TIME_ZONE).replace(hour=0, minute=0, second=0, microsecond=0)
                     start_of_current_month = int(current_date.timestamp())
                     start_of_next_month = int((current_date + relativedelta(months=+1)).timestamp())
                     count_current = self._count_by(after=start_of_current_month, before=start_of_next_month, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
@@ -383,7 +383,7 @@ class FrigateSource(MediaSource):
             if before - after > SECONDS_IN_DAY:
                 current = after
                 while (current < before):
-                    current_date = DEFAULT_TIME_ZONE.localize(dt.datetime.fromtimestamp(current)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    current_date = dt.datetime.fromtimestamp(current).astimezone(DEFAULT_TIME_ZONE).replace(hour=0, minute=0, second=0, microsecond=0)
                     start_of_current_day = int(current_date.timestamp())
                     start_of_next_day = start_of_current_day + SECONDS_IN_DAY
                     count_current = self._count_by(after=start_of_current_day, before=start_of_next_day, camera=identifier['camera'], label=identifier['label'], zone=identifier['zone'])
