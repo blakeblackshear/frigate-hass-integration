@@ -2,3 +2,4 @@ __pycache__
 pythonenv*
 .vscode/.ropeproject
 custom_components/hacs
+frigate/**

@@ -1,0 +1,8 @@
+detectors:
+  cpu1:
+    type: cpu
+  cpu2:
+    type: cpu
+mqtt:
+  host: mqtt
+cameras: {}
