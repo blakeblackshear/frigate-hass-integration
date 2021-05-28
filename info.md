@@ -1,6 +1,6 @@
 [Frigate NVR Custom Component](https://github.com/blakeblackshear/frigate-hass-integration) for Home Assistant
 
-This is a custom component to integrate [Frigate](https://github.com/blakeblackshear/frigate) into to [Home Assistant](https://www.home-assistant.io).
+This is a custom component to integrate [Frigate](https://github.com/blakeblackshear/frigate) into [Home Assistant](https://www.home-assistant.io).
 
 Provides the following:
 - Rich media browser with thumbnails and navigation
