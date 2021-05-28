@@ -529,6 +529,28 @@ class FrigateSource(MediaSource):
             return dt.datetime.strptime(f"{folder['name']}", '%Y-%m').strftime('%B %Y')
 
     def _browse_recording_folders(self, identifier, folders):
+        children = []
+        for folder in folders:
+            if folder["name"].endswith(".mp4"):
+                continue
+            try:
+                child = BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=self._create_recordings_folder_identifier(
+                        identifier, folder
+                    ),
+                    media_class=MEDIA_CLASS_DIRECTORY,
+                    children_media_class=MEDIA_CLASS_VIDEO,
+                    media_content_type=MEDIA_CLASS_VIDEO,
+                    title=self._generate_recording_title(identifier, folder),
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=None,
+                )
+                children.append(child)
+            except:
+                _LOGGER.warn(f"Skipping non-standard folder {folder['name']}")
+
         base = BrowseMediaSource(
             domain=DOMAIN,
             identifier=identifier["original"],
@@ -539,20 +561,7 @@ class FrigateSource(MediaSource):
             can_play=False,
             can_expand=True,
             thumbnail=None,
-            children=[
-                BrowseMediaSource(
-                    domain=DOMAIN,
-                    identifier=self._create_recordings_folder_identifier(identifier, folder),
-                    media_class=MEDIA_CLASS_DIRECTORY,
-                    children_media_class=MEDIA_CLASS_VIDEO,
-                    media_content_type=MEDIA_CLASS_VIDEO,
-                    title=self._generate_recording_title(identifier, folder),
-                    can_play=False,
-                    can_expand=True,
-                    thumbnail=None
-                )
-                for folder in folders if not folder['name'].endswith('.mp4')
-            ]
+            children=children,
         )
 
         return base
