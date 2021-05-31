@@ -14,6 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import slugify
 
 from .api import FrigateApiClient
 from .const import DOMAIN, PLATFORMS, STARTUP_MESSAGE
@@ -22,6 +23,19 @@ from .views import ClipsProxy, NotificationProxy, RecordingsProxy
 SCAN_INTERVAL = timedelta(seconds=5)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+
+
+def get_frigate_device_identifier(entry: ConfigEntry, camera_name: str | None = None) -> tuple[str, str]:
+    """Get a device identifier."""
+    if camera_name:
+        return (DOMAIN, f"{entry.entry_id}:{slugify(camera_name)}")
+    else:
+        return (DOMAIN, entry.entry_id)
+
+
+def get_friendly_name(name: str) -> str:
+    """Get a friendly version of a name."""
+    return name.replace('_', ' ').title()
 
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:

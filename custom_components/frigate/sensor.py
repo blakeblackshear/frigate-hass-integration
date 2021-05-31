@@ -19,6 +19,7 @@ from .const import (
     PERSON_ICON,
     VERSION,
 )
+from . import get_friendly_name, get_frigate_device_identifier
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -141,8 +142,7 @@ class DetectorSpeedSensor(CoordinatorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_detector_name = self.detector_name.replace("_", " ")
-        return f"{friendly_detector_name} inference speed".title()
+        return f"{get_friendly_name(self.detector_name)} inference speed".title()
 
     @property
     def state(self):
@@ -185,8 +185,8 @@ class CameraFpsSensor(CoordinatorEntity):
     def device_info(self):
         """Get device information."""
         return {
-            "identifiers": {(DOMAIN, self.config_entry.entry_id)},
-            "name": NAME,
+            "identifiers": {get_frigate_device_identifier(self.config_entry, self.camera_name)},
+            "name": get_friendly_name(self.camera_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -194,8 +194,7 @@ class CameraFpsSensor(CoordinatorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self.camera_name.replace("_", " ")
-        return f"{friendly_camera_name} {self.fps_type} FPS".title()
+        return f"{get_friendly_name(self.camera_name)} {self.fps_type} FPS".title()
 
     @property
     def unit_of_measurement(self):
@@ -301,8 +300,8 @@ class FrigateObjectCountSensor(Entity):
         """Get device information."""
 
         return {
-            "identifiers": {(DOMAIN, self._entry.entry_id)},
-            "name": NAME,
+            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
+            "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -310,8 +309,7 @@ class FrigateObjectCountSensor(Entity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace("_", " ")
-        return f"{friendly_camera_name} {self._obj_name}".title()
+        return f"{get_friendly_name(self._cam_name)} {self._obj_name}".title()
 
     @property
     def state(self):
