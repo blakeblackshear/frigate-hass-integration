@@ -106,6 +106,7 @@ class FrigateSwitch(SwitchEntity):
         """Get device information."""
         return {
             "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
+            "via_device": get_frigate_device_identifier(self._entry),
             "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,

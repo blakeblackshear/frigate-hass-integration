@@ -84,9 +84,8 @@ class FrigateFpsSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
-        """Get device information."""
         return {
-            "identifiers": {(DOMAIN, self.config_entry.entry_id)},
+            "identifiers": {get_frigate_device_identifier(self.config_entry)},
             "name": NAME,
             "model": VERSION,
             "manufacturer": NAME,
@@ -131,9 +130,8 @@ class DetectorSpeedSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
-        """Get device information."""
         return {
-            "identifiers": {(DOMAIN, self.config_entry.entry_id)},
+            "identifiers": {get_frigate_device_identifier(self.config_entry)},
             "name": NAME,
             "model": VERSION,
             "manufacturer": NAME,
@@ -186,6 +184,7 @@ class CameraFpsSensor(CoordinatorEntity):
         """Get device information."""
         return {
             "identifiers": {get_frigate_device_identifier(self.config_entry, self.camera_name)},
+            "via_device": get_frigate_device_identifier(self.config_entry),
             "name": get_friendly_name(self.camera_name),
             "model": VERSION,
             "manufacturer": NAME,
@@ -301,6 +300,7 @@ class FrigateObjectCountSensor(Entity):
 
         return {
             "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
+            "via_device": get_frigate_device_identifier(self._entry),
             "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
