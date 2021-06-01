@@ -10,12 +10,10 @@
             }
         },
         "error": {
-            "auth": "Unable to connect to Frigate.",
-            "mqtt": "MQTT is required for this integration."
+            "cannot_connect": "Failed to connect"
         },
         "abort": {
-            "single_instance_allowed": "Only a single configuration of Frigate is allowed.",
-            "mqtt_required": "MQTT is required for this integration."
+            "single_instance_allowed": "Only a single configuration of Frigate is allowed."
         }
     }
 }
