@@ -1,5 +1,80 @@
 __pycache__
 pythonenv*
-.vscode/.ropeproject
 custom_components/hacs
 frigate/**
+
+# pytest
+.pytest_cache
+.cache
+
+# GITHUB Proposed Python stuff:
+*.py[cod]
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+.eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+pip-wheel-metadata
+
+# Logs
+*.log
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+coverage.xml
+nosetests.xml
+htmlcov/
+test-reports/
+test-results.xml
+test-output.xml
+
+# Translations
+*.mo
+
+.python-version
+
+# emacs auto backups
+*~
+*#
+*.orig
+
+# venv stuff
+pyvenv.cfg
+pip-selfcheck.json
+venv
+.venv
+Pipfile*
+share/*
+Scripts/
+
+# vimmy stuff
+*.swp
+*.swo
+tags
+ctags.tmp
+
+# Visual Studio Code
+.vscode/*
+!.vscode/cSpell.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+.env
+
+# Built docs
+docs/build
