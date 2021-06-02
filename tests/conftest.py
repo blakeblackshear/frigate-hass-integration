@@ -1,6 +1,6 @@
 """Global fixtures for frigate component integration."""
 from typing import Any, Generator
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.plugins import (  # noqa: F401
@@ -27,3 +27,10 @@ def auto_enable_custom_integrations(
     hass: Any, enable_custom_integrations: Any  # noqa: F811
 ) -> None:
     """Enable custom integrations defined in the test dir."""
+
+
+@pytest.fixture(name="auto_use_mqtt_mock", autouse=True)
+def auto_use_mqtt_mock(
+    hass: Any, mqtt_mock: MagicMock
+) -> None:
+    """Automatically use mqtt_mock as otherwise mqtt will fail setup."""

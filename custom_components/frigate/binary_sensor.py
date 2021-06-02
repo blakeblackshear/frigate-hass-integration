@@ -1,39 +1,49 @@
 """Binary sensor platform for frigate."""
+from __future__ import annotations
+
 import logging
-from .const import (
-    DEFAULT_NAME, DOMAIN, PERSON_ICON, CAR_ICON, DOG_ICON, CAT_ICON,
-    OTHER_ICON, SENSOR, NAME, VERSION
+from typing import Any, Callable
+
+from homeassistant.components.binary_sensor import (
+    DEVICE_CLASS_MOTION,
+    BinarySensorEntity,
 )
-from homeassistant.core import callback
-from homeassistant.const import STATE_OFF, STATE_ON
-from homeassistant.components.binary_sensor import DEVICE_CLASS_MOTION, BinarySensorEntity
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+
+from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-async def async_setup_entry(hass, entry, async_add_devices):
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_devices: Callable
+) -> None:
     """Setup sensor platform."""
     frigate_config = hass.data[DOMAIN]["config"]
 
-    camera_objects = [(cam_name, obj) for cam_name, cam_config in frigate_config["cameras"].items() for obj in cam_config["objects"]["track"]]
+    camera_objects = set()
+    for cam_name, cam_config in frigate_config["cameras"].items():
+        for obj in cam_config["objects"]["track"]:
+            camera_objects.add((cam_name, obj))
 
-    zone_objects = []
+    zone_objects = set()
     for cam, obj in camera_objects:
         for zone_name in frigate_config["cameras"][cam]["zones"]:
-            zone_objects.append((zone_name, obj))
-    zone_objects = list(set(zone_objects))
+            zone_objects.add((zone_name, obj))
 
     async_add_devices([
         FrigateMotionSensor(hass, entry, frigate_config, cam_name, obj)
-        for cam_name, obj in camera_objects + zone_objects
+        for cam_name, obj in camera_objects.union(zone_objects)
     ])
 
 
 class FrigateMotionSensor(BinarySensorEntity):
     """Frigate Motion Sensor class."""
 
-    def __init__(self, hass, entry, frigate_config, cam_name, obj_name):
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, frigate_config: dict[str, Any], cam_name: str, obj_name: str) -> None:
+        """Construct a new FrigateMotionSensor."""
         self.hass = hass
         self._entry = entry
         self._frigate_config = frigate_config
@@ -45,37 +55,28 @@ class FrigateMotionSensor(BinarySensorEntity):
         self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}"
         self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
 
-    async def async_added_to_hass(self):
+    async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
         await super().async_added_to_hass()
         await self._subscribe_topics()
 
-    async def _subscribe_topics(self):
+    async def _subscribe_topics(self) -> None:
         """(Re)Subscribe to topics."""
         @callback
-        def state_message_received(msg):
+        def state_message_received(msg: str) -> None:
             """Handle a new received MQTT state message."""
-            payload = int(msg.payload)
-
-            if payload > 0:
-                self._is_on = True
-            else:
+            try:
+                self._is_on = int(msg.payload) > 0
+            except ValueError:
                 self._is_on = False
-
             self.async_write_ha_state()
 
         @callback
-        def availability_message_received(msg):
+        def availability_message_received(msg: str) -> None:
             """Handle a new received MQTT availability message."""
             payload = msg.payload
-
-            if payload == "online":
-                self._available = True
-            elif payload == "offline":
-                self._available = False
-            else:
-                _LOGGER.info(f"Invalid payload received for {self.name}")
-                return
+            self._available = (payload == "online")
+            self.async_write_ha_state()
 
         self._sub_state = await async_subscribe_topics(
             self.hass,
@@ -95,12 +96,13 @@ class FrigateMotionSensor(BinarySensorEntity):
         )
 
     @property
-    def unique_id(self):
-        """Return a unique ID to use for this entity."""
+    def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
         return f"{DOMAIN}_{self._cam_name}_{self._obj_name}_binary_sensor"
 
     @property
-    def device_info(self):
+    def device_info(self) -> dict[str, Any]:
+        """Return device information."""
         return {
             "identifiers": {(DOMAIN, self._entry.entry_id)},
             "name": NAME,
@@ -109,20 +111,22 @@ class FrigateMotionSensor(BinarySensorEntity):
         }
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the sensor."""
         friendly_camera_name = self._cam_name.replace('_', ' ')
         return f"{friendly_camera_name} {self._obj_name} Motion".title()
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._is_on
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
+        """Return the device class."""
         return DEVICE_CLASS_MOTION
 
     @property
     def available(self) -> bool:
+        """Return true if the binary sensor is available."""
         return self._available

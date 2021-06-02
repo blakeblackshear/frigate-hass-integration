@@ -1,2 +1,3 @@
-aiohttp_cors
+aiohttp_cors==0.7.0
 homeassistant==2021.5.0
+paho-mqtt==1.5.1
