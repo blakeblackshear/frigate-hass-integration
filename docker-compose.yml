@@ -1,0 +1,40 @@
+version: "3"
+services:
+  dev:
+    container_name: dev
+    user: vscode
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - .:/workspace:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
+  hass:
+    container_name: hass
+    image: homeassistant/home-assistant:beta
+    ports:
+      - "8123:8123"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - .devcontainer/configuration.yaml:/config/configuration.yaml:ro
+      - ./custom_components:/config/custom_components:ro
+  frigate:
+    container_name: frigate
+    privileged: true
+    image: blakeblackshear/frigate:stable-amd64
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+      - /dev/dri:/dev/dri # for intel hwaccel, needs to be updated for your hardware
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - .devcontainer/frigate.yml:/config/config.yml:ro
+      - ./frigate:/media/frigate
+    ports:
+      - "5000:5000"
+      - "1935:1935"
+  mqtt:
+    container_name: mqtt
+    image: eclipse-mosquitto:1.6
+    ports:
+      - "1883:1883"

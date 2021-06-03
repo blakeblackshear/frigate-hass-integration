@@ -1,8 +1,19 @@
 """Sensor platform for frigate."""
 import logging
 from .const import (
-    DEFAULT_NAME, DOMAIN, PERSON_ICON, CAR_ICON, DOG_ICON, CAT_ICON,
-    OTHER_ICON, ICON, SENSOR, NAME, VERSION, FPS, MS
+    DEFAULT_NAME,
+    DOMAIN,
+    PERSON_ICON,
+    CAR_ICON,
+    DOG_ICON,
+    CAT_ICON,
+    OTHER_ICON,
+    ICON,
+    SENSOR,
+    NAME,
+    VERSION,
+    FPS,
+    MS,
 )
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -11,7 +22,7 @@ from homeassistant.components.mqtt.subscription import async_subscribe_topics
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
-CAMERA_FPS_TYPES = ['camera', 'detection', 'process', 'skipped']
+CAMERA_FPS_TYPES = ["camera", "detection", "process", "skipped"]
 
 
 async def async_setup_entry(hass, entry, async_add_devices):
@@ -20,20 +31,26 @@ async def async_setup_entry(hass, entry, async_add_devices):
 
     devices = []
     for key, value in coordinator.data.items():
-        if key == 'detection_fps':
+        if key == "detection_fps":
             devices.append(FrigateFpsSensor(coordinator, entry))
-        elif key == 'detectors':
+        elif key == "detectors":
             for name in value.keys():
                 devices.append(DetectorSpeedSensor(coordinator, entry, name))
-        elif key == 'service':
+        elif key == "service":
             # TODO: add sensors
             continue
         else:
-            devices.extend([CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES])
+            devices.extend(
+                [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
+            )
 
     frigate_config = hass.data[DOMAIN]["config"]
 
-    camera_objects = [(cam_name, obj) for cam_name, cam_config in frigate_config["cameras"].items() for obj in cam_config["objects"]["track"]]
+    camera_objects = [
+        (cam_name, obj)
+        for cam_name, cam_config in frigate_config["cameras"].items()
+        for obj in cam_config["objects"]["track"]
+    ]
 
     zone_objects = []
     for cam, obj in camera_objects:
@@ -41,10 +58,12 @@ async def async_setup_entry(hass, entry, async_add_devices):
             zone_objects.append((zone_name, obj))
     zone_objects = list(set(zone_objects))
 
-    devices.extend([
-        FrigateObjectCountSensor(hass, entry, frigate_config, cam_name, obj)
-        for cam_name, obj in camera_objects + zone_objects
-    ])
+    devices.extend(
+        [
+            FrigateObjectCountSensor(hass, entry, frigate_config, cam_name, obj)
+            for cam_name, obj in camera_objects + zone_objects
+        ]
+    )
 
     async_add_devices(devices)
 
@@ -79,7 +98,7 @@ class FrigateFpsSensor(CoordinatorEntity):
     def state(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            return self.coordinator.data.get("detection_fps")
+            return round(self.coordinator.data.get("detection_fps"))
         else:
             return None
 
@@ -119,14 +138,18 @@ class DetectorSpeedSensor(CoordinatorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_detector_name = self.detector_name.replace('_', ' ')
+        friendly_detector_name = self.detector_name.replace("_", " ")
         return f"{friendly_detector_name} inference speed".title()
 
     @property
     def state(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            return self.coordinator.data["detectors"][self.detector_name]["inference_speed"]
+            return round(
+                self.coordinator.data["detectors"][self.detector_name][
+                    "inference_speed"
+                ]
+            )
         else:
             return None
 
@@ -167,7 +190,7 @@ class CameraFpsSensor(CoordinatorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self.camera_name.replace('_', ' ')
+        friendly_camera_name = self.camera_name.replace("_", " ")
         return f"{friendly_camera_name} {self.fps_type} FPS".title()
 
     @property
@@ -179,7 +202,9 @@ class CameraFpsSensor(CoordinatorEntity):
     def state(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            return self.coordinator.data[self.camera_name][f"{self.fps_type}_fps"]
+            return round(
+                self.coordinator.data[self.camera_name][f"{self.fps_type}_fps"]
+            )
         else:
             return None
 
@@ -202,15 +227,17 @@ class FrigateObjectCountSensor(Entity):
         self._available = False
         self._sub_state = None
         self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}"
-        self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        self._availability_topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        )
 
-        if self._obj_name == 'person':
+        if self._obj_name == "person":
             self._icon = PERSON_ICON
-        elif self._obj_name == 'car':
+        elif self._obj_name == "car":
             self._icon = CAR_ICON
-        elif self._obj_name == 'dog':
+        elif self._obj_name == "dog":
             self._icon = DOG_ICON
-        elif self._obj_name == 'cat':
+        elif self._obj_name == "cat":
             self._icon = CAT_ICON
         else:
             self._icon = OTHER_ICON
@@ -222,6 +249,7 @@ class FrigateObjectCountSensor(Entity):
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
+
         @callback
         def state_message_received(msg):
             """Handle a new received MQTT state message."""
@@ -255,7 +283,7 @@ class FrigateObjectCountSensor(Entity):
                     "topic": self._availability_topic,
                     "msg_callback": availability_message_received,
                     "qos": 0,
-                }
+                },
             },
         )
 
@@ -276,7 +304,7 @@ class FrigateObjectCountSensor(Entity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace('_', ' ')
+        friendly_camera_name = self._cam_name.replace("_", " ")
         return f"{friendly_camera_name} {self._obj_name}".title()
 
     @property
