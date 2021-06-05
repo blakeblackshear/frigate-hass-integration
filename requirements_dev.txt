@@ -1,0 +1,3 @@
+-r requirements.txt
+pytest
+pytest-homeassistant-custom-component==0.3.2
