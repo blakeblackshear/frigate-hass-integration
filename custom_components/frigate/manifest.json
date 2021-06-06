@@ -1,19 +1,17 @@
 {
-  "domain": "frigate",
-  "documentation": "https://github.com/blakeblackshear/frigate",
-  "name": "Frigate",
-  "version": "1.0.4",
-  "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
-  "dependencies": [
-    "http"
-  ],
-  "after_dependencies": [
-    "mqtt"
-  ],
-  "config_flow": true,
-  "codeowners": [
-    "@blakeblackshear"
-  ],
-  "requirements": [],
-  "iot_class": "local_push"
+    "domain": "frigate",
+    "documentation": "https://github.com/blakeblackshear/frigate",
+    "name": "Frigate",
+    "version": "1.0.4",
+    "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
+    "dependencies": [
+        "http",
+        "mqtt"
+    ],
+    "config_flow": true,
+    "codeowners": [
+        "@blakeblackshear"
+    ],
+    "requirements": [],
+    "iot_class": "local_push"
 }

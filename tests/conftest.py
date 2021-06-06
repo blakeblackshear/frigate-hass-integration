@@ -1,6 +1,6 @@
 """Global fixtures for frigate component integration."""
 from typing import Any, Generator
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.plugins import (  # noqa: F401
@@ -13,7 +13,7 @@ pytest_plugins = "pytest_homeassistant_custom_component"
 # This fixture is used to prevent HomeAssistant from attempting to create and dismiss persistent
 # notifications. These calls would fail without this fixture since the persistent_notification
 # integration is never loaded during a test.
-@pytest.fixture(name="skip_notifications", autouse=True)
+@pytest.fixture(name="skip_notifications")
 def skip_notifications_fixture() -> Generator:
     """Skip notification calls."""
     with patch("homeassistant.components.persistent_notification.async_create"), patch(
@@ -22,8 +22,11 @@ def skip_notifications_fixture() -> Generator:
         yield
 
 
-@pytest.fixture(name="auto_enable_custom_integrations", autouse=True)
-def auto_enable_custom_integrations(
-    hass: Any, enable_custom_integrations: Any  # noqa: F811
+@pytest.fixture(autouse=True)
+def frigate_fixture(
+    skip_notifications: Any,
+    enable_custom_integrations: Any,
+    hass: Any,
+    mqtt_mock: MagicMock,
 ) -> None:
-    """Enable custom integrations defined in the test dir."""
+    """Automatically use an ordered combination of fixtures."""

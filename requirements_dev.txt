@@ -1,3 +1,4 @@
 -r requirements.txt
-pytest
-pytest-homeassistant-custom-component==0.3.2
+black
+pytest==6.2.4
+pytest-homeassistant-custom-component==0.4.1
