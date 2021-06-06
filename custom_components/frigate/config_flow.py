@@ -21,7 +21,9 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
-    async def async_step_user(self, user_input: dict[str, Any] = None) -> dict[str, Any]:
+    async def async_step_user(
+        self, user_input: dict[str, Any] = None
+    ) -> dict[str, Any]:
         """Handle a flow initialized by the user."""
 
         # Check if another instance is already configured.
@@ -38,12 +40,12 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception:  # pylint: disable=broad-except
             return self._show_config_form(user_input, errors={"base": "cannot_connect"})
 
-        return self.async_create_entry(
-            title="Frigate", data=user_input
-        )
+        return self.async_create_entry(title="Frigate", data=user_input)
 
     def _show_config_form(
-        self, user_input: dict[str, Any] | None = None, errors: dict[str, Any] | None = None
+        self,
+        user_input: dict[str, Any] | None = None,
+        errors: dict[str, Any] | None = None,
     ):  # pylint: disable=unused-argument
         """Show the configuration form."""
         if user_input is None:
@@ -52,7 +54,11 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
-                {vol.Required(CONF_HOST, default=user_input.get(CONF_HOST, DEFAULT_HOST)): str}
+                {
+                    vol.Required(
+                        CONF_HOST, default=user_input.get(CONF_HOST, DEFAULT_HOST)
+                    ): str
+                }
             ),
             errors=errors,
         )

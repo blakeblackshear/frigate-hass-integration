@@ -1,14 +1,15 @@
-import logging
-import urllib.parse
+"""Frigate HTTP views."""
+
 from ipaddress import ip_address
+import logging
 from typing import Dict, Union
+import urllib.parse
 
 import aiohttp
 from aiohttp import hdrs, web
 from aiohttp.web_exceptions import HTTPBadGateway
-from multidict import CIMultiDict
-
 from homeassistant.components.http import HomeAssistantView
+from multidict import CIMultiDict
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -164,9 +165,13 @@ class NotificationProxy(HomeAssistantView):
     def _create_url(self, event_id: str, path: str) -> str:
         """Create URL to service."""
         if path == "thumbnail.jpg":
-            return urllib.parse.urljoin(self._host, f"/api/events/{event_id}/thumbnail.jpg")
+            return urllib.parse.urljoin(
+                self._host, f"/api/events/{event_id}/thumbnail.jpg"
+            )
         if path == "snapshot.jpg":
-            return urllib.parse.urljoin(self._host, f"/api/events/{event_id}/snapshot.jpg")
+            return urllib.parse.urljoin(
+                self._host, f"/api/events/{event_id}/snapshot.jpg"
+            )
 
         camera = path.split("/")[0]
         if path.endswith("clip.mp4"):
@@ -226,9 +231,7 @@ class NotificationProxy(HomeAssistantView):
             return response
 
 
-def _init_header(
-    request: web.Request
-) -> Union[CIMultiDict, Dict[str, str]]:
+def _init_header(request: web.Request) -> Union[CIMultiDict, Dict[str, str]]:
     """Create initial header."""
     headers = {}
 

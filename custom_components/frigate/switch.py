@@ -1,18 +1,18 @@
 """Sensor platform for frigate."""
 import logging
-from .const import (
-    DEFAULT_NAME, DOMAIN, NAME, VERSION
-)
-from homeassistant.core import callback
-from homeassistant.components.switch import SwitchEntity
+
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.core import callback
+
+from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(hass, entry, async_add_devices):
-    """Setup switch platform."""
+    """Switch entry setup."""
     devices = []
 
     frigate_config = hass.data[DOMAIN]["config"]
@@ -20,11 +20,13 @@ async def async_setup_entry(hass, entry, async_add_devices):
     cameras = frigate_config["cameras"].keys()
 
     for cam in cameras:
-        devices.extend([
-            FrigateSwitch(hass, entry, frigate_config, cam, 'detect'),
-            FrigateSwitch(hass, entry, frigate_config, cam, 'clips'),
-            FrigateSwitch(hass, entry, frigate_config, cam, 'snapshots')
-        ])
+        devices.extend(
+            [
+                FrigateSwitch(hass, entry, frigate_config, cam, "detect"),
+                FrigateSwitch(hass, entry, frigate_config, cam, "clips"),
+                FrigateSwitch(hass, entry, frigate_config, cam, "snapshots"),
+            ]
+        )
 
     async_add_devices(devices)
 
@@ -33,6 +35,7 @@ class FrigateSwitch(SwitchEntity):
     """Frigate Switch class."""
 
     def __init__(self, hass, entry, frigate_config, cam_name, switch_name):
+        """Construct a FrigateSwitch."""
         self.hass = hass
         self._entry = entry
         self._frigate_config = frigate_config
@@ -43,7 +46,9 @@ class FrigateSwitch(SwitchEntity):
         self._sub_state = None
         self._state_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._switch_name}/state"
         self._command_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._switch_name}/set"
-        self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        self._availability_topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        )
 
     async def async_added_to_hass(self):
         """Subscribe mqtt events."""
@@ -52,10 +57,11 @@ class FrigateSwitch(SwitchEntity):
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
+
         @callback
         def state_message_received(msg):
             """Handle a new received MQTT state message."""
-            self._state = msg.payload == 'ON'
+            self._state = msg.payload == "ON"
 
             self.async_write_ha_state()
 
@@ -85,7 +91,7 @@ class FrigateSwitch(SwitchEntity):
                     "topic": self._availability_topic,
                     "msg_callback": availability_message_received,
                     "qos": 0,
-                }
+                },
             },
         )
 
@@ -96,6 +102,7 @@ class FrigateSwitch(SwitchEntity):
 
     @property
     def device_info(self):
+        """Get device information."""
         return {
             "identifiers": {(DOMAIN, self._entry.entry_id)},
             "name": NAME,
@@ -106,7 +113,7 @@ class FrigateSwitch(SwitchEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace('_', ' ')
+        friendly_camera_name = self._cam_name.replace("_", " ")
         return f"{friendly_camera_name} {self._switch_name}".title()
 
     @property
@@ -120,25 +127,21 @@ class FrigateSwitch(SwitchEntity):
         return False
 
     async def async_turn_on(self, **kwargs):
-        """Turn the device on.
-        This method is a coroutine.
-        """
+        """Turn the device on."""
         async_publish(
             self.hass,
             self._command_topic,
-            'ON',
+            "ON",
             0,
             True,
         )
 
     async def async_turn_off(self, **kwargs):
-        """Turn the device off.
-        This method is a coroutine.
-        """
+        """Turn the device off."""
         async_publish(
             self.hass,
             self._command_topic,
-            'OFF',
+            "OFF",
             0,
             True,
         )
@@ -154,4 +157,5 @@ class FrigateSwitch(SwitchEntity):
 
     @property
     def available(self) -> bool:
+        """Determine if the entity is available."""
         return self._available

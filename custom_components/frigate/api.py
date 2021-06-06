@@ -1,12 +1,11 @@
-import logging
+"""Frigate API client."""
 import asyncio
+import logging
 import socket
-from typing import Optional
+import urllib.parse
+
 import aiohttp
 import async_timeout
-import urllib.parse
-from ipaddress import ip_address
-from typing import Dict, Union
 
 TIMEOUT = 10
 
@@ -16,10 +15,10 @@ HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 
 
 class FrigateApiClient:
-    def __init__(
-        self, host: str, session: aiohttp.ClientSession
-    ) -> None:
-        """API Client."""
+    """Frigate API client."""
+
+    def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
+        """Construct API Client."""
         self._host = host
         self._session = session
 
@@ -28,17 +27,37 @@ class FrigateApiClient:
         url = urllib.parse.urljoin(self._host, "/api/stats")
         return await self.api_wrapper("get", url)
 
-    async def async_get_events(self, camera=None, label=None, zone=None, after=None, before=None, limit: int = None) -> dict:
+    async def async_get_events(
+        self,
+        camera=None,
+        label=None,
+        zone=None,
+        after=None,
+        before=None,
+        limit: int = None,
+    ) -> dict:
         """Get data from the API."""
-        params = {"camera": camera, "label": label, "zone": zone, "after": after, "before": before, "limit": limit, "has_clip": 1}
-        params = urllib.parse.urlencode({k: v for k, v in params.items() if not v is None and not v == ''})
+        params = {
+            "camera": camera,
+            "label": label,
+            "zone": zone,
+            "after": after,
+            "before": before,
+            "limit": limit,
+            "has_clip": 1,
+        }
+        params = urllib.parse.urlencode(
+            {k: v for k, v in params.items() if v is not None and not v == ""}
+        )
         url = urllib.parse.urljoin(self._host, f"/api/events?{params}")
         return await self.api_wrapper("get", url)
 
     async def async_get_event_summary(self) -> dict:
         """Get data from the API."""
         params = {"has_clip": 1}
-        params = urllib.parse.urlencode({k: v for k, v in params.items() if not v is None and not v == ''})
+        params = urllib.parse.urlencode(
+            {k: v for k, v in params.items() if v is not None and not v == ""}
+        )
         url = urllib.parse.urljoin(self._host, f"/api/events/summary?{params}")
         return await self.api_wrapper("get", url)
 
@@ -59,7 +78,9 @@ class FrigateApiClient:
         try:
             async with async_timeout.timeout(TIMEOUT, loop=asyncio.get_event_loop()):
                 if method == "get":
-                    response = await self._session.get(url, headers=headers, raise_for_status=True)
+                    response = await self._session.get(
+                        url, headers=headers, raise_for_status=True
+                    )
                     return await response.json()
 
                 elif method == "put":
@@ -94,5 +115,5 @@ class FrigateApiClient:
             )
             raise
         except Exception as exception:  # pylint: disable=broad-except
-            _LOGGER.error("Something really wrong happend! - %s", exception)
+            _LOGGER.error("Something really wrong happened! - %s", exception)
             raise

@@ -1,29 +1,26 @@
 """Frigate Media Source Implementation."""
 import datetime as dt
-from dateutil.relativedelta import *
 import logging
-import re
-from typing import Optional, Tuple
+from typing import Tuple
 
-from homeassistant.components.http.auth import async_sign_path
+# TODO: Remove glob import and F403/F405 noqa after unittests are added.
+from dateutil.relativedelta import *  # noqa: F403
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
     MEDIA_CLASS_VIDEO,
     MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_CHANNEL,
 )
-from homeassistant.components.media_player.errors import BrowseError
 from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
-from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
+from homeassistant.components.media_source.error import MediaSourceError
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
     MediaSource,
     MediaSourceItem,
     PlayMedia,
 )
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.util.dt import DEFAULT_TIME_ZONE
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from .api import FrigateApiClient
 from .const import DOMAIN
@@ -118,13 +115,13 @@ class FrigateSource(MediaSource):
                     self.last_summary_refresh is None
                     or dt.datetime.now().timestamp() - self.last_summary_refresh > 60
                 ):
-                    _LOGGER.debug(f"refreshing summary data")
+                    _LOGGER.debug("refreshing summary data")
                     self.last_summary_refresh = dt.datetime.now().timestamp()
                     self.summary_data = await self.client.async_get_event_summary()
-                    self.cameras = list(set([d["camera"] for d in self.summary_data]))
-                    self.labels = list(set([d["label"] for d in self.summary_data]))
+                    self.cameras = list({d["camera"] for d in self.summary_data})
+                    self.labels = list({d["label"] for d in self.summary_data})
                     self.zones = list(
-                        set([zone for d in self.summary_data for zone in d["zones"]])
+                        {zone for d in self.summary_data for zone in d["zones"]}
                     )
                     for d in self.summary_data:
                         d["timestamp"] = int(
@@ -233,7 +230,7 @@ class FrigateSource(MediaSource):
             )
 
         # only show the drill down options if there are more than 10 events
-        # and there is more than 1 drilldown or when you arent showing any events
+        # and there is more than 1 drilldown or when you aren't showing any events
         if len(events) > 10 and (len(drilldown_sources) > 1 or len(base.children) == 0):
             base.children.extend(drilldown_sources)
 
@@ -307,7 +304,7 @@ class FrigateSource(MediaSource):
 
     def _build_label_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for l in self.labels:
+        for label in self.labels:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -316,7 +313,7 @@ class FrigateSource(MediaSource):
                 after=after,
                 before=before,
                 camera=identifier["camera"],
-                label=l,
+                label=label,
                 zone=identifier["zone"],
             )
             if count == 0 or count == shown_event_count:
@@ -324,11 +321,11 @@ class FrigateSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{l}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{l}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.{label}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{label}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{l.replace('_', ' ').title()} ({count})",
+                    title=f"{label.replace('_', ' ').title()} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -377,7 +374,7 @@ class FrigateSource(MediaSource):
         start_of_yesterday = start_of_today - SECONDS_IN_DAY
         start_of_month = int(today.replace(day=1).timestamp())
         start_of_last_month = int(
-            (today.replace(day=1) + relativedelta(months=-1)).timestamp()
+            (today.replace(day=1) + relativedelta(months=-1)).timestamp()  # noqa: F405
         )
         start_of_year = int(today.replace(month=1, day=1).timestamp())
 
@@ -438,7 +435,9 @@ class FrigateSource(MediaSource):
                     )
                     start_of_current_month = int(current_date.timestamp())
                     start_of_next_month = int(
-                        (current_date + relativedelta(months=+1)).timestamp()
+                        (
+                            current_date + relativedelta(months=+1)  # noqa: F405
+                        ).timestamp()  # noqa: F405
                     )
                     count_current = self._count_by(
                         after=start_of_current_month,
@@ -668,7 +667,7 @@ class FrigateSource(MediaSource):
                     thumbnail=None,
                 )
                 children.append(child)
-            except:
+            except:  # noqa: E722
                 _LOGGER.warn(f"Skipping non-standard folder {folder['name']}")
 
         base = BrowseMediaSource(

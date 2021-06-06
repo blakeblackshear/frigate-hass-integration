@@ -1,24 +1,24 @@
 """Sensor platform for frigate."""
 import logging
-from .const import (
-    DEFAULT_NAME,
-    DOMAIN,
-    PERSON_ICON,
-    CAR_ICON,
-    DOG_ICON,
-    CAT_ICON,
-    OTHER_ICON,
-    ICON,
-    SENSOR,
-    NAME,
-    VERSION,
-    FPS,
-    MS,
-)
-from homeassistant.core import callback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.entity import Entity
+
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.core import callback
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import (
+    CAR_ICON,
+    CAT_ICON,
+    DOG_ICON,
+    DOMAIN,
+    FPS,
+    ICON,
+    MS,
+    NAME,
+    OTHER_ICON,
+    PERSON_ICON,
+    VERSION,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -26,7 +26,7 @@ CAMERA_FPS_TYPES = ["camera", "detection", "process", "skipped"]
 
 
 async def async_setup_entry(hass, entry, async_add_devices):
-    """Setup sensor platform."""
+    """Sensor entry setup."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
     devices = []
@@ -71,7 +71,8 @@ async def async_setup_entry(hass, entry, async_add_devices):
 class FrigateFpsSensor(CoordinatorEntity):
     """Frigate Sensor class."""
 
-    def __init__(self, coordinator, config_entry):
+    def __init__(self, coordinator, config_entry) -> None:
+        """Construct a FrigateFpsSensor."""
         super().__init__(coordinator)
         self.config_entry = config_entry
 
@@ -82,6 +83,7 @@ class FrigateFpsSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
+        """Get device information."""
         return {
             "identifiers": {(DOMAIN, self.config_entry.entry_id)},
             "name": NAME,
@@ -92,7 +94,7 @@ class FrigateFpsSensor(CoordinatorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return f"Detection Fps"
+        return "Detection Fps"
 
     @property
     def state(self):
@@ -117,6 +119,7 @@ class DetectorSpeedSensor(CoordinatorEntity):
     """Frigate Detector Speed class."""
 
     def __init__(self, coordinator, config_entry, detector_name):
+        """Construct a DetectorSpeedSensor."""
         super().__init__(coordinator)
         self.config_entry = config_entry
         self.detector_name = detector_name
@@ -128,6 +131,7 @@ class DetectorSpeedSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
+        """Get device information."""
         return {
             "identifiers": {(DOMAIN, self.config_entry.entry_id)},
             "name": NAME,
@@ -168,6 +172,7 @@ class CameraFpsSensor(CoordinatorEntity):
     """Frigate Camera Fps class."""
 
     def __init__(self, coordinator, config_entry, camera_name, fps_type):
+        """Construct a CameraFpsSensor."""
         super().__init__(coordinator)
         self.config_entry = config_entry
         self.camera_name = camera_name
@@ -180,6 +185,7 @@ class CameraFpsSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
+        """Get device information."""
         return {
             "identifiers": {(DOMAIN, self.config_entry.entry_id)},
             "name": NAME,
@@ -218,6 +224,7 @@ class FrigateObjectCountSensor(Entity):
     """Frigate Motion Sensor class."""
 
     def __init__(self, hass, entry, frigate_config, cam_name, obj_name):
+        """Construct a FrigateObjectCountSensor."""
         self.hass = hass
         self._entry = entry
         self._frigate_config = frigate_config
@@ -294,6 +301,8 @@ class FrigateObjectCountSensor(Entity):
 
     @property
     def device_info(self):
+        """Get device information."""
+
         return {
             "identifiers": {(DOMAIN, self._entry.entry_id)},
             "name": NAME,
@@ -324,4 +333,5 @@ class FrigateObjectCountSensor(Entity):
 
     @property
     def available(self) -> bool:
+        """Determine if the entity is available."""
         return self._available

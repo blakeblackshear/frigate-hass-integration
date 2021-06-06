@@ -1,22 +1,17 @@
 """Support for Frigate cameras."""
-import async_timeout
+import logging
 from typing import Dict
 import urllib.parse
-import logging
 
-from homeassistant.core import callback
+import async_timeout
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import HomeAssistantType
-from homeassistant.helpers.aiohttp_client import (
-    async_aiohttp_proxy_web,
-    async_get_clientsession,
-)
 
-from .const import (
-    DOMAIN, NAME, VERSION, STATE_DETECTED, STATE_IDLE
-)
+from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -28,10 +23,20 @@ async def async_setup_entry(
 
     config = hass.data[DOMAIN]["config"]
 
-    entities = [FrigateCamera(hass, entry, name, camera) for name, camera in config['cameras'].items()]
+    entities = [
+        FrigateCamera(hass, entry, name, camera)
+        for name, camera in config["cameras"].items()
+    ]
 
-    camera_objects = [(cam_name, obj) for cam_name, cam_config in config["cameras"].items() for obj in cam_config["objects"]["track"]]
-    mqtt_entities = [FrigateMqttSnapshots(hass, entry, config, cam_name, obj_name) for cam_name, obj_name in camera_objects]
+    camera_objects = [
+        (cam_name, obj)
+        for cam_name, cam_config in config["cameras"].items()
+        for obj in cam_config["objects"]["track"]
+    ]
+    mqtt_entities = [
+        FrigateMqttSnapshots(hass, entry, config, cam_name, obj_name)
+        for cam_name, obj_name in camera_objects
+    ]
 
     async_add_entities(entities + mqtt_entities)
 
@@ -48,7 +53,9 @@ class FrigateCamera(Camera):
         self._name = name
         _LOGGER.debug(f"Adding camera {name}")
         self._config = config
-        self._latest_url = urllib.parse.urljoin(self._host, f"/api/{self._name}/latest.jpg?h=277")
+        self._latest_url = urllib.parse.urljoin(
+            self._host, f"/api/{self._name}/latest.jpg?h=277"
+        )
         parsed_host = urllib.parse.urlparse(self._host).hostname
         self._stream_source = f"rtmp://{parsed_host}/live/{self._name}"
         self._stream_enabled = self._config["rtmp"]["enabled"]
@@ -85,16 +92,6 @@ class FrigateCamera(Camera):
             return 0
         return SUPPORT_STREAM
 
-    # @ property
-    # def is_recording(self):
-    #     """Return true if the device is recording."""
-    #     return False
-
-    # @ property
-    # def motion_detection_enabled(self):
-    #     """Return the camera motion detection status."""
-    #     return True
-
     async def async_camera_image(self) -> bytes:
         """Return bytes of camera image."""
         websession = async_get_clientsession(self.hass)
@@ -116,6 +113,7 @@ class FrigateMqttSnapshots(Camera):
     """Frigate best camera class."""
 
     def __init__(self, hass, entry, frigate_config, cam_name, obj_name):
+        """Construct a FrigateMqttSnapshots camera."""
         super().__init__()
         self.hass = hass
         self._entry = entry
@@ -126,7 +124,9 @@ class FrigateMqttSnapshots(Camera):
         self._available = False
         self._sub_state = None
         self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}/snapshot"
-        self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        self._availability_topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        )
 
     async def async_added_to_hass(self):
         """Subscribe mqtt events."""
@@ -135,6 +135,7 @@ class FrigateMqttSnapshots(Camera):
 
     async def _subscribe_topics(self):
         """(Re)Subscribe to topics."""
+
         @callback
         def state_message_received(msg):
             """Handle a new received MQTT state message."""
@@ -163,13 +164,13 @@ class FrigateMqttSnapshots(Camera):
                     "topic": self._topic,
                     "msg_callback": state_message_received,
                     "qos": 0,
-                    "encoding": None
+                    "encoding": None,
                 },
                 "availability_topic": {
                     "topic": self._availability_topic,
                     "msg_callback": availability_message_received,
                     "qos": 0,
-                }
+                },
             },
         )
 
@@ -180,6 +181,7 @@ class FrigateMqttSnapshots(Camera):
 
     @property
     def device_info(self):
+        """Get the device information."""
         return {
             "identifiers": {(DOMAIN, self._entry.entry_id)},
             "name": NAME,
@@ -190,7 +192,7 @@ class FrigateMqttSnapshots(Camera):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace('_', ' ')
+        friendly_camera_name = self._cam_name.replace("_", " ")
         return f"{friendly_camera_name} {self._obj_name}".title()
 
     async def async_camera_image(self):
@@ -199,6 +201,7 @@ class FrigateMqttSnapshots(Camera):
 
     @property
     def available(self) -> bool:
+        """Determine if the entity is available."""
         return self._available
 
     @property
