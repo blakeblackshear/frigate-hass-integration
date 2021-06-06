@@ -8,12 +8,12 @@ from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
     BinarySensorEntity,
 )
-from . import get_friendly_name, get_frigate_device_identifier
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)

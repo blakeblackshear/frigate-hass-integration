@@ -1,12 +1,12 @@
 """Sensor platform for frigate."""
 import logging
 
-from . import get_friendly_name, get_frigate_device_identifier
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
 
+from . import get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)

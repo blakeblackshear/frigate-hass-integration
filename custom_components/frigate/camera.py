@@ -14,9 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import HomeAssistantType
 
 from . import get_friendly_name, get_frigate_device_identifier
-from .const import (
-    DOMAIN, NAME, VERSION, STATE_DETECTED, STATE_IDLE
-)
+from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -79,7 +77,9 @@ class FrigateCamera(Camera):
     def device_info(self) -> dict[str, any]:
         """Return the device information."""
         return {
-            "identifiers": {get_frigate_device_identifier(self.config_entry, self._name)},
+            "identifiers": {
+                get_frigate_device_identifier(self.config_entry, self._name)
+            },
             "via_device": get_frigate_device_identifier(self.config_entry),
             "name": get_friendly_name(self._name),
             "model": VERSION,

@@ -6,6 +6,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import get_friendly_name, get_frigate_device_identifier
 from .const import (
     CAR_ICON,
     CAT_ICON,
@@ -19,7 +20,6 @@ from .const import (
     PERSON_ICON,
     VERSION,
 )
-from . import get_friendly_name, get_frigate_device_identifier
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -84,6 +84,7 @@ class FrigateFpsSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
+        """Get device information."""
         return {
             "identifiers": {get_frigate_device_identifier(self.config_entry)},
             "name": NAME,
@@ -130,6 +131,7 @@ class DetectorSpeedSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
+        """Get device information."""
         return {
             "identifiers": {get_frigate_device_identifier(self.config_entry)},
             "name": NAME,
@@ -183,7 +185,9 @@ class CameraFpsSensor(CoordinatorEntity):
     def device_info(self):
         """Get device information."""
         return {
-            "identifiers": {get_frigate_device_identifier(self.config_entry, self.camera_name)},
+            "identifiers": {
+                get_frigate_device_identifier(self.config_entry, self.camera_name)
+            },
             "via_device": get_frigate_device_identifier(self.config_entry),
             "name": get_friendly_name(self.camera_name),
             "model": VERSION,

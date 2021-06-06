@@ -25,7 +25,9 @@ SCAN_INTERVAL = timedelta(seconds=5)
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-def get_frigate_device_identifier(entry: ConfigEntry, camera_name: str | None = None) -> tuple[str, str]:
+def get_frigate_device_identifier(
+    entry: ConfigEntry, camera_name: str | None = None
+) -> tuple[str, str]:
     """Get a device identifier."""
     if camera_name:
         return (DOMAIN, f"{entry.entry_id}:{slugify(camera_name)}")
@@ -35,7 +37,7 @@ def get_frigate_device_identifier(entry: ConfigEntry, camera_name: str | None = 
 
 def get_friendly_name(name: str) -> str:
     """Get a friendly version of a name."""
-    return name.replace('_', ' ').title()
+    return name.replace("_", " ").title()
 
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
