@@ -26,7 +26,7 @@ def skip_notifications_fixture() -> Generator:
 @pytest.fixture(autouse=True)
 def frigate_fixture(
     skip_notifications: Any,
-    enable_custom_integrations: Any,
+    enable_custom_integrations: Any,  # noqa: F811
     hass: Any,
     mqtt_mock: MagicMock,
 ) -> None:
