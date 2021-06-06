@@ -379,7 +379,7 @@ class FrigateSource(MediaSource):
         start_of_yesterday = start_of_today - SECONDS_IN_DAY
         start_of_month = int(today.replace(day=1).timestamp())
         start_of_last_month = int(
-            (today.replace(day=1) + relativedelta(months=-1)).timestamp()  # noqa: F405
+            (today.replace(day=1) + relativedelta(months=-1)).timestamp()
         )
         start_of_year = int(today.replace(month=1, day=1).timestamp())
 
@@ -440,9 +440,7 @@ class FrigateSource(MediaSource):
                     )
                     start_of_current_month = int(current_date.timestamp())
                     start_of_next_month = int(
-                        (
-                            current_date + relativedelta(months=+1)  # noqa: F405
-                        ).timestamp()  # noqa: F405
+                        (current_date + relativedelta(months=+1)).timestamp()
                     )
                     count_current = self._count_by(
                         after=start_of_current_month,
@@ -632,9 +630,9 @@ class FrigateSource(MediaSource):
                 return dt.datetime.strptime(
                     f"{identifier['year_month']}-{identifier['day']}", "%Y-%m-%d"
                 ).strftime("%B %d")
-            return dt.datetime.strptime(
-                f"{folder['name']}.00.00", "%H.%M.%S"
-            ).strftime("%-I:%M:%S %p")
+            return dt.datetime.strptime(f"{folder['name']}.00.00", "%H.%M.%S").strftime(
+                "%-I:%M:%S %p"
+            )
 
         if identifier["year_month"] != "":
             if folder is None:
@@ -669,8 +667,8 @@ class FrigateSource(MediaSource):
                     thumbnail=None,
                 )
                 children.append(child)
-            except Exception:  # noqa: E722  # pylint: disable=broad-except
-                _LOGGER.warning("Skipping non-standard folder: %s", folder['name'])
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.warning("Skipping non-standard folder: %s", folder["name"])
 
         base = BrowseMediaSource(
             domain=DOMAIN,

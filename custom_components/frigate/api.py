@@ -74,7 +74,11 @@ class FrigateApiClient:
         return await self.api_wrapper("get", url)
 
     async def api_wrapper(
-        self, method: str, url: str, data: dict | None = None, headers: dict | None = None
+        self,
+        method: str,
+        url: str,
+        data: dict | None = None,
+        headers: dict | None = None,
     ) -> dict:
         """Get information from the API."""
         if data is None:
