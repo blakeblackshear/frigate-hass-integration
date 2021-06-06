@@ -13,6 +13,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import HomeAssistantType
 
+from . import get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -70,14 +71,17 @@ class FrigateCamera(Camera):
     @property
     def name(self):
         """Return the name of the camera."""
-        return f"{self._name.replace('_', ' ')}".title()
+        return get_friendly_name(self._name)
 
     @property
     def device_info(self) -> dict[str, any]:
         """Return the device information."""
         return {
-            "identifiers": {(DOMAIN, self.config_entry.entry_id)},
-            "name": NAME,
+            "identifiers": {
+                get_frigate_device_identifier(self.config_entry, self._name)
+            },
+            "via_device": get_frigate_device_identifier(self.config_entry),
+            "name": get_friendly_name(self._name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -185,8 +189,9 @@ class FrigateMqttSnapshots(Camera):
     def device_info(self):
         """Get the device information."""
         return {
-            "identifiers": {(DOMAIN, self._entry.entry_id)},
-            "name": NAME,
+            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
+            "via_device": get_frigate_device_identifier(self._entry),
+            "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -194,8 +199,7 @@ class FrigateMqttSnapshots(Camera):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace("_", " ")
-        return f"{friendly_camera_name} {self._obj_name}".title()
+        return f"{get_friendly_name(self._cam_name)} {self._obj_name}".title()
 
     async def async_camera_image(self):
         """Return image response."""

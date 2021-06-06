@@ -23,6 +23,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
+from . import get_friendly_name
 from .api import FrigateApiClient
 from .const import DOMAIN
 
@@ -191,7 +192,7 @@ class FrigateSource(MediaSource):
         if identifier["original"] == CLIPS_ROOT:
             title = f"Clips ({count})"
         else:
-            title = f"{' > '.join([s for s in identifier['name'].replace('_', ' ').split('.') if s != '']).title()} ({count})"
+            title = f"{' > '.join([s for s in get_friendly_name(identifier['name']).split('.') if s != '']).title()} ({count})"
 
         base = BrowseMediaSource(
             domain=DOMAIN,
@@ -299,7 +300,7 @@ class FrigateSource(MediaSource):
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{camera.replace('_', ' ').title()} ({count})",
+                    title=f"{get_friendly_name(camera)} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -330,7 +331,7 @@ class FrigateSource(MediaSource):
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{label.replace('_', ' ').title()} ({count})",
+                    title=f"{get_friendly_name(label)} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -361,7 +362,7 @@ class FrigateSource(MediaSource):
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{zone.replace('_', ' ').title()} ({count})",
+                    title=f"{get_friendly_name(zone)} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -612,7 +613,7 @@ class FrigateSource(MediaSource):
     def _generate_recording_title(cls, identifier, folder=None):
         if identifier["camera"] != "":
             if folder is None:
-                return identifier["camera"].replace("_", " ").title()
+                return get_friendly_name(identifier["camera"])
             minute_seconds = folder["name"].replace(".mp4", "")
             return dt.datetime.strptime(
                 f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
@@ -623,7 +624,7 @@ class FrigateSource(MediaSource):
                 return dt.datetime.strptime(
                     f"{identifier['hour']}.00.00", "%H.%M.%S"
                 ).strftime("%-I:%M:%S %p")
-            return folder["name"].replace("_", " ").title()
+            return get_friendly_name(folder["name"])
 
         if identifier["day"] != "":
             if folder is None:

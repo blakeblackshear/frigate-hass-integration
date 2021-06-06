@@ -13,6 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -114,8 +115,9 @@ class FrigateMotionSensor(BinarySensorEntity):
     def device_info(self) -> dict[str, Any]:
         """Return device information."""
         return {
-            "identifiers": {(DOMAIN, self._entry.entry_id)},
-            "name": NAME,
+            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
+            "via_device": get_frigate_device_identifier(self._entry),
+            "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -123,8 +125,7 @@ class FrigateMotionSensor(BinarySensorEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace("_", " ")
-        return f"{friendly_camera_name} {self._obj_name} Motion".title()
+        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Motion".title()
 
     @property
     def is_on(self) -> bool:

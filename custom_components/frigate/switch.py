@@ -6,6 +6,7 @@ from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
 
+from . import get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -104,8 +105,9 @@ class FrigateSwitch(SwitchEntity):
     def device_info(self):
         """Get device information."""
         return {
-            "identifiers": {(DOMAIN, self._entry.entry_id)},
-            "name": NAME,
+            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
+            "via_device": get_frigate_device_identifier(self._entry),
+            "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -113,8 +115,7 @@ class FrigateSwitch(SwitchEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace("_", " ")
-        return f"{friendly_camera_name} {self._switch_name}".title()
+        return f"{get_friendly_name(self._cam_name)} {self._switch_name}".title()
 
     @property
     def is_on(self):
