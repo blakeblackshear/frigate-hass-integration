@@ -5,6 +5,7 @@ from typing import Tuple
 
 # TODO: Remove glob import and F403/F405 noqa after unittests are added.
 from dateutil.relativedelta import *  # noqa: F403
+
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
     MEDIA_CLASS_VIDEO,

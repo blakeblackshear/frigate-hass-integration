@@ -8,8 +8,9 @@ import urllib.parse
 import aiohttp
 from aiohttp import hdrs, web
 from aiohttp.web_exceptions import HTTPBadGateway
-from homeassistant.components.http import HomeAssistantView
 from multidict import CIMultiDict
+
+from homeassistant.components.http import HomeAssistantView
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 

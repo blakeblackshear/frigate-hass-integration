@@ -4,10 +4,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-import voluptuous as vol
 
 from .api import FrigateApiClient
 from .const import DEFAULT_HOST, DOMAIN
