@@ -25,42 +25,46 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass)
 
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+    )
     assert entity_state
     assert entity_state.state == "unavailable"
 
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+    )
     assert entity_state
     assert entity_state.state == "off"
 
     async_fire_mqtt_message(hass, "frigate/front_door/person", "1")
     await hass.async_block_till_done()
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+    )
     assert entity_state
     assert entity_state.state == "on"
 
     # Verify the steps (zone) motion sensor works.
     async_fire_mqtt_message(hass, "frigate/steps/person", "1")
     await hass.async_block_till_done()
-    entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID)
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "on"
 
     async_fire_mqtt_message(hass, "frigate/front_door/person", "not_an_int")
     await hass.async_block_till_done()
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+    )
     assert entity_state
     assert entity_state.state == "off"
 
     async_fire_mqtt_message(hass, "frigate/available", "offline")
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+    )
     assert entity_state
     assert entity_state.state == "unavailable"
 

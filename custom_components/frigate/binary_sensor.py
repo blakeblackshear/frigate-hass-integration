@@ -1,8 +1,8 @@
-"""Binary sensor platform for frigate."""
+"""Binary sensor platform for Frigate."""
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
@@ -11,6 +11,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, NAME, VERSION
 
@@ -18,7 +19,7 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_devices: Callable
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Setup sensor platform."""
     frigate_config = hass.data[DOMAIN]["config"]
@@ -33,18 +34,25 @@ async def async_setup_entry(
         for zone_name in frigate_config["cameras"][cam]["zones"]:
             zone_objects.add((zone_name, obj))
 
-    async_add_devices([
-        FrigateMotionSensor(hass, entry, frigate_config, cam_name, obj)
-        for cam_name, obj in camera_objects.union(zone_objects)
-    ])
+    async_add_entities(
+        [
+            FrigateMotionSensor(entry, frigate_config, cam_name, obj)
+            for cam_name, obj in camera_objects.union(zone_objects)
+        ]
+    )
 
 
 class FrigateMotionSensor(BinarySensorEntity):
     """Frigate Motion Sensor class."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, frigate_config: dict[str, Any], cam_name: str, obj_name: str) -> None:
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        obj_name: str,
+    ) -> None:
         """Construct a new FrigateMotionSensor."""
-        self.hass = hass
         self._entry = entry
         self._frigate_config = frigate_config
         self._cam_name = cam_name
@@ -53,7 +61,9 @@ class FrigateMotionSensor(BinarySensorEntity):
         self._available = False
         self._sub_state = None
         self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}"
-        self._availability_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        self._availability_topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
+        )
 
     async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
@@ -62,6 +72,7 @@ class FrigateMotionSensor(BinarySensorEntity):
 
     async def _subscribe_topics(self) -> None:
         """(Re)Subscribe to topics."""
+
         @callback
         def state_message_received(msg: str) -> None:
             """Handle a new received MQTT state message."""
@@ -74,8 +85,7 @@ class FrigateMotionSensor(BinarySensorEntity):
         @callback
         def availability_message_received(msg: str) -> None:
             """Handle a new received MQTT availability message."""
-            payload = msg.payload
-            self._available = (payload == "online")
+            self._available = msg.payload == "online"
             self.async_write_ha_state()
 
         self._sub_state = await async_subscribe_topics(
@@ -91,7 +101,7 @@ class FrigateMotionSensor(BinarySensorEntity):
                     "topic": self._availability_topic,
                     "msg_callback": availability_message_received,
                     "qos": 0,
-                }
+                },
             },
         )
 
@@ -113,7 +123,7 @@ class FrigateMotionSensor(BinarySensorEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        friendly_camera_name = self._cam_name.replace('_', ' ')
+        friendly_camera_name = self._cam_name.replace("_", " ")
         return f"{friendly_camera_name} {self._obj_name} Motion".title()
 
     @property
