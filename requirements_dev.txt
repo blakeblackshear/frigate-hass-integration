@@ -3,3 +3,4 @@ black
 pytest==6.2.4
 pytest-homeassistant-custom-component==0.4.1
 pylint-pytest
+pylint==2.8.3
