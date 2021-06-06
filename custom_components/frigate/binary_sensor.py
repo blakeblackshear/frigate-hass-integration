@@ -138,5 +138,5 @@ class FrigateMotionSensor(BinarySensorEntity):
 
     @property
     def available(self) -> bool:
-        """Return true if the binary sensor is available."""
+        """Determine if the entity is available."""
         return self._available

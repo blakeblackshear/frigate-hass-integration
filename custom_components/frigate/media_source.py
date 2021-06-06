@@ -1,29 +1,27 @@
 """Frigate Media Source Implementation."""
-import datetime as dt
-from dateutil.relativedelta import *
-import logging
-import re
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from homeassistant.components.http.auth import async_sign_path
+import datetime as dt
+import logging
+
+from dateutil.relativedelta import relativedelta
+
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
     MEDIA_CLASS_VIDEO,
     MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_CHANNEL,
 )
-from homeassistant.components.media_player.errors import BrowseError
 from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
-from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
+from homeassistant.components.media_source.error import MediaSourceError
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
     MediaSource,
     MediaSourceItem,
     PlayMedia,
 )
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.util.dt import DEFAULT_TIME_ZONE
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from .api import FrigateApiClient
 from .const import DOMAIN
@@ -60,13 +58,16 @@ class FrigateSource(MediaSource):
         self.client = FrigateApiClient(host, session)
         self.last_summary_refresh = None
         self.summary_data = None
+        self.cameras = []
+        self.labels = []
+        self.zones = []
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
         return PlayMedia(f"/api/frigate/{item.identifier}", MIME_TYPE)
 
     async def async_browse_media(
-        self, item: MediaSourceItem, media_types: Tuple[str] = MEDIA_MIME_TYPES
+        self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
     ) -> BrowseMediaSource:
         """Return media."""
 
@@ -109,26 +110,26 @@ class FrigateSource(MediaSource):
                 ],
             )
 
-        elif item.identifier.startswith("clips"):
+        if item.identifier.startswith("clips"):
             identifier = None
-            _LOGGER.debug(f"item.identifier: {item.identifier}")
+            _LOGGER.debug("item.identifier: %s", item.identifier)
             if item.identifier == CLIPS_ROOT:
                 # if the summary data is old, refresh
                 if (
                     self.last_summary_refresh is None
                     or dt.datetime.now().timestamp() - self.last_summary_refresh > 60
                 ):
-                    _LOGGER.debug(f"refreshing summary data")
+                    _LOGGER.debug("refreshing summary data")
                     self.last_summary_refresh = dt.datetime.now().timestamp()
                     self.summary_data = await self.client.async_get_event_summary()
-                    self.cameras = list(set([d["camera"] for d in self.summary_data]))
-                    self.labels = list(set([d["label"] for d in self.summary_data]))
+                    self.cameras = list({d["camera"] for d in self.summary_data})
+                    self.labels = list({d["label"] for d in self.summary_data})
                     self.zones = list(
-                        set([zone for d in self.summary_data for zone in d["zones"]])
+                        {zone for d in self.summary_data for zone in d["zones"]}
                     )
-                    for d in self.summary_data:
-                        d["timestamp"] = int(
-                            dt.datetime.strptime(d["day"], "%Y-%m-%d")
+                    for data in self.summary_data:
+                        data["timestamp"] = int(
+                            dt.datetime.strptime(data["day"], "%Y-%m-%d")
                             .astimezone(DEFAULT_TIME_ZONE)
                             .timestamp()
                         )
@@ -155,7 +156,7 @@ class FrigateSource(MediaSource):
 
             return self._browse_clips(identifier, events)
 
-        elif item.identifier.startswith("recordings"):
+        if item.identifier.startswith("recordings"):
             identifier_parts = item.identifier.split("/")
             identifier = {
                 "original": item.identifier,
@@ -233,7 +234,7 @@ class FrigateSource(MediaSource):
             )
 
         # only show the drill down options if there are more than 10 events
-        # and there is more than 1 drilldown or when you arent showing any events
+        # and there is more than 1 drilldown or when you aren't showing any events
         if len(events) > 10 and (len(drilldown_sources) > 1 or len(base.children) == 0):
             base.children.extend(drilldown_sources)
 
@@ -259,7 +260,8 @@ class FrigateSource(MediaSource):
 
         return base
 
-    def _build_clip_response(self, events) -> BrowseMediaSource:
+    @classmethod
+    def _build_clip_response(cls, events) -> BrowseMediaSource:
         return [
             BrowseMediaSource(
                 domain=DOMAIN,
@@ -276,7 +278,7 @@ class FrigateSource(MediaSource):
 
     def _build_camera_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for c in self.cameras:
+        for camera in self.cameras:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -284,20 +286,20 @@ class FrigateSource(MediaSource):
             count = self._count_by(
                 after=after,
                 before=before,
-                camera=c,
+                camera=camera,
                 label=identifier["label"],
                 zone=identifier["zone"],
             )
-            if count == 0 or count == shown_event_count:
+            if count in (0, shown_event_count):
                 continue
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{c}/{identifier['after']}/{identifier['before']}/{c}/{identifier['label']}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.{camera}/{identifier['after']}/{identifier['before']}/{camera}/{identifier['label']}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{c.replace('_', ' ').title()} ({count})",
+                    title=f"{camera.replace('_', ' ').title()} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -307,7 +309,7 @@ class FrigateSource(MediaSource):
 
     def _build_label_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for l in self.labels:
+        for label in self.labels:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -316,19 +318,19 @@ class FrigateSource(MediaSource):
                 after=after,
                 before=before,
                 camera=identifier["camera"],
-                label=l,
+                label=label,
                 zone=identifier["zone"],
             )
-            if count == 0 or count == shown_event_count:
+            if count in (0, shown_event_count):
                 continue
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{l}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{l}/{identifier['zone']}",
+                    identifier=f"clips/{identifier['name']}.{label}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{label}/{identifier['zone']}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{l.replace('_', ' ').title()} ({count})",
+                    title=f"{label.replace('_', ' ').title()} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -338,7 +340,7 @@ class FrigateSource(MediaSource):
 
     def _build_zone_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for z in self.zones:
+        for zone in self.zones:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -348,18 +350,18 @@ class FrigateSource(MediaSource):
                 before=before,
                 camera=identifier["camera"],
                 label=identifier["label"],
-                zone=z,
+                zone=zone,
             )
-            if count == 0 or count == shown_event_count:
+            if count in (0, shown_event_count):
                 continue
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{z}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{z}",
+                    identifier=f"clips/{identifier['name']}.{zone}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{zone}",
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=f"{z.replace('_', ' ').title()} ({count})",
+                    title=f"{zone.replace('_', ' ').title()} ({count})",
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
@@ -591,62 +593,59 @@ class FrigateSource(MediaSource):
                 if (
                     (after is None or d["timestamp"] >= after)
                     and (before is None or d["timestamp"] < before)
-                    and (camera == "" or d["camera"] == camera)
-                    and (label == "" or d["label"] == label)
-                    and (zone == "" or zone in d["zones"])
+                    and camera in ("", d["camera"])
+                    and label in ("", d["label"])
+                    and zone in ("", d["zones"])
                 )
             ]
         )
 
-    def _create_recordings_folder_identifier(self, identifier, folder):
+    @classmethod
+    def _create_recordings_folder_identifier(cls, identifier, folder):
         identifier_fragments = [
             s for s in identifier["original"].split("/") if s != ""
         ] + [folder["name"]]
         identifier_fragments += [""] * (5 - len(identifier_fragments))
         return "/".join(identifier_fragments)
 
-    def _generate_recording_title(self, identifier, folder=None):
+    @classmethod
+    def _generate_recording_title(cls, identifier, folder=None):
         if identifier["camera"] != "":
             if folder is None:
                 return identifier["camera"].replace("_", " ").title()
-            else:
-                minute_seconds = folder["name"].replace(".mp4", "")
-                return dt.datetime.strptime(
-                    f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
-                ).strftime("%-I:%M:%S %p")
+            minute_seconds = folder["name"].replace(".mp4", "")
+            return dt.datetime.strptime(
+                f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
+            ).strftime("%-I:%M:%S %p")
 
         if identifier["hour"] != "":
             if folder is None:
                 return dt.datetime.strptime(
                     f"{identifier['hour']}.00.00", "%H.%M.%S"
                 ).strftime("%-I:%M:%S %p")
-            else:
-                return folder["name"].replace("_", " ").title()
+            return folder["name"].replace("_", " ").title()
 
         if identifier["day"] != "":
             if folder is None:
                 return dt.datetime.strptime(
                     f"{identifier['year_month']}-{identifier['day']}", "%Y-%m-%d"
                 ).strftime("%B %d")
-            else:
-                return dt.datetime.strptime(
-                    f"{folder['name']}.00.00", "%H.%M.%S"
-                ).strftime("%-I:%M:%S %p")
+            return dt.datetime.strptime(f"{folder['name']}.00.00", "%H.%M.%S").strftime(
+                "%-I:%M:%S %p"
+            )
 
         if identifier["year_month"] != "":
             if folder is None:
                 return dt.datetime.strptime(
                     f"{identifier['year_month']}", "%Y-%m"
                 ).strftime("%B %Y")
-            else:
-                return dt.datetime.strptime(
-                    f"{identifier['year_month']}-{folder['name']}", "%Y-%m-%d"
-                ).strftime("%B %d")
+            return dt.datetime.strptime(
+                f"{identifier['year_month']}-{folder['name']}", "%Y-%m-%d"
+            ).strftime("%B %d")
 
         if folder is None:
             return [s for s in identifier["original"].split("/") if s != ""][-1].title()
-        else:
-            return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
+        return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
 
     def _browse_recording_folders(self, identifier, folders):
         children = []
@@ -668,8 +667,8 @@ class FrigateSource(MediaSource):
                     thumbnail=None,
                 )
                 children.append(child)
-            except:
-                _LOGGER.warn(f"Skipping non-standard folder {folder['name']}")
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.warning("Skipping non-standard folder: %s", folder["name"])
 
         base = BrowseMediaSource(
             domain=DOMAIN,

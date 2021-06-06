@@ -5,11 +5,10 @@ import asyncio
 import logging
 from unittest.mock import AsyncMock, patch
 
+from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-
-from custom_components.frigate.const import DOMAIN, NAME
 
 from . import TEST_HOST, create_mock_frigate_client, create_mock_frigate_config_entry
 
