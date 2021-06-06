@@ -11,7 +11,9 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.const import DOMAIN, NAME
 
-TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID = "binary_sensor.front_door_person_motion"
+TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID = (
+    "binary_sensor.front_door_person_motion"
+)
 TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID = "binary_sensor.steps_person_motion"
 
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
@@ -26,30 +28,17 @@ TEST_CONFIG = {
                 "post_capture": 5,
                 "pre_capture": 5,
                 "required_zones": [],
-                "retain": {
-                    "default": 10,
-                    "objects": {}
-                }
+                "retain": {"default": 10, "objects": {}},
             },
-            "detect": {
-                "enabled": True,
-                "max_disappeared": 20
-            },
+            "detect": {"enabled": True, "max_disappeared": 20},
             "ffmpeg_cmds": [
                 {
                     "cmd": "ffmpeg -hide_banner -loglevel warning -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -stimeout 5000000 -use_wallclock_as_timestamps 1 -i rtsp://rtsp:password@cam-front-door/live -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy -an /tmp/cache/front_door-%Y%m%d%H%M%S.mp4 -c copy -f flv rtmp://127.0.0.1/live/front_door -r 4 -f rawvideo -pix_fmt yuv420p pipe:",
-                    "roles": [
-                        "detect",
-                        "rtmp",
-                        "clips"
-                    ]
+                    "roles": ["detect", "rtmp", "clips"],
                 }
             ],
             "fps": 4,
-            "frame_shape": [
-                1080,
-                1920
-            ],
+            "frame_shape": [1080, 1920],
             "height": 1080,
             "motion": {
                 "contour_area": 100,
@@ -57,7 +46,7 @@ TEST_CONFIG = {
                 "frame_alpha": 0.2,
                 "frame_height": 180,
                 "mask": None,
-                "threshold": 25
+                "threshold": 25,
             },
             "mqtt": {
                 "bounding_box": True,
@@ -65,7 +54,7 @@ TEST_CONFIG = {
                 "enabled": True,
                 "height": 270,
                 "required_zones": [],
-                "timestamp": True
+                "timestamp": True,
             },
             "name": "front_door",
             "objects": {
@@ -75,66 +64,39 @@ TEST_CONFIG = {
                         "max_area": 24000000,
                         "min_area": 0,
                         "min_score": 0.6,
-                        "threshold": 0.7
+                        "threshold": 0.7,
                     }
                 },
                 "mask": None,
-                "track": [
-                    "person"
-                ]
+                "track": ["person"],
             },
-            "record": {
-                "enabled": False,
-                "retain_days": 30
-            },
-            "rtmp": {
-                "enabled": True
-            },
+            "record": {"enabled": False, "retain_days": 30},
+            "rtmp": {"enabled": True},
             "snapshots": {
                 "bounding_box": False,
                 "crop": False,
                 "enabled": True,
                 "height": None,
                 "required_zones": [],
-                "retain": {
-                    "default": 10,
-                    "objects": {}
-                },
-                "timestamp": False
+                "retain": {"default": 10, "objects": {}},
+                "timestamp": False,
             },
             "width": 1920,
-            "zones": {
-                "steps": {}
-            }
+            "zones": {"steps": {}},
         },
     },
     "clips": {
         "max_seconds": 300,
-        "retain": {
-            "default": 10,
-            "objects": {}
-        },
-        "tmpfs_cache_size": ""
+        "retain": {"default": 10, "objects": {}},
+        "tmpfs_cache_size": "",
     },
-    "database": {
-        "path": "/media/frigate/clips/frigate.db"
-    },
+    "database": {"path": "/media/frigate/clips/frigate.db"},
     "detectors": {
-        "cpu1": {
-            "device": "usb",
-            "num_threads": 3,
-            "type": "cpu"
-        },
+        "cpu1": {"device": "usb", "num_threads": 3, "type": "cpu"},
     },
     "environment_vars": {},
-    "logger": {
-        "default": "INFO",
-        "logs": {}
-    },
-    "model": {
-        "height": 320,
-        "width": 320
-    },
+    "logger": {"default": "INFO", "logs": {}},
+    "model": {"height": 320, "width": 320},
     "mqtt": {
         "client_id": "frigate",
         "host": "mqtt",
@@ -143,12 +105,7 @@ TEST_CONFIG = {
         "topic_prefix": "frigate",
         "user": None,
     },
-    "snapshots": {
-        "retain": {
-            "default": 10,
-            "objects": {}
-        }
-    }
+    "snapshots": {"retain": {"default": 10, "objects": {}}},
 }
 
 

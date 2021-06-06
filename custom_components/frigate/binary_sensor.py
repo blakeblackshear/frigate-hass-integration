@@ -21,7 +21,7 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Setup sensor platform."""
+    """Binary sensor entry setup."""
     frigate_config = hass.data[DOMAIN]["config"]
 
     camera_objects = set()
