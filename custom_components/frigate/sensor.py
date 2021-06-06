@@ -101,8 +101,7 @@ class FrigateFpsSensor(CoordinatorEntity):
         """Return the state of the sensor."""
         if self.coordinator.data:
             return round(self.coordinator.data.get("detection_fps"))
-        else:
-            return None
+        return None
 
     @property
     def unit_of_measurement(self):
@@ -154,8 +153,7 @@ class DetectorSpeedSensor(CoordinatorEntity):
                     "inference_speed"
                 ]
             )
-        else:
-            return None
+        return None
 
     @property
     def unit_of_measurement(self):
@@ -211,8 +209,7 @@ class CameraFpsSensor(CoordinatorEntity):
             return round(
                 self.coordinator.data[self.camera_name][f"{self.fps_type}_fps"]
             )
-        else:
-            return None
+        return None
 
     @property
     def icon(self):
@@ -274,7 +271,7 @@ class FrigateObjectCountSensor(Entity):
             elif payload == "offline":
                 self._available = False
             else:
-                _LOGGER.info(f"Invalid payload received for {self.name}")
+                _LOGGER.info("Invalid payload received for: %s", self.name)
                 return
 
         self._sub_state = await async_subscribe_topics(

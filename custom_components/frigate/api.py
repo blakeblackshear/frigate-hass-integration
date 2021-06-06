@@ -1,4 +1,6 @@
 """Frigate API client."""
+from __future__ import annotations
+
 import asyncio
 import logging
 import socket
@@ -47,7 +49,7 @@ class FrigateApiClient:
             "has_clip": 1,
         }
         params = urllib.parse.urlencode(
-            {k: v for k, v in params.items() if v is not None and not v == ""}
+            {k: v for k, v in params.items() if v is not None and v != ""}
         )
         url = urllib.parse.urljoin(self._host, f"/api/events?{params}")
         return await self.api_wrapper("get", url)
@@ -56,7 +58,7 @@ class FrigateApiClient:
         """Get data from the API."""
         params = {"has_clip": 1}
         params = urllib.parse.urlencode(
-            {k: v for k, v in params.items() if v is not None and not v == ""}
+            {k: v for k, v in params.items() if v is not None and v != ""}
         )
         url = urllib.parse.urljoin(self._host, f"/api/events/summary?{params}")
         return await self.api_wrapper("get", url)
@@ -72,9 +74,14 @@ class FrigateApiClient:
         return await self.api_wrapper("get", url)
 
     async def api_wrapper(
-        self, method: str, url: str, data: dict = {}, headers: dict = {}
+        self, method: str, url: str, data: dict | None = None, headers: dict | None = None
     ) -> dict:
         """Get information from the API."""
+        if data is None:
+            data = {}
+        if headers is None:
+            headers = {}
+
         try:
             async with async_timeout.timeout(TIMEOUT, loop=asyncio.get_event_loop()):
                 if method == "get":
@@ -83,7 +90,7 @@ class FrigateApiClient:
                     )
                     return await response.json()
 
-                elif method == "put":
+                if method == "put":
                     await self._session.put(url, headers=headers, json=data)
 
                 elif method == "patch":

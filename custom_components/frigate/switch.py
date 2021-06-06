@@ -75,7 +75,7 @@ class FrigateSwitch(SwitchEntity):
             elif payload == "offline":
                 self._available = False
             else:
-                _LOGGER.info(f"Invalid payload received for {self.name}")
+                _LOGGER.info("Invalid payload received for: %s", self.name)
                 return
 
         self._sub_state = await async_subscribe_topics(

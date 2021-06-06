@@ -1,6 +1,7 @@
 """Support for Frigate cameras."""
+from __future__ import annotations
+
 import logging
-from typing import Dict
 import urllib.parse
 
 import async_timeout
@@ -45,14 +46,14 @@ async def async_setup_entry(
 class FrigateCamera(Camera):
     """Representation a Frigate camera."""
 
-    def __init__(self, hass, config_entry, name: str, config: Dict):
+    def __init__(self, hass, config_entry, name: str, config: dict):
         """Initialize a Frigate camera."""
         super().__init__()
         self.hass = hass
         self.config_entry = config_entry
         self._host = self.hass.data[DOMAIN]["host"]
         self._name = name
-        _LOGGER.debug(f"Adding camera {name}")
+        _LOGGER.debug("Adding camera: %s", name)
         self._config = config
         self._latest_url = urllib.parse.urljoin(
             self._host, f"/api/{self._name}/latest.jpg?h=277"
@@ -72,7 +73,7 @@ class FrigateCamera(Camera):
         return f"{self._name.replace('_', ' ')}".title()
 
     @property
-    def device_info(self) -> Dict[str, any]:
+    def device_info(self) -> dict[str, any]:
         """Return the device information."""
         return {
             "identifiers": {(DOMAIN, self.config_entry.entry_id)},
@@ -152,7 +153,7 @@ class FrigateMqttSnapshots(Camera):
             elif payload == "offline":
                 self._available = False
             else:
-                _LOGGER.info(f"Invalid payload received for {self.name}")
+                _LOGGER.info("Invalid payload received for: %s", self.name)
                 return
 
             self.async_write_ha_state()

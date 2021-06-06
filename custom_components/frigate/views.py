@@ -1,8 +1,8 @@
 """Frigate HTTP views."""
+from __future__ import annotations
 
 from ipaddress import ip_address
 import logging
-from typing import Dict, Union
 import urllib.parse
 
 import aiohttp
@@ -33,7 +33,7 @@ class ClipsProxy(HomeAssistantView):
 
     async def _handle(
         self, request: web.Request, path: str
-    ) -> Union[web.Response, web.StreamResponse, web.WebSocketResponse]:
+    ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
         """Route data to service."""
         try:
             return await self._handle_request(request, path)
@@ -52,7 +52,7 @@ class ClipsProxy(HomeAssistantView):
 
     async def _handle_request(
         self, request: web.Request, path: str
-    ) -> Union[web.Response, web.StreamResponse]:
+    ) -> web.Response | web.StreamResponse:
         """Handle route for request."""
         url = self._create_url(path)
         data = await request.read()
@@ -101,7 +101,7 @@ class RecordingsProxy(HomeAssistantView):
 
     async def _handle(
         self, request: web.Request, path: str
-    ) -> Union[web.Response, web.StreamResponse, web.WebSocketResponse]:
+    ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
         """Route data to service."""
         try:
             return await self._handle_request(request, path)
@@ -120,7 +120,7 @@ class RecordingsProxy(HomeAssistantView):
 
     async def _handle_request(
         self, request: web.Request, path: str
-    ) -> Union[web.Response, web.StreamResponse]:
+    ) -> web.Response | web.StreamResponse:
         """Handle route for request."""
         url = self._create_url(path)
         data = await request.read()
@@ -182,7 +182,7 @@ class NotificationProxy(HomeAssistantView):
 
     async def _handle(
         self, request: web.Request, event_id: str, path: str
-    ) -> Union[web.Response, web.StreamResponse, web.WebSocketResponse]:
+    ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
         """Route data to service."""
         try:
             url = self._create_url(event_id, path)
@@ -202,7 +202,7 @@ class NotificationProxy(HomeAssistantView):
 
     async def _handle_request(
         self, request: web.Request, url: str
-    ) -> Union[web.Response, web.StreamResponse]:
+    ) -> web.Response | web.StreamResponse:
         """Handle route for request."""
         data = await request.read()
         source_header = _init_header(request)
@@ -232,7 +232,7 @@ class NotificationProxy(HomeAssistantView):
             return response
 
 
-def _init_header(request: web.Request) -> Union[CIMultiDict, Dict[str, str]]:
+def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
     """Create initial header."""
     headers = {}
 
@@ -273,7 +273,7 @@ def _init_header(request: web.Request) -> Union[CIMultiDict, Dict[str, str]]:
     return headers
 
 
-def _response_header(response: aiohttp.ClientResponse) -> Dict[str, str]:
+def _response_header(response: aiohttp.ClientResponse) -> dict[str, str]:
     """Create response header."""
     headers = {}
 
