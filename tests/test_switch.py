@@ -76,7 +76,6 @@ async def test_switch_turn_on(hass: HomeAssistant, mqtt_mock: Any) -> None:
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
 
-    # Turn switch on.
     await hass.services.async_call(
         SWITCH_DOMAIN,
         SERVICE_TURN_ON,
@@ -95,7 +94,6 @@ async def test_switch_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
 
-    # Turn switch on.
     await hass.services.async_call(
         SWITCH_DOMAIN,
         SERVICE_TURN_OFF,
