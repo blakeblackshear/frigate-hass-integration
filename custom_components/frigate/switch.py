@@ -4,7 +4,6 @@ import logging
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.components.switch import SwitchEntity
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
