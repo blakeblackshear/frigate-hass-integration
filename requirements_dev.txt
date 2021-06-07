@@ -1,5 +1,7 @@
 -r requirements.txt
 black
+flake8
+pre-commit
 pytest==6.2.4
 pytest-homeassistant-custom-component==0.4.1
 pylint-pytest
