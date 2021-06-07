@@ -4,13 +4,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
+
+from custom_components.frigate.const import DOMAIN, NAME, VERSION
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
-from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
-
-from custom_components.frigate.const import DOMAIN, NAME, VERSION
 
 from . import (
     TEST_SWITCH_FRONT_DOOR_CLIPS,
@@ -113,10 +113,9 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
 
     device_registry = dr.async_get(hass)
     device = device_registry.async_get_device(
-        identifiers={(DOMAIN, config_entry.entry_id)}
+        identifiers={(DOMAIN, f"{config_entry.entry_id}:front_door")}
     )
     assert device
-
     assert device.manufacturer == NAME
     assert device.model == VERSION
 
