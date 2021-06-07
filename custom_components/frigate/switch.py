@@ -4,7 +4,9 @@ import logging
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import callback
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, VERSION
@@ -12,41 +14,44 @@ from .const import DOMAIN, NAME, VERSION
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-async def async_setup_entry(hass, entry, async_add_devices):
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     """Switch entry setup."""
-    devices = []
-
     frigate_config = hass.data[DOMAIN]["config"]
 
-    cameras = frigate_config["cameras"].keys()
-
-    for cam in cameras:
-        devices.extend(
+    entities = []
+    for camera in frigate_config["cameras"].keys():
+        entities.extend(
             [
-                FrigateSwitch(hass, entry, frigate_config, cam, "detect"),
-                FrigateSwitch(hass, entry, frigate_config, cam, "clips"),
-                FrigateSwitch(hass, entry, frigate_config, cam, "snapshots"),
+                FrigateSwitch(entry, frigate_config, camera, "detect"),
+                FrigateSwitch(entry, frigate_config, camera, "clips"),
+                FrigateSwitch(entry, frigate_config, camera, "snapshots"),
             ]
         )
-
-    async_add_devices(devices)
+    async_add_entities(entities)
 
 
 class FrigateSwitch(SwitchEntity):
     """Frigate Switch class."""
 
-    def __init__(self, hass, entry, frigate_config, cam_name, switch_name):
+    def __init__(self, entry, frigate_config, cam_name, switch_name):
         """Construct a FrigateSwitch."""
-        self.hass = hass
         self._entry = entry
         self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._switch_name = switch_name
-        self._state = False
+        self._is_on = False
         self._available = False
         self._sub_state = None
-        self._state_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._switch_name}/state"
-        self._command_topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._switch_name}/set"
+        self._state_topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}"
+            f"/{self._cam_name}/{self._switch_name}/state"
+        )
+        self._command_topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}"
+            f"/{self._cam_name}/{self._switch_name}/set"
+        )
         self._availability_topic = (
             f"{self._frigate_config['mqtt']['topic_prefix']}/available"
         )
@@ -62,22 +67,14 @@ class FrigateSwitch(SwitchEntity):
         @callback
         def state_message_received(msg):
             """Handle a new received MQTT state message."""
-            self._state = msg.payload == "ON"
-
+            self._is_on = msg.payload == "ON"
             self.async_write_ha_state()
 
         @callback
-        def availability_message_received(msg):
+        def availability_message_received(msg: str) -> None:
             """Handle a new received MQTT availability message."""
-            payload = msg.payload
-
-            if payload == "online":
-                self._available = True
-            elif payload == "offline":
-                self._available = False
-            else:
-                _LOGGER.info("Invalid payload received for: %s", self.name)
-                return
+            self._available = msg.payload == "online"
+            self.async_write_ha_state()
 
         self._sub_state = await async_subscribe_topics(
             self.hass,
@@ -120,12 +117,7 @@ class FrigateSwitch(SwitchEntity):
     @property
     def is_on(self):
         """Return true if the binary sensor is on."""
-        return self._state
-
-    @property
-    def assumed_state(self):
-        """Return true if we do optimistic updates."""
-        return False
+        return self._is_on
 
     async def async_turn_on(self, **kwargs):
         """Turn the device on."""
