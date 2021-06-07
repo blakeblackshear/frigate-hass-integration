@@ -123,3 +123,4 @@ norecursedirs = [
     ".git",
     "testing_config",
 ]
+addopts = "--timeout=10 --cov-report=xml:coverage.xml --cov-report=term-missing --cov=custom_components.frigate"
