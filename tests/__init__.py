@@ -18,6 +18,8 @@ TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID = "binary_sensor.steps_person_m
 TEST_SWITCH_FRONT_DOOR_DETECT = "switch.front_door_detect"
 TEST_SWITCH_FRONT_DOOR_SNAPSHOTS = "switch.front_door_snapshots"
 TEST_SWITCH_FRONT_DOOR_CLIPS = "switch.front_door_clips"
+TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person"
+TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID = "sensor.front_door_person"
 
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_HOST = "http://example.com"

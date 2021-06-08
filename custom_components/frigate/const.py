@@ -7,12 +7,15 @@ VERSION = "0.0.1"
 ISSUE_URL = "https://github.com/blakeblackshear/frigate-hass-integration/issues"
 
 # Icons
-ICON = "mdi:speedometer"
-PERSON_ICON = "mdi:shield-account"
-CAR_ICON = "mdi:shield-car"
-DOG_ICON = "mdi:dog-side"
-CAT_ICON = "mdi:cat"
-OTHER_ICON = "mdi:shield-alert"
+ICON_CAR = "mdi:shield-car"
+ICON_CAT = "mdi:cat"
+ICON_DOG = "mdi:dog-side"
+ICON_FILM_MULTIPLE = "mdi:filmstrip-box-multiple"
+ICON_IMAGE_MULTIPLE = "mdi:image-multiple"
+ICON_MOTION_SENSOR = "hass:motion-sensor"
+ICON_OTHER = "mdi:shield-alert"
+ICON_PERSON = "mdi:shield-account"
+ICON_SPEEDOMETER = "mdi:speedometer"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
