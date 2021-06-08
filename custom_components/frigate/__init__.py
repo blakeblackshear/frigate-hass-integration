@@ -40,7 +40,7 @@ def get_friendly_name(name: str) -> str:
     return name.replace("_", " ").title()
 
 
-def get_cameras_zones_and_objects(config: dict[str, Any]) -> {str, str}:
+def get_cameras_zones_and_objects(config: dict[str, Any]) -> {(str, str)}:
     """Get cameras/zones and tracking object tuples."""
 
     camera_objects = set()
