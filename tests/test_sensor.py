@@ -22,6 +22,7 @@ from custom_components.frigate.const import (
     ICON_OTHER,
     ICON_PERSON,
     ICON_SPEEDOMETER,
+    MS,
     NAME,
     VERSION,
 )
@@ -31,6 +32,8 @@ import homeassistant.util.dt as dt_util
 
 from . import (
     TEST_CONFIG,
+    TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
+    TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
@@ -110,7 +113,7 @@ async def test_object_count_icon(object_icon, hass: HomeAssistant) -> None:
         ("steps", TEST_SENSOR_STEPS_PERSON_ENTITY_ID),
     ],
 )
-async def test_object_count_device_info(
+async def test_per_camerazone_device_info(
     camerazone_entity: Any, hass: HomeAssistant
 ) -> None:
     """Verify switch device information."""
@@ -174,7 +177,7 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state.state == "unknown"
 
 
-async def test_fps_sensor_device_info(hass: HomeAssistant) -> None:
+async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     """Verify switch device information."""
     config_entry = await setup_mock_frigate_config_entry(hass)
 
@@ -193,3 +196,45 @@ async def test_fps_sensor_device_info(hass: HomeAssistant) -> None:
         for entry in er.async_entries_for_device(entity_registry, device.id)
     ]
     assert TEST_SENSOR_DETECTION_FPS_ENTITY_ID in entities_from_device
+    assert TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID in entities_from_device
+    assert TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID in entities_from_device
+
+
+async def test_detector_speed_sensor(hass: HomeAssistant) -> None:
+    """Test DetectorSpeedSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "91"
+    assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
+    assert entity_state.attributes["unit_of_measurement"] == MS
+
+    stats = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["detectors"]["cpu1"]["inference_speed"] = 11.5
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "12"
+
+    stats["detectors"]["cpu1"]["inference_speed"] = None
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["detectors"]["cpu1"]["inference_speed"] = "NOT_A_NUMBER"
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
