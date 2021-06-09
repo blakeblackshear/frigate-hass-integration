@@ -259,7 +259,6 @@ class FrigateObjectCountSensor(Entity):
         obj_name: str,
     ) -> None:
         """Construct a FrigateObjectCountSensor."""
-        _LOGGER.error("CAMERA: %s" % cam_name)
         self._config_entry = config_entry
         self._frigate_config = frigate_config
         self._cam_name = cam_name

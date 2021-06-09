@@ -1,4 +1,4 @@
-"""Test the frigate binary sensor."""
+"""Test the frigate sensors."""
 from __future__ import annotations
 
 import copy
@@ -105,6 +105,7 @@ async def test_object_count_icon(object_icon, hass: HomeAssistant) -> None:
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)
+
     entity_state = hass.states.get(f"sensor.front_door_{object}")
     assert entity_state
     assert entity_state.attributes["icon"] == icon
