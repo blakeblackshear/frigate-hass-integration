@@ -35,7 +35,11 @@ from . import (
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_CAMERA_FPS,
+    TEST_SENSOR_FRONT_DOOR_DETECTION_FPS,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_PROCESS_FPS,
+    TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
     TEST_STATS,
     create_mock_frigate_client,
@@ -107,17 +111,29 @@ async def test_object_count_icon(object_icon, hass: HomeAssistant) -> None:
 
 
 @pytest.mark.parametrize(
-    "camerazone_entity",
+    "camerazone_entities",
     [
-        ("front_door", TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID),
-        ("steps", TEST_SENSOR_STEPS_PERSON_ENTITY_ID),
+        (
+            "front_door",
+            {
+                TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+                TEST_SENSOR_FRONT_DOOR_CAMERA_FPS,
+                TEST_SENSOR_FRONT_DOOR_DETECTION_FPS,
+                TEST_SENSOR_FRONT_DOOR_PROCESS_FPS,
+                TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS,
+            },
+        ),
+        (
+            "steps",
+            {TEST_SENSOR_STEPS_PERSON_ENTITY_ID},
+        ),
     ],
 )
 async def test_per_camerazone_device_info(
-    camerazone_entity: Any, hass: HomeAssistant
+    camerazone_entities: Any, hass: HomeAssistant
 ) -> None:
     """Verify switch device information."""
-    camerazone, entity = camerazone_entity
+    camerazone, entities = camerazone_entities
     config_entry = await setup_mock_frigate_config_entry(hass)
 
     device_registry = dr.async_get(hass)
@@ -130,11 +146,11 @@ async def test_per_camerazone_device_info(
     assert device.manufacturer == NAME
     assert device.model == VERSION
 
-    entities_from_device = [
+    entities_from_device = {
         entry.entity_id
         for entry in er.async_entries_for_device(entity_registry, device.id)
-    ]
-    assert entity in entities_from_device
+    }
+    assert entities.issubset(entities_from_device)
 
 
 async def test_fps_sensor(hass: HomeAssistant) -> None:
@@ -236,5 +252,45 @@ async def test_detector_speed_sensor(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
+async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
+    """Test CameraFpsSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    assert entity_state
+    assert entity_state.state == "4"
+    assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
+    assert entity_state.attributes["unit_of_measurement"] == FPS
+
+    stats = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["front_door"]["camera_fps"] = 3.9
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    assert entity_state
+    assert entity_state.state == "4"
+
+    stats["front_door"]["camera_fps"] = None
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["front_door"]["camera_fps"] = "NOT_A_NUMBER"
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
     assert entity_state
     assert entity_state.state == "unknown"
