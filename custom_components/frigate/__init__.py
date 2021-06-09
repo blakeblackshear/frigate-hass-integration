@@ -40,6 +40,21 @@ def get_friendly_name(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+def get_cameras_zones_and_objects(config: dict[str, Any]) -> {(str, str)}:
+    """Get cameras/zones and tracking object tuples."""
+
+    camera_objects = set()
+    for cam_name, cam_config in config["cameras"].items():
+        for obj in cam_config["objects"]["track"]:
+            camera_objects.add((cam_name, obj))
+
+    zone_objects = set()
+    for cam_name, obj in camera_objects:
+        for zone_name in config["cameras"][cam_name]["zones"]:
+            zone_objects.add((zone_name, obj))
+    return camera_objects.union(zone_objects)
+
+
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
     return True

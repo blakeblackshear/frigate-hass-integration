@@ -13,7 +13,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import get_friendly_name, get_frigate_device_identifier
+from . import (
+    get_cameras_zones_and_objects,
+    get_friendly_name,
+    get_frigate_device_identifier,
+)
 from .const import DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -24,21 +28,10 @@ async def async_setup_entry(
 ) -> None:
     """Binary sensor entry setup."""
     frigate_config = hass.data[DOMAIN]["config"]
-
-    camera_objects = set()
-    for cam_name, cam_config in frigate_config["cameras"].items():
-        for obj in cam_config["objects"]["track"]:
-            camera_objects.add((cam_name, obj))
-
-    zone_objects = set()
-    for cam, obj in camera_objects:
-        for zone_name in frigate_config["cameras"][cam]["zones"]:
-            zone_objects.add((zone_name, obj))
-
     async_add_entities(
         [
             FrigateMotionSensor(entry, frigate_config, cam_name, obj)
-            for cam_name, obj in camera_objects.union(zone_objects)
+            for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
 
@@ -48,20 +41,23 @@ class FrigateMotionSensor(BinarySensorEntity):
 
     def __init__(
         self,
-        entry: ConfigEntry,
+        config_entry: ConfigEntry,
         frigate_config: dict[str, Any],
         cam_name: str,
         obj_name: str,
     ) -> None:
         """Construct a new FrigateMotionSensor."""
-        self._entry = entry
+        self._config_entry = config_entry
         self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._is_on = False
         self._available = False
         self._sub_state = None
-        self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}"
+        self._topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}"
+            f"/{self._cam_name}/{self._obj_name}"
+        )
         self._availability_topic = (
             f"{self._frigate_config['mqtt']['topic_prefix']}/available"
         )
@@ -115,8 +111,10 @@ class FrigateMotionSensor(BinarySensorEntity):
     def device_info(self) -> dict[str, Any]:
         """Return device information."""
         return {
-            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
-            "via_device": get_frigate_device_identifier(self._entry),
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,

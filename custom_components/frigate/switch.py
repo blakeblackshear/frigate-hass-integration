@@ -9,7 +9,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import get_friendly_name, get_frigate_device_identifier
-from .const import DOMAIN, NAME, VERSION
+from .const import (
+    DOMAIN,
+    ICON_FILM_MULTIPLE,
+    ICON_IMAGE_MULTIPLE,
+    ICON_MOTION_SENSOR,
+    NAME,
+    VERSION,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -143,10 +150,10 @@ class FrigateSwitch(SwitchEntity):
     def icon(self):
         """Return the icon of the sensor."""
         if self._switch_name == "snapshots":
-            return "mdi:image-multiple"
+            return ICON_IMAGE_MULTIPLE
         if self._switch_name == "clips":
-            return "mdi:filmstrip-box-multiple"
-        return "hass:motion-sensor"
+            return ICON_FILM_MULTIPLE
+        return ICON_MOTION_SENSOR
 
     @property
     def available(self) -> bool:
