@@ -40,13 +40,18 @@ def get_friendly_name(name: str) -> str:
     return name.replace("_", " ").title()
 
 
-def get_cameras_zones_and_objects(config: dict[str, Any]) -> {(str, str)}:
-    """Get cameras/zones and tracking object tuples."""
-
+def get_cameras_and_objects(config: dict[str, Any]) -> {(str, str)}:
+    """Get cameras and tracking object tuples."""
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
         for obj in cam_config["objects"]["track"]:
             camera_objects.add((cam_name, obj))
+    return camera_objects
+
+
+def get_cameras_zones_and_objects(config: dict[str, Any]) -> {(str, str)}:
+    """Get cameras/zones and tracking object tuples."""
+    camera_objects = get_cameras_and_objects(config)
 
     zone_objects = set()
     for cam_name, obj in camera_objects:
