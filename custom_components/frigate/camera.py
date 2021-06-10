@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 import urllib.parse
 
 import async_timeout
@@ -9,59 +10,56 @@ import async_timeout
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import get_friendly_name, get_frigate_device_identifier
+from . import get_cameras_and_objects, get_friendly_name, get_frigate_device_identifier
 from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(
-    hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up the Synology NAS binary sensor."""
+    """Camera entry setup."""
 
     config = hass.data[DOMAIN]["config"]
 
-    entities = [
-        FrigateCamera(hass, entry, name, camera)
-        for name, camera in config["cameras"].items()
-    ]
-
-    camera_objects = [
-        (cam_name, obj)
-        for cam_name, cam_config in config["cameras"].items()
-        for obj in cam_config["objects"]["track"]
-    ]
-    mqtt_entities = [
-        FrigateMqttSnapshots(hass, entry, config, cam_name, obj_name)
-        for cam_name, obj_name in camera_objects
-    ]
-
-    async_add_entities(entities + mqtt_entities)
+    async_add_entities(
+        [
+            FrigateCamera(entry, name, camera)
+            for name, camera in config["cameras"].items()
+        ]
+        + [
+            FrigateMqttSnapshots(entry, config, cam_name, obj_name)
+            for cam_name, obj_name in get_cameras_and_objects(config)
+        ]
+    )
 
 
 class FrigateCamera(Camera):
     """Representation a Frigate camera."""
 
-    def __init__(self, hass, config_entry, name: str, config: dict):
+    def __init__(
+        self, config_entry: ConfigEntry, name: str, config: dict[str, Any]
+    ) -> None:
         """Initialize a Frigate camera."""
         super().__init__()
-        self.hass = hass
-        self.config_entry = config_entry
-        self._host = self.hass.data[DOMAIN]["host"]
+
+        self._config_entry = config_entry
         self._name = name
-        _LOGGER.debug("Adding camera: %s", name)
         self._config = config
+        self._host = config_entry.data["host"]
         self._latest_url = urllib.parse.urljoin(
             self._host, f"/api/{self._name}/latest.jpg?h=277"
         )
         parsed_host = urllib.parse.urlparse(self._host).hostname
         self._stream_source = f"rtmp://{parsed_host}/live/{self._name}"
         self._stream_enabled = self._config["rtmp"]["enabled"]
+
+        _LOGGER.debug("Adding camera: %s", name)
 
     @property
     def unique_id(self):
@@ -78,9 +76,9 @@ class FrigateCamera(Camera):
         """Return the device information."""
         return {
             "identifiers": {
-                get_frigate_device_identifier(self.config_entry, self._name)
+                get_frigate_device_identifier(self._config_entry, self._name)
             },
-            "via_device": get_frigate_device_identifier(self.config_entry),
+            "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._name),
             "model": VERSION,
             "manufacturer": NAME,
@@ -104,9 +102,7 @@ class FrigateCamera(Camera):
 
         with async_timeout.timeout(10):
             response = await websession.get(self._latest_url)
-
-            image = await response.read()
-            return image
+            return await response.read()
 
     async def stream_source(self) -> str:
         """Return the source of the stream."""
@@ -118,18 +114,21 @@ class FrigateCamera(Camera):
 class FrigateMqttSnapshots(Camera):
     """Frigate best camera class."""
 
-    def __init__(self, hass, entry, frigate_config, cam_name, obj_name):
+    def __init__(self, config_entry, frigate_config, cam_name, obj_name):
         """Construct a FrigateMqttSnapshots camera."""
         super().__init__()
-        self.hass = hass
-        self._entry = entry
+
+        self._config_entry = config_entry
         self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._last_image = None
         self._available = False
         self._sub_state = None
-        self._topic = f"{self._frigate_config['mqtt']['topic_prefix']}/{self._cam_name}/{self._obj_name}/snapshot"
+        self._topic = (
+            f"{self._frigate_config['mqtt']['topic_prefix']}"
+            f"/{self._cam_name}/{self._obj_name}/snapshot"
+        )
         self._availability_topic = (
             f"{self._frigate_config['mqtt']['topic_prefix']}/available"
         )
@@ -146,20 +145,12 @@ class FrigateMqttSnapshots(Camera):
         def state_message_received(msg):
             """Handle a new received MQTT state message."""
             self._last_image = msg.payload
+            self.async_write_ha_state()
 
         @callback
         def availability_message_received(msg):
             """Handle a new received MQTT availability message."""
-            payload = msg.payload
-
-            if payload == "online":
-                self._available = True
-            elif payload == "offline":
-                self._available = False
-            else:
-                _LOGGER.info("Invalid payload received for: %s", self.name)
-                return
-
+            self._available = msg.payload == "online"
             self.async_write_ha_state()
 
         self._sub_state = await async_subscribe_topics(
@@ -189,8 +180,10 @@ class FrigateMqttSnapshots(Camera):
     def device_info(self):
         """Get the device information."""
         return {
-            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
-            "via_device": get_frigate_device_identifier(self._entry),
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,

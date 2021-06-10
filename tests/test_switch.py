@@ -13,18 +13,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
-    TEST_SWITCH_FRONT_DOOR_CLIPS,
-    TEST_SWITCH_FRONT_DOOR_DETECT,
-    TEST_SWITCH_FRONT_DOOR_SNAPSHOTS,
+    TEST_SWITCH_FRONT_DOOR_CLIPS_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
     setup_mock_frigate_config_entry,
 )
 
 _LOGGER = logging.getLogger(__package__)
 
 SWITCH_ENTITY_IDS = [
-    TEST_SWITCH_FRONT_DOOR_DETECT,
-    TEST_SWITCH_FRONT_DOOR_CLIPS,
-    TEST_SWITCH_FRONT_DOOR_SNAPSHOTS,
+    TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_CLIPS_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
 ]
 
 
@@ -47,24 +47,24 @@ async def test_switch_state(hass: HomeAssistant) -> None:
 
     async_fire_mqtt_message(hass, "frigate/front_door/detect/state", "ON")
     await hass.async_block_till_done()
-    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT)
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "on"
 
     async_fire_mqtt_message(hass, "frigate/front_door/detect/state", "OFF")
     await hass.async_block_till_done()
-    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT)
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "off"
 
     async_fire_mqtt_message(hass, "frigate/front_door/detect/state", "INVALID_VALUE")
     await hass.async_block_till_done()
-    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT)
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "off"
 
     async_fire_mqtt_message(hass, "frigate/available", "offline")
-    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT)
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unavailable"
 
@@ -79,7 +79,7 @@ async def test_switch_turn_on(hass: HomeAssistant, mqtt_mock: Any) -> None:
     await hass.services.async_call(
         SWITCH_DOMAIN,
         SERVICE_TURN_ON,
-        {ATTR_ENTITY_ID: TEST_SWITCH_FRONT_DOOR_DETECT},
+        {ATTR_ENTITY_ID: TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID},
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
@@ -97,7 +97,7 @@ async def test_switch_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
     await hass.services.async_call(
         SWITCH_DOMAIN,
         SERVICE_TURN_OFF,
-        {ATTR_ENTITY_ID: TEST_SWITCH_FRONT_DOOR_DETECT},
+        {ATTR_ENTITY_ID: TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID},
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
@@ -131,9 +131,9 @@ async def test_switch_icon(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass)
 
     expected_results = {
-        TEST_SWITCH_FRONT_DOOR_DETECT: "hass:motion-sensor",
-        TEST_SWITCH_FRONT_DOOR_CLIPS: "mdi:filmstrip-box-multiple",
-        TEST_SWITCH_FRONT_DOOR_SNAPSHOTS: "mdi:image-multiple",
+        TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID: "hass:motion-sensor",
+        TEST_SWITCH_FRONT_DOOR_CLIPS_ENTITY_ID: "mdi:filmstrip-box-multiple",
+        TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID: "mdi:image-multiple",
     }
 
     for entity_id, icon in expected_results.items():

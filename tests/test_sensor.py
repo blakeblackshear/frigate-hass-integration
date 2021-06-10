@@ -35,11 +35,11 @@ from . import (
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
-    TEST_SENSOR_FRONT_DOOR_CAMERA_FPS,
-    TEST_SENSOR_FRONT_DOOR_DETECTION_FPS,
+    TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
-    TEST_SENSOR_FRONT_DOOR_PROCESS_FPS,
-    TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS,
+    TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
     TEST_STATS,
     create_mock_frigate_client,
@@ -118,10 +118,10 @@ async def test_object_count_icon(object_icon, hass: HomeAssistant) -> None:
             "front_door",
             {
                 TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
-                TEST_SENSOR_FRONT_DOOR_CAMERA_FPS,
-                TEST_SENSOR_FRONT_DOOR_DETECTION_FPS,
-                TEST_SENSOR_FRONT_DOOR_PROCESS_FPS,
-                TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS,
+                TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+                TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+                TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
+                TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
             },
         ),
         (
@@ -263,7 +263,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
 
-    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "4"
     assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
@@ -276,7 +276,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
-    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "4"
 
@@ -284,7 +284,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
-    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
 
@@ -292,6 +292,6 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
-    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS)
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
