@@ -594,9 +594,9 @@ class FrigateSource(MediaSource):
                 if (
                     (after is None or d["timestamp"] >= after)
                     and (before is None or d["timestamp"] < before)
-                    and camera in ("", d["camera"])
-                    and label in ("", d["label"])
-                    and zone in ("", d["zones"])
+                    and (camera == "" or camera in d["camera"])
+                    and (label == "" or label in d["label"])
+                    and (zone == "" or zone in d["zones"])
                 )
             ]
         )
