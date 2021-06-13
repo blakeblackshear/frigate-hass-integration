@@ -166,6 +166,79 @@ TEST_STATS = {
         "version": "0.8.4-09a4d6d",
     },
 }
+TEST_EVENT_SUMMARY = [
+    # Today
+    {
+        "camera": "front_door",
+        "count": 51,
+        "day": "2021-06-04",
+        "label": "person",
+        "zones": [],
+    },
+    {
+        "camera": "front_door",
+        "count": 52,
+        "day": "2021-06-04",
+        "label": "person",
+        "zones": ["steps"],
+    },
+    # Yesterday
+    {
+        "camera": "front_door",
+        "count": 53,
+        "day": "2021-06-03",
+        "label": "person",
+        "zones": [],
+    },
+    # Other content from this month
+    {
+        "camera": "front_door",
+        "count": 54,
+        "day": "2021-06-02",
+        "label": "person",
+        "zones": [],
+    },
+    # Last month
+    {
+        "camera": "front_door",
+        "count": 55,
+        "day": "2021-05-01",
+        "label": "person",
+        "zones": [],
+    },
+    # Other content from this year
+    {
+        "camera": "front_door",
+        "count": 56,
+        "day": "2021-01-01",
+        "label": "person",
+        "zones": [],
+    },
+    # Empty camera
+    {
+        "camera": "empty_camera",
+        "count": 0,
+        "day": "2021-06-04",
+        "label": "person",
+        "zones": [],
+    },
+    # Empty label
+    {
+        "camera": "front_door",
+        "count": 0,
+        "day": "2021-06-04",
+        "label": "car",
+        "zones": [],
+    },
+    # Empty zone
+    {
+        "camera": "front_door",
+        "count": 0,
+        "day": "2021-06-04",
+        "label": "person",
+        "zones": ["empty"],
+    },
+]
 
 
 def create_mock_frigate_client() -> AsyncMock:
@@ -173,6 +246,7 @@ def create_mock_frigate_client() -> AsyncMock:
     mock_client = AsyncMock()
     mock_client.async_get_stats = AsyncMock(return_value=TEST_STATS)
     mock_client.async_get_config = AsyncMock(return_value=TEST_CONFIG)
+    mock_client.async_get_event_summary = AsyncMock(return_value=TEST_EVENT_SUMMARY)
     return mock_client
 
 
@@ -205,6 +279,8 @@ async def setup_mock_frigate_config_entry(
     with patch(
         "custom_components.frigate.FrigateApiClient",
         return_value=client,
+    ), patch(
+        "custom_components.frigate.media_source.FrigateApiClient", return_value=client
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()

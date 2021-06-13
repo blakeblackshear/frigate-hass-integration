@@ -1,4 +1,4 @@
-"""Frigate Media Source Implementation."""
+"""Frigate Media Source."""
 from __future__ import annotations
 
 import datetime as dt
@@ -25,7 +25,7 @@ from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from . import get_friendly_name
 from .api import FrigateApiClient
-from .const import DOMAIN
+from .const import DOMAIN, NAME
 
 _LOGGER = logging.getLogger(__name__)
 MIME_TYPE = "video/mp4"
@@ -54,14 +54,14 @@ class FrigateSource(MediaSource):
         """Initialize Frigate source."""
         super().__init__(DOMAIN)
         self.hass = hass
-        session = async_get_clientsession(hass)
-        host = self.hass.data[DOMAIN]["host"]
-        self.client = FrigateApiClient(host, session)
-        self.last_summary_refresh = None
-        self.summary_data = None
-        self.cameras = []
-        self.labels = []
-        self.zones = []
+        self._client = FrigateApiClient(
+            self.hass.data[DOMAIN]["host"], async_get_clientsession(hass)
+        )
+        self._last_summary_refresh = None
+        self._summary_data = None
+        self._cameras = []
+        self._labels = []
+        self._zones = []
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
@@ -70,7 +70,7 @@ class FrigateSource(MediaSource):
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
     ) -> BrowseMediaSource:
-        """Return media."""
+        """Browse media."""
 
         if item.identifier is None:
             return BrowseMediaSource(
@@ -79,7 +79,7 @@ class FrigateSource(MediaSource):
                 media_class=MEDIA_CLASS_DIRECTORY,
                 children_media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_CLASS_VIDEO,
-                title="Frigate",
+                title=NAME,
                 can_play=False,
                 can_expand=True,
                 thumbnail=None,
@@ -113,27 +113,26 @@ class FrigateSource(MediaSource):
 
         if item.identifier.startswith("clips"):
             identifier = None
-            _LOGGER.debug("item.identifier: %s", item.identifier)
-            if item.identifier == CLIPS_ROOT:
-                # if the summary data is old, refresh
-                if (
-                    self.last_summary_refresh is None
-                    or dt.datetime.now().timestamp() - self.last_summary_refresh > 60
-                ):
-                    _LOGGER.debug("refreshing summary data")
-                    self.last_summary_refresh = dt.datetime.now().timestamp()
-                    self.summary_data = await self.client.async_get_event_summary()
-                    self.cameras = list({d["camera"] for d in self.summary_data})
-                    self.labels = list({d["label"] for d in self.summary_data})
-                    self.zones = list(
-                        {zone for d in self.summary_data for zone in d["zones"]}
+
+            # If the summary data is old, refresh it.
+            if (
+                self._last_summary_refresh is None
+                or dt.datetime.now().timestamp() - self._last_summary_refresh > 60
+            ):
+                _LOGGER.debug("refreshing summary data")
+                self._last_summary_refresh = dt.datetime.now().timestamp()
+                self._summary_data = await self._client.async_get_event_summary()
+                self._cameras = list({d["camera"] for d in self._summary_data})
+                self._labels = list({d["label"] for d in self._summary_data})
+                self._zones = list(
+                    {zone for d in self._summary_data for zone in d["zones"]}
+                )
+                for data in self._summary_data:
+                    data["timestamp"] = int(
+                        dt.datetime.strptime(data["day"], "%Y-%m-%d")
+                        .astimezone(DEFAULT_TIME_ZONE)
+                        .timestamp()
                     )
-                    for data in self.summary_data:
-                        data["timestamp"] = int(
-                            dt.datetime.strptime(data["day"], "%Y-%m-%d")
-                            .astimezone(DEFAULT_TIME_ZONE)
-                            .timestamp()
-                        )
 
             identifier_parts = item.identifier.split("/")
             identifier = {
@@ -146,7 +145,7 @@ class FrigateSource(MediaSource):
                 "zone": identifier_parts[6],
             }
 
-            events = await self.client.async_get_events(
+            events = await self._client.async_get_events(
                 after=identifier["after"],
                 before=identifier["before"],
                 camera=identifier["camera"],
@@ -169,11 +168,11 @@ class FrigateSource(MediaSource):
 
             if identifier["camera"] == "":
                 path = "/".join([s for s in item.identifier.split("/")[1:] if s != ""])
-                folders = await self.client.async_get_recordings_folder(path)
+                folders = await self._client.async_get_recordings_folder(path)
                 return self._browse_recording_folders(identifier, folders)
 
             path = "/".join([s for s in item.identifier.split("/")[1:] if s != ""])
-            recordings = await self.client.async_get_recordings_folder(path)
+            recordings = await self._client.async_get_recordings_folder(path)
             return self._browse_recordings(identifier, recordings)
 
     def _browse_clips(self, identifier, events) -> BrowseMediaSource:
@@ -210,7 +209,11 @@ class FrigateSource(MediaSource):
         event_items = self._build_clip_response(events)
 
         # if you are at the limit, but not at the root
-        if len(event_items) == ITEM_LIMIT and not identifier["original"] == CLIPS_ROOT:
+        if (
+            count > 0
+            and len(event_items) == ITEM_LIMIT
+            and not identifier["original"] == CLIPS_ROOT
+        ):
             # only render if > 10% is represented in view
             if ITEM_LIMIT / float(count) > 0.1:
                 base.children.extend(event_items)
@@ -279,7 +282,7 @@ class FrigateSource(MediaSource):
 
     def _build_camera_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for camera in self.cameras:
+        for camera in self._cameras:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -310,7 +313,7 @@ class FrigateSource(MediaSource):
 
     def _build_label_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for label in self.labels:
+        for label in self._labels:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -341,7 +344,7 @@ class FrigateSource(MediaSource):
 
     def _build_zone_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
         sources = []
-        for zone in self.zones:
+        for zone in self._zones:
             after = int(identifier["after"]) if not identifier["after"] == "" else None
             before = (
                 int(identifier["before"]) if not identifier["before"] == "" else None
@@ -590,7 +593,7 @@ class FrigateSource(MediaSource):
         return sum(
             [
                 d["count"]
-                for d in self.summary_data
+                for d in self._summary_data
                 if (
                     (after is None or d["timestamp"] >= after)
                     and (before is None or d["timestamp"] < before)

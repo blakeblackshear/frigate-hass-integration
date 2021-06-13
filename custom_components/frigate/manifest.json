@@ -6,6 +6,7 @@
     "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
     "dependencies": [
         "http",
+        "media_source",
         "mqtt"
     ],
     "config_flow": true,
