@@ -15,6 +15,12 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 
+# ==============================================================================
+# Please do not add HomeAssistant specific imports/functionality to this module,
+# so that this library can be optionally moved to a different repo at a later
+# date.
+# ==============================================================================
+
 
 class FrigateApiClient:
     """Frigate API client."""
@@ -56,10 +62,7 @@ class FrigateApiClient:
 
     async def async_get_event_summary(self) -> dict:
         """Get data from the API."""
-        params = {"has_clip": 1}
-        params = urllib.parse.urlencode(
-            {k: v for k, v in params.items() if v is not None and v != ""}
-        )
+        params = urllib.parse.urlencode({"has_clip": 1})
         url = urllib.parse.urljoin(self._host, f"/api/events/summary?{params}")
         return await self.api_wrapper("get", url)
 
