@@ -18,7 +18,7 @@ from homeassistant.util import slugify
 
 from .api import FrigateApiClient
 from .const import DOMAIN, PLATFORMS, STARTUP_MESSAGE
-from .views import ClipsProxy, NotificationProxy, RecordingsProxy
+from .views import ClipsProxyView, NotificationsProxyView, RecordingsProxyView
 
 SCAN_INTERVAL = timedelta(seconds=5)
 
@@ -75,9 +75,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # register views
     websession = hass.helpers.aiohttp_client.async_get_clientsession()
-    hass.http.register_view(ClipsProxy(frigate_host, websession))
-    hass.http.register_view(RecordingsProxy(frigate_host, websession))
-    hass.http.register_view(NotificationProxy(frigate_host, websession))
+    hass.http.register_view(ClipsProxyView(frigate_host, websession))
+    hass.http.register_view(RecordingsProxyView(frigate_host, websession))
+    hass.http.register_view(NotificationsProxyView(frigate_host, websession))
 
     # setup api polling
     session = async_get_clientsession(hass)

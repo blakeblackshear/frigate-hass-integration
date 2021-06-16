@@ -12,7 +12,6 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_VIDEO,
 )
 from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
-from homeassistant.components.media_source.error import MediaSourceError
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
     MediaSource,
@@ -36,16 +35,12 @@ CLIPS_ROOT = "clips//////"
 RECORDINGS_ROOT = "recordings////"
 
 
-class IncompatibleMediaSource(MediaSourceError):
-    """Incompatible media source attributes."""
-
-
 async def async_get_media_source(hass: HomeAssistant):
     """Set up Frigate media source."""
-    return FrigateSource(hass)
+    return FrigateMediaSource(hass)
 
 
-class FrigateSource(MediaSource):
+class FrigateMediaSource(MediaSource):
     """Provide Frigate camera recordings as media sources."""
 
     name: str = "Frigate"
