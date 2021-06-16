@@ -49,7 +49,7 @@ async def hass_client_local_frigate(
     """Point the integration at a local fake Frigate server."""
     await async_setup_component(hass, "http", {"http": {}})
 
-    def handler(request: web.Request) -> web.Response:
+    async def handler(request: web.Request) -> web.Response:
         for header in (
             hdrs.CONTENT_LENGTH,
             hdrs.CONTENT_ENCODING,
