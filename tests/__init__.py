@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
+from aiohttp import web
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.const import DOMAIN, NAME
@@ -239,6 +240,13 @@ TEST_EVENT_SUMMARY = [
         "zones": ["empty"],
     },
 ]
+
+
+async def start_frigate_server(aiohttp_server: Any, handlers: list[web.route]) -> Any:
+    """Start a fake Frigate server."""
+    app = web.Application()
+    app.add_routes(handlers)
+    return await aiohttp_server(app)
 
 
 def create_mock_frigate_client() -> AsyncMock:

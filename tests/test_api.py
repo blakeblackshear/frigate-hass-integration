@@ -12,6 +12,8 @@ import pytest
 
 from custom_components.frigate.api import FrigateApiClient
 
+from . import start_frigate_server
+
 _LOGGER = logging.getLogger(__package__)
 
 # ==============================================================================
@@ -26,13 +28,6 @@ async def aiohttp_session() -> aiohttp.ClientSession:
     """Test fixture for aiohttp.ClientSerssion."""
     async with aiohttp.ClientSession() as session:
         yield session
-
-
-async def _start_frigate_server(aiohttp_server: Any, handlers: list[web.route]) -> Any:
-    """Start a fake Frigate server."""
-    app = web.Application()
-    app.add_routes(handlers)
-    return await aiohttp_server(app)
 
 
 def _assert_request_params(
@@ -50,7 +45,7 @@ async def test_async_get_stats(
     stats_in = {"detection_fps": 8.1}
     stats_handler = Mock(return_value=web.json_response(stats_in))
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server, [web.get("/api/stats", stats_handler)]
     )
 
@@ -94,7 +89,7 @@ async def test_async_get_events(
         )
         return web.json_response(events_in)
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server, [web.get("/api/events", events_handler)]
     )
 
@@ -128,7 +123,7 @@ async def test_async_get_event_summary(
         _assert_request_params(request, {"has_clip": "1"})
         return web.json_response(events_summary_in)
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server, [web.get("/api/events/summary", events_summary_handler)]
     )
 
@@ -143,7 +138,7 @@ async def test_async_get_config(
     config_in = {"cameras": {"front_door": {"camera_config": "goes here"}}}
     config_handler = Mock(return_value=web.json_response(config_in))
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server, [web.get("/api/config", config_handler)]
     )
 
@@ -165,7 +160,7 @@ async def test_async_get_recordings_folder(
 
     recordings_handler = Mock(return_value=web.json_response(recordings_in))
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server, [web.get("/recordings/moo/", recordings_handler)]
     )
 
@@ -183,7 +178,7 @@ async def test_api_wrapper_methods(
     patch_handler = Mock(return_value=web.json_response({"method": "PATCH"}))
     post_handler = Mock(return_value=web.json_response({"method": "POST"}))
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server,
         [
             web.get("/get", get_handler),
@@ -215,7 +210,7 @@ async def test_api_wrapper_exceptions(
 ) -> None:
     """Test the general api_wrapper."""
 
-    server = await _start_frigate_server(
+    server = await start_frigate_server(
         aiohttp_server,
         [
             web.get("/get", Mock(return_value=web.json_response({}))),
