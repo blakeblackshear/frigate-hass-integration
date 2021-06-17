@@ -31,7 +31,7 @@ class ProxyView(HomeAssistantView):
         """Create a URL."""
         raise NotImplementedError  # pragma: no cover
 
-    async def _handle(
+    async def get(
         self,
         request: web.Request,
         **kwargs,
@@ -44,13 +44,6 @@ class ProxyView(HomeAssistantView):
             _LOGGER.debug("Reverse proxy error for %s: %s", request.rel_url, err)
 
         raise HTTPBadGateway() from None
-
-    get = _handle
-    post = _handle
-    put = _handle
-    delete = _handle
-    patch = _handle
-    options = _handle
 
     async def _handle_request(
         self, request: web.Request, **kwargs: Any
