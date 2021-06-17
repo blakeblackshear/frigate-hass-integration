@@ -184,7 +184,7 @@ async def test_async_browse_media_clips_drilldown(
         "can_expand": False,
         "children_media_class": None,
         "thumbnail": "data:image/jpeg;base64,thumbnail",
-        "title": "06/11/21 11:36 PM Person 72% | 8s",
+        "title": "2021-06-11 23:36:23 [8s, Person 72%]",
     } in media.as_dict()["children"]
 
     assert {
@@ -494,7 +494,7 @@ async def test_async_browse_media_recordings_root(
                 "media_content_id": "media-source://frigate/recordings/2021-06/04/15/",
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "3:00:00 PM",
+                "title": "15:00:00",
             }
         ],
     }
@@ -519,7 +519,7 @@ async def test_async_browse_media_recordings_root(
     )
 
     assert media.as_dict() == {
-        "title": "3:00:00 PM",
+        "title": "15:00:00",
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": "media-source://frigate/recordings/2021-06/04/15/",
@@ -600,7 +600,7 @@ async def test_async_browse_media_recordings_for_camera(
                 "media_content_id": "media-source://frigate/recordings/2021-06/04/15/front_door/46.08.mp4",
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "3:46:08 PM",
+                "title": "15:46:08",
             },
             {
                 "can_expand": False,
@@ -610,7 +610,7 @@ async def test_async_browse_media_recordings_for_camera(
                 "media_content_id": "media-source://frigate/recordings/2021-06/04/15/front_door/47.08.mp4",
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "3:47:08 PM",
+                "title": "15:47:08",
             },
         ],
     }

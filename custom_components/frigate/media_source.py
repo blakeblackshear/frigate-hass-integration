@@ -20,6 +20,7 @@ from homeassistant.components.media_source.models import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from . import get_friendly_name
@@ -267,7 +268,7 @@ class FrigateMediaSource(MediaSource):
                 identifier=f"clips/{event['camera']}-{event['id']}.mp4",
                 media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_TYPE_VIDEO,
-                title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime('%x %I:%M %p')} {event['label'].capitalize()} {int(event['top_score']*100)}% | {int(event['end_time']-event['start_time'])}s",
+                title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{int(event['end_time']-event['start_time'])}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
                 can_play=True,
                 can_expand=False,
                 thumbnail=f"data:image/jpeg;base64,{event['thumbnail']}",
@@ -615,13 +616,13 @@ class FrigateMediaSource(MediaSource):
             minute_seconds = folder["name"].replace(".mp4", "")
             return dt.datetime.strptime(
                 f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
-            ).strftime("%-I:%M:%S %p")
+            ).strftime("%T")
 
         if identifier["hour"] != "":
             if folder is None:
                 return dt.datetime.strptime(
                     f"{identifier['hour']}.00.00", "%H.%M.%S"
-                ).strftime("%-I:%M:%S %p")
+                ).strftime("%T")
             return get_friendly_name(folder["name"])
 
         if identifier["day"] != "":
@@ -630,7 +631,7 @@ class FrigateMediaSource(MediaSource):
                     f"{identifier['year_month']}-{identifier['day']}", "%Y-%m-%d"
                 ).strftime("%B %d")
             return dt.datetime.strptime(f"{folder['name']}.00.00", "%H.%M.%S").strftime(
-                "%-I:%M:%S %p"
+                "%T"
             )
 
         if identifier["year_month"] != "":
