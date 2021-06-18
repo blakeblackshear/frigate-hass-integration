@@ -3,3 +3,4 @@ homeassistant==2021.6.2
 paho-mqtt==1.5.1
 homeassistant==2021.6.2
 python-dateutil
+yarl
