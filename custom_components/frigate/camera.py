@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-import urllib.parse
 
 import async_timeout
+from yarl import URL
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
@@ -52,11 +52,10 @@ class FrigateCamera(Camera):
         self._name = name
         self._config = config
         self._host = config_entry.data["host"]
-        self._latest_url = urllib.parse.urljoin(
-            self._host, f"/api/{self._name}/latest.jpg?h=277"
+        self._latest_url = str(
+            URL(self._host) / f"api/{self._name}/latest.jpg" % {"h": 277}
         )
-        parsed_host = urllib.parse.urlparse(self._host).hostname
-        self._stream_source = f"rtmp://{parsed_host}/live/{self._name}"
+        self._stream_source = f"rtmp://{URL(self._host).host}/live/{self._name}"
         self._stream_enabled = self._config["rtmp"]["enabled"]
 
         _LOGGER.debug("Adding camera: %s", name)

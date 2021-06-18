@@ -4,10 +4,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
-import urllib.parse
 
 import aiohttp
 import async_timeout
+from yarl import URL
 
 TIMEOUT = 10
 
@@ -32,8 +32,7 @@ class FrigateApiClient:
 
     async def async_get_stats(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/api/stats")
-        return await self.api_wrapper("get", url)
+        return await self.api_wrapper("get", str(URL(self._host) / "api/stats"))
 
     async def async_get_events(
         self,
@@ -54,27 +53,29 @@ class FrigateApiClient:
             "limit": limit,
             "has_clip": 1,
         }
-        params = urllib.parse.urlencode(
-            {k: v for k, v in params.items() if v is not None and v != ""}
+
+        return await self.api_wrapper(
+            "get",
+            str(
+                URL(self._host) / "api/events" % {k: v for k, v in params.items() if v}
+            ),
         )
-        url = urllib.parse.urljoin(self._host, f"/api/events?{params}")
-        return await self.api_wrapper("get", url)
 
     async def async_get_event_summary(self) -> dict:
         """Get data from the API."""
-        params = urllib.parse.urlencode({"has_clip": 1})
-        url = urllib.parse.urljoin(self._host, f"/api/events/summary?{params}")
-        return await self.api_wrapper("get", url)
+        return await self.api_wrapper(
+            "get", str(URL(self._host) / "api/events/summary" % {"has_clip": 1})
+        )
 
     async def async_get_config(self) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, "/api/config")
-        return await self.api_wrapper("get", url)
+        return await self.api_wrapper("get", str(URL(self._host) / "api/config"))
 
     async def async_get_recordings_folder(self, path) -> dict:
         """Get data from the API."""
-        url = urllib.parse.urljoin(self._host, f"/recordings/{path}/")
-        return await self.api_wrapper("get", url)
+        return await self.api_wrapper(
+            "get", str(URL(self._host) / f"recordings/{path}/")
+        )
 
     async def api_wrapper(
         self,

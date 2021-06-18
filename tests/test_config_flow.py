@@ -86,3 +86,23 @@ async def test_user_connection_failure(hass: HomeAssistant) -> None:
 
     assert result["type"] == "form"
     assert result["errors"]["base"] == "cannot_connect"
+
+
+async def test_user_invalid_url(hass: HomeAssistant) -> None:
+    """Test connection failure."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_HOST: "THIS IS NOT A URL",
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "form"
+    assert result["errors"]["base"] == "invalid_url"

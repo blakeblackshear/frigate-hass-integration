@@ -4,12 +4,12 @@ from __future__ import annotations
 from ipaddress import ip_address
 import logging
 from typing import Any
-import urllib.parse
 
 import aiohttp
 from aiohttp import hdrs, web
 from aiohttp.web_exceptions import HTTPBadGateway
 from multidict import CIMultiDict
+from yarl import URL
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.const import HTTP_NOT_FOUND
@@ -89,7 +89,7 @@ class ClipsProxyView(ProxyView):
 
     def _create_url(self, path: str) -> str:
         """Create URL."""
-        return urllib.parse.urljoin(self._host, f"/clips/{path}")
+        return str(URL(self._host) / "clips" / path)
 
 
 class RecordingsProxyView(ProxyView):
@@ -100,7 +100,7 @@ class RecordingsProxyView(ProxyView):
 
     def _create_url(self, path: str) -> str:
         """Create URL."""
-        return urllib.parse.urljoin(self._host, f"/recordings/{path}")
+        return str(URL(self._host) / "recordings" / path)
 
 
 class NotificationsProxyView(ProxyView):
@@ -113,17 +113,14 @@ class NotificationsProxyView(ProxyView):
     def _create_url(self, event_id: str, path: str) -> str | None:
         """Create URL to service."""
         if path == "thumbnail.jpg":
-            return urllib.parse.urljoin(
-                self._host, f"/api/events/{event_id}/thumbnail.jpg"
-            )
+            return str(URL(self._host) / f"api/events/{event_id}/thumbnail.jpg")
+
         if path == "snapshot.jpg":
-            return urllib.parse.urljoin(
-                self._host, f"/api/events/{event_id}/snapshot.jpg"
-            )
+            return str(URL(self._host) / f"api/events/{event_id}/snapshot.jpg")
 
         camera = path.split("/")[0]
         if path.endswith("clip.mp4"):
-            return urllib.parse.urljoin(self._host, f"/clips/{camera}-{event_id}.mp4")
+            return str(URL(self._host) / f"clips/{camera}-{event_id}.mp4")
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
