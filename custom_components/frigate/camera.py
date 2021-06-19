@@ -24,7 +24,7 @@ from . import (
 )
 from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+_LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -63,8 +63,6 @@ class FrigateCamera(FrigateEntity, Camera):
         )
         self._stream_source = f"rtmp://{URL(self._host).host}/live/{self._name}"
         self._stream_enabled = self._config["rtmp"]["enabled"]
-
-        _LOGGER.debug("Adding camera: %s", name)
 
     @property
     def unique_id(self) -> str:

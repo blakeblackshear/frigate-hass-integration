@@ -46,7 +46,7 @@ from . import (
     setup_mock_frigate_config_entry,
 )
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 
 async def test_object_count_sensor(hass: HomeAssistant) -> None:

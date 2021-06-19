@@ -12,6 +12,7 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_VIDEO,
 )
 from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
+from homeassistant.components.media_source.error import MediaSourceError
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
     MediaSource,
@@ -24,7 +25,7 @@ from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from . import get_friendly_name
-from .api import FrigateApiClient
+from .api import FrigateApiClient, FrigateApiClientError
 from .const import DOMAIN, NAME
 
 _LOGGER = logging.getLogger(__name__)
@@ -115,9 +116,12 @@ class FrigateMediaSource(MediaSource):
                 self._last_summary_refresh is None
                 or dt.datetime.now().timestamp() - self._last_summary_refresh > 60
             ):
-                _LOGGER.debug("refreshing summary data")
                 self._last_summary_refresh = dt.datetime.now().timestamp()
-                self._summary_data = await self._client.async_get_event_summary()
+                try:
+                    self._summary_data = await self._client.async_get_event_summary()
+                except FrigateApiClientError as exc:
+                    raise MediaSourceError from exc
+
                 self._cameras = list({d["camera"] for d in self._summary_data})
                 self._labels = list({d["label"] for d in self._summary_data})
                 self._zones = list(
@@ -141,14 +145,17 @@ class FrigateMediaSource(MediaSource):
                 "zone": identifier_parts[6],
             }
 
-            events = await self._client.async_get_events(
-                after=identifier["after"],
-                before=identifier["before"],
-                camera=identifier["camera"],
-                label=identifier["label"],
-                zone=identifier["zone"],
-                limit=10000 if identifier["name"].endswith(".all") else ITEM_LIMIT,
-            )
+            try:
+                events = await self._client.async_get_events(
+                    after=identifier["after"],
+                    before=identifier["before"],
+                    camera=identifier["camera"],
+                    label=identifier["label"],
+                    zone=identifier["zone"],
+                    limit=10000 if identifier["name"].endswith(".all") else ITEM_LIMIT,
+                )
+            except FrigateApiClientError as exc:
+                raise MediaSourceError from exc
 
             return self._browse_clips(identifier, events)
 
@@ -164,11 +171,17 @@ class FrigateMediaSource(MediaSource):
 
             if identifier["camera"] == "":
                 path = "/".join([s for s in item.identifier.split("/")[1:] if s != ""])
-                folders = await self._client.async_get_recordings_folder(path)
+                try:
+                    folders = await self._client.async_get_recordings_folder(path)
+                except FrigateApiClientError as exc:
+                    raise MediaSourceError from exc
                 return self._browse_recording_folders(identifier, folders)
 
             path = "/".join([s for s in item.identifier.split("/")[1:] if s != ""])
-            recordings = await self._client.async_get_recordings_folder(path)
+            try:
+                recordings = await self._client.async_get_recordings_folder(path)
+            except FrigateApiClientError as exc:
+                raise MediaSourceError from exc
             return self._browse_recordings(identifier, recordings)
 
     def _browse_clips(self, identifier, events) -> BrowseMediaSource:

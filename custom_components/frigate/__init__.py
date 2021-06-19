@@ -14,18 +14,19 @@ from homeassistant.components.mqtt.models import Message
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
-from .api import FrigateApiClient
+from .api import FrigateApiClient, FrigateApiClientError
 from .const import DOMAIN, PLATFORMS, STARTUP_MESSAGE
 from .views import ClipsProxyView, NotificationsProxyView, RecordingsProxyView
 
 SCAN_INTERVAL = timedelta(seconds=5)
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+_LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 def get_frigate_device_identifier(
@@ -92,8 +93,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    # get and store config info
-    config = await client.async_get_config()
+    try:
+        config = await client.async_get_config()
+    except FrigateApiClientError as exc:
+        raise ConfigEntryNotReady from exc
+
     hass.data[DOMAIN]["config"] = config
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
@@ -106,15 +110,15 @@ class FrigateDataUpdateCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, client: FrigateApiClient):
         """Initialize."""
-        self._api: FrigateApiClient = client
+        self._api = client
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via library."""
         try:
             return await self._api.async_get_stats()
-        except Exception as exception:
-            raise UpdateFailed() from exception
+        except FrigateApiClientError as exc:
+            raise UpdateFailed from exc
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:

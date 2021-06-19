@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
+from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN, NAME, VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -19,7 +20,7 @@ from . import (
     setup_mock_frigate_config_entry,
 )
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 
 async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
@@ -74,7 +75,7 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
     """Verify a failed API call results in unsuccessful setup."""
     client = create_mock_frigate_client()
-    client.async_get_stats = AsyncMock(side_effect=Exception)
+    client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
     await setup_mock_frigate_config_entry(hass, client=client)
     assert not hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
 

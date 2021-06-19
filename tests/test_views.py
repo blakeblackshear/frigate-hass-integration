@@ -20,7 +20,7 @@ from . import (
     start_frigate_server,
 )
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class FakeStreamResponse(web.StreamResponse):
