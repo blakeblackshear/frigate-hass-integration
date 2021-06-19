@@ -553,12 +553,18 @@ async def test_async_browse_media_recordings_root(
         ],
     }
 
+    # Verify an inappropriate identifier will result in a MediaSourceError.
+    with pytest.raises(MediaSourceError):
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/recordings/2021-06/04/NOT_AN_HOUR/"
+        )
+
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_recordings_for_camera(
-    frigate_client: AsyncMock, hass: HomeAssistant
+    caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
-    """Test recordings root."""
+    """Test recordings for a camera."""
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
@@ -616,6 +622,26 @@ async def test_async_browse_media_recordings_for_camera(
             },
         ],
     }
+
+    # Verify an unexpected folder name will result in a suitable log message.
+    frigate_client.async_get_recordings_folder = AsyncMock(
+        return_value=[
+            {
+                "name": "NOT_A_MINUTE.NOT_AN_HOUR.mp4",
+                "type": "file",
+                "mtime": "Sun, 04 June 2021 22:47:08 GMT",
+                "size": 5480823,
+            }
+        ]
+    )
+
+    await media_source.async_browse_media(
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}/recordings/2021-06/04/15/front_door",
+    )
+
+    # There's a bogus value for an hour, that should be skipped.
+    assert "Skipping non-standard recording name" in caplog.text
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)

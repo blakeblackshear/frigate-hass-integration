@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+from typing import Any
 
 from dateutil.relativedelta import relativedelta
 
@@ -622,51 +623,90 @@ class FrigateMediaSource(MediaSource):
         return "/".join(identifier_fragments)
 
     @classmethod
-    def _generate_recording_title(cls, identifier, folder=None):
-        if identifier["camera"] != "":
-            if folder is None:
-                return get_friendly_name(identifier["camera"])
-            minute_seconds = folder["name"].replace(".mp4", "")
-            return dt.datetime.strptime(
-                f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
-            ).strftime("%T")
-
-        if identifier["hour"] != "":
-            if folder is None:
+    def _generate_recording_title(
+        cls, identifier: dict[str, Any], folder: str = None
+    ) -> str | None:
+        """Generate recording title."""
+        try:
+            if identifier["camera"] != "":
+                if folder is None:
+                    return get_friendly_name(identifier["camera"])
+                minute_seconds = folder["name"].replace(".mp4", "")
                 return dt.datetime.strptime(
-                    f"{identifier['hour']}.00.00", "%H.%M.%S"
+                    f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
                 ).strftime("%T")
-            return get_friendly_name(folder["name"])
 
-        if identifier["day"] != "":
-            if folder is None:
+            if identifier["hour"] != "":
+                if folder is None:
+                    return dt.datetime.strptime(
+                        f"{identifier['hour']}.00.00", "%H.%M.%S"
+                    ).strftime("%T")
+                return get_friendly_name(folder["name"])
+
+            if identifier["day"] != "":
+                if folder is None:
+                    return dt.datetime.strptime(
+                        f"{identifier['year_month']}-{identifier['day']}", "%Y-%m-%d"
+                    ).strftime("%B %d")
                 return dt.datetime.strptime(
-                    f"{identifier['year_month']}-{identifier['day']}", "%Y-%m-%d"
+                    f"{folder['name']}.00.00", "%H.%M.%S"
+                ).strftime("%T")
+
+            if identifier["year_month"] != "":
+                if folder is None:
+                    return dt.datetime.strptime(
+                        f"{identifier['year_month']}", "%Y-%m"
+                    ).strftime("%B %Y")
+                return dt.datetime.strptime(
+                    f"{identifier['year_month']}-{folder['name']}", "%Y-%m-%d"
                 ).strftime("%B %d")
-            return dt.datetime.strptime(f"{folder['name']}.00.00", "%H.%M.%S").strftime(
-                "%T"
-            )
 
-        if identifier["year_month"] != "":
             if folder is None:
-                return dt.datetime.strptime(
-                    f"{identifier['year_month']}", "%Y-%m"
-                ).strftime("%B %Y")
-            return dt.datetime.strptime(
-                f"{identifier['year_month']}-{folder['name']}", "%Y-%m-%d"
-            ).strftime("%B %d")
+                return [s for s in identifier["original"].split("/") if s != ""][
+                    -1
+                ].title()
+            return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
+        except ValueError:
+            return None
 
-        if folder is None:
-            return [s for s in identifier["original"].split("/") if s != ""][-1].title()
-        return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
+    def _get_recording_base_media_source(
+        self, identifier: dict[str, Any]
+    ) -> BrowseMediaSource:
+        """Get the base BrowseMediaSource object for a recording identifier."""
+        title = self._generate_recording_title(identifier)
 
-    def _browse_recording_folders(self, identifier, folders):
-        children = []
+        # Must be able to generate a title for the source folder.
+        if not title:
+            raise MediaSourceError
+
+        return BrowseMediaSource(
+            domain=DOMAIN,
+            identifier=identifier["original"],
+            media_class=MEDIA_CLASS_DIRECTORY,
+            children_media_class=MEDIA_CLASS_VIDEO,
+            media_content_type=MEDIA_CLASS_VIDEO,
+            title=title,
+            can_play=False,
+            can_expand=True,
+            thumbnail=None,
+            children=[],
+        )
+
+    def _browse_recording_folders(
+        self, identifier: dict[str, Any], folders: dict[str, Any]
+    ) -> BrowseMediaSource:
+        """Browse Frigate recording folders."""
+        base = self._get_recording_base_media_source(identifier)
+
         for folder in folders:
             if folder["name"].endswith(".mp4"):
                 continue
-            try:
-                child = BrowseMediaSource(
+            title = self._generate_recording_title(identifier, folder)
+            if not title:
+                _LOGGER.warning("Skipping non-standard folder name: %s", folder["name"])
+                continue
+            base.children.append(
+                BrowseMediaSource(
                     domain=DOMAIN,
                     identifier=self._create_recordings_folder_identifier(
                         identifier, folder
@@ -674,54 +714,37 @@ class FrigateMediaSource(MediaSource):
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
-                    title=self._generate_recording_title(identifier, folder),
+                    title=title,
                     can_play=False,
                     can_expand=True,
                     thumbnail=None,
                 )
-                children.append(child)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.warning("Skipping non-standard folder: %s", folder["name"])
-
-        base = BrowseMediaSource(
-            domain=DOMAIN,
-            identifier=identifier["original"],
-            media_class=MEDIA_CLASS_DIRECTORY,
-            children_media_class=MEDIA_CLASS_VIDEO,
-            media_content_type=MEDIA_CLASS_VIDEO,
-            title=self._generate_recording_title(identifier),
-            can_play=False,
-            can_expand=True,
-            thumbnail=None,
-            children=children,
-        )
-
+            )
         return base
 
-    def _browse_recordings(self, identifier, recordings):
-        base = BrowseMediaSource(
-            domain=DOMAIN,
-            identifier=identifier["original"],
-            media_class=MEDIA_CLASS_DIRECTORY,
-            children_media_class=MEDIA_CLASS_VIDEO,
-            media_content_type=MEDIA_CLASS_VIDEO,
-            title=self._generate_recording_title(identifier),
-            can_play=False,
-            can_expand=True,
-            thumbnail=None,
-            children=[
+    def _browse_recordings(
+        self, identifier: dict[str, Any], recordings: dict[str, Any]
+    ) -> BrowseMediaSource:
+        """Browse Frigate recordings."""
+        base = self._get_recording_base_media_source(identifier)
+
+        for recording in recordings:
+            title = self._generate_recording_title(identifier, recording)
+            if not title:
+                _LOGGER.warning(
+                    "Skipping non-standard recording name: %s", recording["name"]
+                )
+                continue
+            base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
                     identifier=f"{identifier['original']}/{recording['name']}",
                     media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_TYPE_VIDEO,
-                    title=self._generate_recording_title(identifier, recording),
+                    title=title,
                     can_play=True,
                     can_expand=False,
                     thumbnail=None,
                 )
-                for recording in recordings
-            ],
-        )
-
+            )
         return base
