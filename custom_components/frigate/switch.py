@@ -1,14 +1,18 @@
 """Sensor platform for frigate."""
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from homeassistant.components.mqtt import async_publish
-from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.components.mqtt.models import Message
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import get_friendly_name, get_frigate_device_identifier
+from . import FrigateMQTTEntity, get_friendly_name, get_frigate_device_identifier
 from .const import (
     DOMAIN,
     ICON_FILM_MULTIPLE,
@@ -39,94 +43,79 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateSwitch(SwitchEntity):
+class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
     """Frigate Switch class."""
 
-    def __init__(self, entry, frigate_config, cam_name, switch_name):
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        switch_name: str,
+    ) -> None:
         """Construct a FrigateSwitch."""
-        self._entry = entry
-        self._frigate_config = frigate_config
+
         self._cam_name = cam_name
         self._switch_name = switch_name
         self._is_on = False
-        self._available = False
-        self._sub_state = None
-        self._state_topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}"
-            f"/{self._cam_name}/{self._switch_name}/state"
-        )
         self._command_topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}"
+            f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/{self._switch_name}/set"
         )
-        self._availability_topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
-        )
 
-    async def async_added_to_hass(self):
-        """Subscribe mqtt events."""
-        await super().async_added_to_hass()
-        await self._subscribe_topics()
+        if self._switch_name == "snapshots":
+            self._icon = ICON_IMAGE_MULTIPLE
+        elif self._switch_name == "clips":
+            self._icon = ICON_FILM_MULTIPLE
+        else:
+            self._icon = ICON_MOTION_SENSOR
 
-    async def _subscribe_topics(self):
-        """(Re)Subscribe to topics."""
-
-        @callback
-        def state_message_received(msg):
-            """Handle a new received MQTT state message."""
-            self._is_on = msg.payload == "ON"
-            self.async_write_ha_state()
-
-        @callback
-        def availability_message_received(msg: str) -> None:
-            """Handle a new received MQTT availability message."""
-            self._available = msg.payload == "online"
-            self.async_write_ha_state()
-
-        self._sub_state = await async_subscribe_topics(
-            self.hass,
-            self._sub_state,
+        super().__init__(
+            config_entry,
+            frigate_config,
             {
-                "state_topic": {
-                    "topic": self._state_topic,
-                    "msg_callback": state_message_received,
-                    "qos": 0,
-                },
-                "availability_topic": {
-                    "topic": self._availability_topic,
-                    "msg_callback": availability_message_received,
-                    "qos": 0,
-                },
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._switch_name}/state"
+                )
             },
         )
 
+    @callback
+    def _state_message_received(self, msg: Message) -> None:
+        """Handle a new received MQTT state message."""
+        self._is_on = msg.payload == "ON"
+        super()._state_message_received(msg)
+
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return f"{DOMAIN}_{self._cam_name}_{self._switch_name}_switch"
 
     @property
-    def device_info(self):
+    def device_info(self) -> DeviceInfo:
         """Get device information."""
         return {
-            "identifiers": {get_frigate_device_identifier(self._entry, self._cam_name)},
-            "via_device": get_frigate_device_identifier(self._entry),
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the sensor."""
         return f"{get_friendly_name(self._cam_name)} {self._switch_name}".title()
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._is_on
 
-    async def async_turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs) -> None:
         """Turn the device on."""
         async_publish(
             self.hass,
@@ -136,7 +125,7 @@ class FrigateSwitch(SwitchEntity):
             True,
         )
 
-    async def async_turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs) -> None:
         """Turn the device off."""
         async_publish(
             self.hass,
@@ -147,15 +136,6 @@ class FrigateSwitch(SwitchEntity):
         )
 
     @property
-    def icon(self):
+    def icon(self) -> str:
         """Return the icon of the sensor."""
-        if self._switch_name == "snapshots":
-            return ICON_IMAGE_MULTIPLE
-        if self._switch_name == "clips":
-            return ICON_FILM_MULTIPLE
-        return ICON_MOTION_SENSOR
-
-    @property
-    def available(self) -> bool:
-        """Determine if the entity is available."""
-        return self._available
+        return self._icon

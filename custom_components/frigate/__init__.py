@@ -10,9 +10,12 @@ from datetime import timedelta
 import logging
 from typing import Any
 
+from homeassistant.components.mqtt.models import Message
+from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.core import Config, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
@@ -128,3 +131,66 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 async def _async_entry_updated(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Handle entry updates."""
     await hass.config_entries.async_reload(config_entry.entry_id)
+
+
+class FrigateEntity(Entity):
+    """Base class for Frigate entities."""
+
+    def __init__(self, config_entry: str):
+        """Construct a FrigateEntity."""
+        Entity.__init__(self)
+
+        self._config_entry = config_entry
+        self._available = True
+
+    @property
+    def available(self) -> bool:
+        """Return the availability of the entity."""
+        return self._available
+
+
+class FrigateMQTTEntity(FrigateEntity):
+    """Base class for MQTT-based Frigate entities."""
+
+    def __init__(
+        self,
+        config_entry,
+        frigate_config: dict[str, Any],
+        state_topic_config: dict[str, Any],
+    ) -> None:
+        """Construct a FrigateMQTTEntity."""
+        super().__init__(config_entry)
+        self._frigate_config = frigate_config
+        self._sub_state = None
+        self._available = False
+        self._state_topic_config = {
+            "msg_callback": self._state_message_received,
+            "qos": 0,
+            **state_topic_config,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe mqtt events."""
+        self._sub_state = await async_subscribe_topics(
+            self.hass,
+            self._sub_state,
+            {
+                "state_topic": self._state_topic_config,
+                "availability_topic": {
+                    "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
+                    "msg_callback": self._availability_message_received,
+                    "qos": 0,
+                },
+            },
+        )
+
+    @callback
+    def _state_message_received(self, msg: Message) -> None:
+        """State message received."""
+        self.async_write_ha_state()
+
+    @callback
+    def _availability_message_received(self, msg: Message) -> None:
+        """Handle a new received MQTT availability message."""
+        self._available = msg.payload == "online"
+        self.async_write_ha_state()

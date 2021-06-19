@@ -5,15 +5,16 @@ import logging
 from typing import Any
 
 from homeassistant.components.mqtt.models import Message
-from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo, Entity
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import (
     FrigateDataUpdateCoordinator,
+    FrigateEntity,
+    FrigateMQTTEntity,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -69,15 +70,15 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateFpsSensor(CoordinatorEntity):
+class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):
     """Frigate Sensor class."""
 
     def __init__(
         self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
     ) -> None:
         """Construct a FrigateFpsSensor."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
 
     @property
     def unique_id(self) -> str:
@@ -122,7 +123,7 @@ class FrigateFpsSensor(CoordinatorEntity):
         return ICON_SPEEDOMETER
 
 
-class DetectorSpeedSensor(CoordinatorEntity):
+class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):
     """Frigate Detector Speed class."""
 
     def __init__(
@@ -132,8 +133,8 @@ class DetectorSpeedSensor(CoordinatorEntity):
         detector_name: str,
     ) -> None:
         """Construct a DetectorSpeedSensor."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
         self._detector_name = detector_name
 
     @property
@@ -183,36 +184,36 @@ class DetectorSpeedSensor(CoordinatorEntity):
         return ICON_SPEEDOMETER
 
 
-class CameraFpsSensor(CoordinatorEntity):
+class CameraFpsSensor(FrigateEntity, CoordinatorEntity):
     """Frigate Camera Fps class."""
 
     def __init__(
         self,
         coordinator: FrigateDataUpdateCoordinator,
         config_entry: ConfigEntry,
-        camera_name: str,
+        cam_name: str,
         fps_type: str,
     ) -> None:
         """Construct a CameraFpsSensor."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
-        self._camera_name = camera_name
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._cam_name = cam_name
         self._fps_type = fps_type
 
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._camera_name}_{self._fps_type}_fps"
+        return f"{DOMAIN}_{self._cam_name}_{self._fps_type}_fps"
 
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
         return {
             "identifiers": {
-                get_frigate_device_identifier(self._config_entry, self._camera_name)
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._camera_name),
+            "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -220,7 +221,7 @@ class CameraFpsSensor(CoordinatorEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._camera_name)} {self._fps_type} FPS".title()
+        return f"{get_friendly_name(self._cam_name)} {self._fps_type} FPS".title()
 
     @property
     def unit_of_measurement(self) -> str:
@@ -232,7 +233,7 @@ class CameraFpsSensor(CoordinatorEntity):
         """Return the state of the sensor."""
 
         if self.coordinator.data:
-            data = self.coordinator.data.get(self._camera_name, {}).get(
+            data = self.coordinator.data.get(self._cam_name, {}).get(
                 f"{self._fps_type}_fps"
             )
             if data is not None:
@@ -248,7 +249,7 @@ class CameraFpsSensor(CoordinatorEntity):
         return ICON_SPEEDOMETER
 
 
-class FrigateObjectCountSensor(Entity):
+class FrigateObjectCountSensor(FrigateMQTTEntity):
     """Frigate Motion Sensor class."""
 
     def __init__(
@@ -259,20 +260,9 @@ class FrigateObjectCountSensor(Entity):
         obj_name: str,
     ) -> None:
         """Construct a FrigateObjectCountSensor."""
-        self._config_entry = config_entry
-        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._state = 0
-        self._available = False
-        self._sub_state = None
-        self._topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}"
-            f"/{self._cam_name}/{self._obj_name}"
-        )
-        self._availability_topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
-        )
 
         if self._obj_name == "person":
             self._icon = ICON_PERSON
@@ -285,45 +275,25 @@ class FrigateObjectCountSensor(Entity):
         else:
             self._icon = ICON_OTHER
 
-    async def async_added_to_hass(self) -> None:
-        """Subscribe mqtt events."""
-        await super().async_added_to_hass()
-        await self._subscribe_topics()
-
-    async def _subscribe_topics(self) -> None:
-        """(Re)Subscribe to topics."""
-
-        @callback
-        def state_message_received(msg: Message) -> None:
-            """Handle a new received MQTT state message."""
-            try:
-                self._state = int(msg.payload)
-                self.async_write_ha_state()
-            except ValueError:
-                pass
-
-        @callback
-        def availability_message_received(msg: Message) -> None:
-            """Handle a new received MQTT availability message."""
-            self._available = msg.payload == "online"
-            self.async_write_ha_state()
-
-        self._sub_state = await async_subscribe_topics(
-            self.hass,
-            self._sub_state,
+        super().__init__(
+            config_entry,
+            frigate_config,
             {
-                "state_topic": {
-                    "topic": self._topic,
-                    "msg_callback": state_message_received,
-                    "qos": 0,
-                },
-                "availability_topic": {
-                    "topic": self._availability_topic,
-                    "msg_callback": availability_message_received,
-                    "qos": 0,
-                },
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._obj_name}"
+                )
             },
         )
+
+    @callback
+    def _state_message_received(self, msg: Message) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            self._state = int(msg.payload)
+            super()._state_message_received(msg)
+        except ValueError:
+            pass
 
     @property
     def unique_id(self) -> str:
@@ -363,8 +333,3 @@ class FrigateObjectCountSensor(Entity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
-
-    @property
-    def available(self) -> bool:
-        """Determine if the entity is available."""
-        return self._available
