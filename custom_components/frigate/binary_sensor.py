@@ -8,12 +8,13 @@ from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
     BinarySensorEntity,
 )
-from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.components.mqtt.models import Message
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
+    FrigateMQTTEntity,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -36,7 +37,7 @@ async def async_setup_entry(
     )
 
 
-class FrigateMotionSensor(BinarySensorEntity):
+class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     """Frigate Motion Sensor class."""
 
     def __init__(
@@ -47,60 +48,29 @@ class FrigateMotionSensor(BinarySensorEntity):
         obj_name: str,
     ) -> None:
         """Construct a new FrigateMotionSensor."""
-        self._config_entry = config_entry
-        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._is_on = False
-        self._available = False
-        self._sub_state = None
-        self._topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}"
-            f"/{self._cam_name}/{self._obj_name}"
-        )
-        self._availability_topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
-        )
 
-    async def async_added_to_hass(self) -> None:
-        """Subscribe mqtt events."""
-        await super().async_added_to_hass()
-        await self._subscribe_topics()
-
-    async def _subscribe_topics(self) -> None:
-        """(Re)Subscribe to topics."""
-
-        @callback
-        def state_message_received(msg: str) -> None:
-            """Handle a new received MQTT state message."""
-            try:
-                self._is_on = int(msg.payload) > 0
-            except ValueError:
-                self._is_on = False
-            self.async_write_ha_state()
-
-        @callback
-        def availability_message_received(msg: str) -> None:
-            """Handle a new received MQTT availability message."""
-            self._available = msg.payload == "online"
-            self.async_write_ha_state()
-
-        self._sub_state = await async_subscribe_topics(
-            self.hass,
-            self._sub_state,
+        super().__init__(
+            config_entry,
+            frigate_config,
             {
-                "state_topic": {
-                    "topic": self._topic,
-                    "msg_callback": state_message_received,
-                    "qos": 0,
-                },
-                "availability_topic": {
-                    "topic": self._availability_topic,
-                    "msg_callback": availability_message_received,
-                    "qos": 0,
-                },
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._obj_name}"
+                )
             },
         )
+
+    @callback
+    def _state_message_received(self, msg: Message) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            self._is_on = int(msg.payload) > 0
+        except ValueError:
+            self._is_on = False
+        super()._state_message_received(msg)
 
     @property
     def unique_id(self) -> str:
@@ -134,8 +104,3 @@ class FrigateMotionSensor(BinarySensorEntity):
     def device_class(self) -> str:
         """Return the device class."""
         return DEVICE_CLASS_MOTION
-
-    @property
-    def available(self) -> bool:
-        """Determine if the entity is available."""
-        return self._available

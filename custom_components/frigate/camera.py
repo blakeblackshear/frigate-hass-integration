@@ -8,13 +8,20 @@ import async_timeout
 from yarl import URL
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
-from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.components.mqtt.models import Message
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import get_cameras_and_objects, get_friendly_name, get_frigate_device_identifier
+from . import (
+    FrigateEntity,
+    FrigateMQTTEntity,
+    get_cameras_and_objects,
+    get_friendly_name,
+    get_frigate_device_identifier,
+)
 from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -39,16 +46,15 @@ async def async_setup_entry(
     )
 
 
-class FrigateCamera(Camera):
+class FrigateCamera(FrigateEntity, Camera):
     """Representation a Frigate camera."""
 
     def __init__(
         self, config_entry: ConfigEntry, name: str, config: dict[str, Any]
     ) -> None:
         """Initialize a Frigate camera."""
-        super().__init__()
-
-        self._config_entry = config_entry
+        FrigateEntity.__init__(self, config_entry)
+        Camera.__init__(self)
         self._name = name
         self._config = config
         self._host = config_entry.data["host"]
@@ -61,12 +67,12 @@ class FrigateCamera(Camera):
         _LOGGER.debug("Adding camera: %s", name)
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return f"{DOMAIN}_{self._name}_camera"
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the camera."""
         return get_friendly_name(self._name)
 
@@ -82,11 +88,6 @@ class FrigateCamera(Camera):
             "model": VERSION,
             "manufacturer": NAME,
         }
-
-    @property
-    def available(self) -> bool:
-        """Return the availability of the camera."""
-        return True
 
     @property
     def supported_features(self) -> int:
@@ -110,73 +111,48 @@ class FrigateCamera(Camera):
         return self._stream_source
 
 
-class FrigateMqttSnapshots(Camera):
+class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):
     """Frigate best camera class."""
 
-    def __init__(self, config_entry, frigate_config, cam_name, obj_name):
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        obj_name: str,
+    ) -> None:
         """Construct a FrigateMqttSnapshots camera."""
-        super().__init__()
-
-        self._config_entry = config_entry
-        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._last_image = None
-        self._available = False
-        self._sub_state = None
-        self._topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}"
-            f"/{self._cam_name}/{self._obj_name}/snapshot"
-        )
-        self._availability_topic = (
-            f"{self._frigate_config['mqtt']['topic_prefix']}/available"
-        )
 
-    async def async_added_to_hass(self):
-        """Subscribe mqtt events."""
-        await super().async_added_to_hass()
-        await self._subscribe_topics()
-
-    async def _subscribe_topics(self):
-        """(Re)Subscribe to topics."""
-
-        @callback
-        def state_message_received(msg):
-            """Handle a new received MQTT state message."""
-            self._last_image = msg.payload
-            self.async_write_ha_state()
-
-        @callback
-        def availability_message_received(msg):
-            """Handle a new received MQTT availability message."""
-            self._available = msg.payload == "online"
-            self.async_write_ha_state()
-
-        self._sub_state = await async_subscribe_topics(
-            self.hass,
-            self._sub_state,
+        FrigateMQTTEntity.__init__(
+            self,
+            config_entry,
+            frigate_config,
             {
-                "state_topic": {
-                    "topic": self._topic,
-                    "msg_callback": state_message_received,
-                    "qos": 0,
-                    "encoding": None,
-                },
-                "availability_topic": {
-                    "topic": self._availability_topic,
-                    "msg_callback": availability_message_received,
-                    "qos": 0,
-                },
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._obj_name}/snapshot"
+                ),
+                "encoding": None,
             },
         )
+        Camera.__init__(self)
+
+    @callback
+    def _state_message_received(self, msg: Message) -> None:
+        """Handle a new received MQTT state message."""
+        self._last_image = msg.payload
+        super()._state_message_received(msg)
 
     @property
-    def unique_id(self):
+    def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return f"{DOMAIN}_{self._cam_name}_{self._obj_name}_snapshot"
 
     @property
-    def device_info(self):
+    def device_info(self) -> DeviceInfo:
         """Get the device information."""
         return {
             "identifiers": {
@@ -189,21 +165,16 @@ class FrigateMqttSnapshots(Camera):
         }
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the name of the sensor."""
         return f"{get_friendly_name(self._cam_name)} {self._obj_name}".title()
 
-    async def async_camera_image(self):
+    async def async_camera_image(self) -> bytes:
         """Return image response."""
         return self._last_image
 
     @property
-    def available(self) -> bool:
-        """Determine if the entity is available."""
-        return self._available
-
-    @property
-    def state(self):
+    def state(self) -> str:
         """Return the camera state."""
         if self._last_image is None:
             return STATE_IDLE
