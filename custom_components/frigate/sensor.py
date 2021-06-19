@@ -33,7 +33,7 @@ from .const import (
     VERSION,
 )
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+_LOGGER: logging.Logger = logging.getLogger(__name__)
 
 CAMERA_FPS_TYPES = ["camera", "detection", "process", "skipped"]
 

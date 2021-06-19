@@ -8,10 +8,12 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN
 from custom_components.frigate.media_source import CLIPS_ROOT, RECORDINGS_ROOT
 from homeassistant.components import media_source
 from homeassistant.components.media_source import const
+from homeassistant.components.media_source.error import MediaSourceError
 from homeassistant.components.media_source.models import PlayMedia
 from homeassistant.core import HomeAssistant
 
@@ -614,3 +616,58 @@ async def test_async_browse_media_recordings_for_camera(
             },
         ],
     }
+
+
+@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
+async def test_async_browse_media_async_get_event_summary_error(
+    caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
+) -> None:
+    """Test API error behavior."""
+    frigate_client.async_get_event_summary = AsyncMock(
+        side_effect=FrigateApiClientError
+    )
+
+    await setup_mock_frigate_config_entry(hass, client=frigate_client)
+
+    with pytest.raises(MediaSourceError):
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/{CLIPS_ROOT}"
+        )
+
+
+@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
+async def test_async_browse_media_async_get_events_error(
+    caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
+) -> None:
+    """Test API error behavior."""
+    frigate_client.async_get_events = AsyncMock(side_effect=FrigateApiClientError)
+
+    await setup_mock_frigate_config_entry(hass, client=frigate_client)
+
+    with pytest.raises(MediaSourceError):
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/{CLIPS_ROOT}"
+        )
+
+
+@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
+async def test_async_browse_media_async_get_recordings_folder_error(
+    caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
+) -> None:
+    """Test API error behavior."""
+    frigate_client.async_get_recordings_folder = AsyncMock(
+        side_effect=FrigateApiClientError
+    )
+
+    await setup_mock_frigate_config_entry(hass, client=frigate_client)
+
+    with pytest.raises(MediaSourceError):
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/{RECORDINGS_ROOT}"
+        )
+
+    with pytest.raises(MediaSourceError):
+        await media_source.async_browse_media(
+            hass,
+            f"{const.URI_SCHEME}{DOMAIN}/recordings/2021-06/04/15/front_door",
+        )

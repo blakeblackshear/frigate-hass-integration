@@ -1,10 +1,10 @@
 """Test the frigate config flow."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from unittest.mock import AsyncMock, patch
 
+from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 
 from . import TEST_HOST, create_mock_frigate_client, create_mock_frigate_config_entry
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 
 async def test_user_success(hass: HomeAssistant) -> None:
@@ -70,7 +70,7 @@ async def test_user_connection_failure(hass: HomeAssistant) -> None:
     assert not result["errors"]
 
     mock_client = create_mock_frigate_client()
-    mock_client.async_get_stats = AsyncMock(side_effect=asyncio.TimeoutError)
+    mock_client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
 
     with patch(
         "custom_components.frigate.config_flow.FrigateApiClient",

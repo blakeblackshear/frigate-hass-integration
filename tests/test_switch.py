@@ -19,7 +19,7 @@ from . import (
     setup_mock_frigate_config_entry,
 )
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 SWITCH_ENTITY_IDS = [
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,

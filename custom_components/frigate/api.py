@@ -11,7 +11,7 @@ from yarl import URL
 
 TIMEOUT = 10
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+_LOGGER: logging.Logger = logging.getLogger(__name__)
 
 HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 
@@ -20,6 +20,10 @@ HEADERS = {"Content-type": "application/json; charset=UTF-8"}
 # so that this library can be optionally moved to a different repo at a later
 # date.
 # ==============================================================================
+
+
+class FrigateApiClientError(Exception):
+    """General FrigateApiClient error."""
 
 
 class FrigateApiClient:
@@ -107,28 +111,25 @@ class FrigateApiClient:
                 elif method == "post":
                     await self._session.post(url, headers=headers, json=data)
 
-        except asyncio.TimeoutError as exception:
+        except asyncio.TimeoutError as exc:
             _LOGGER.error(
-                "Timeout error fetching information from %s - %s",
+                "Timeout error fetching information from %s: %s",
                 url,
-                exception,
+                exc,
             )
-            raise
+            raise FrigateApiClientError from exc
 
-        except (KeyError, TypeError) as exception:
+        except (KeyError, TypeError) as exc:
             _LOGGER.error(
-                "Error parsing information from %s - %s",
+                "Error parsing information from %s: %s",
                 url,
-                exception,
+                exc,
             )
-            raise
-        except (aiohttp.ClientError, socket.gaierror) as exception:
+            raise FrigateApiClientError from exc
+        except (aiohttp.ClientError, socket.gaierror) as exc:
             _LOGGER.error(
-                "Error fetching information from %s - %s",
+                "Error fetching information from %s: %s",
                 url,
-                exception,
+                exc,
             )
-            raise
-        except Exception as exception:  # pylint: disable=broad-except
-            _LOGGER.error("Something really wrong happened! - %s", exception)
-            raise
+            raise FrigateApiClientError from exc

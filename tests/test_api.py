@@ -10,11 +10,11 @@ import aiohttp
 from aiohttp import web  # type: ignore
 import pytest
 
-from custom_components.frigate.api import FrigateApiClient
+from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
 
 from . import start_frigate_server
 
-_LOGGER = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 # ==============================================================================
 # Please do not add HomeAssistant specific imports/functionality to this test,
@@ -219,25 +219,19 @@ async def test_api_wrapper_exceptions(
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
 
     with patch.object(aiohttp_session, "get", side_effect=asyncio.TimeoutError):
-        with pytest.raises(asyncio.TimeoutError):
+        with pytest.raises(FrigateApiClientError):
             await frigate_client.api_wrapper(method="get", url=server.make_url("/get"))
             assert "Timeout error" in caplog.text
     caplog.clear()
 
     with patch.object(aiohttp_session, "get", side_effect=TypeError):
-        with pytest.raises(TypeError):
+        with pytest.raises(FrigateApiClientError):
             await frigate_client.api_wrapper(method="get", url=server.make_url("/get"))
             assert "Error parsing information" in caplog.text
     caplog.clear()
 
     with patch.object(aiohttp_session, "get", side_effect=aiohttp.ClientError):
-        with pytest.raises(aiohttp.ClientError):
+        with pytest.raises(FrigateApiClientError):
             await frigate_client.api_wrapper(method="get", url=server.make_url("/get"))
             assert "Error fetching information" in caplog.text
-    caplog.clear()
-
-    with patch.object(aiohttp_session, "get", side_effect=Exception):
-        with pytest.raises(Exception):
-            await frigate_client.api_wrapper(method="get", url=server.make_url("/get"))
-            assert "Something really wrong happened" in caplog.text
     caplog.clear()
