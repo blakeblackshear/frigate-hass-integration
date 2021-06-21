@@ -11,13 +11,14 @@ import pytest
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN
 from custom_components.frigate.media_source import (
-    ClipsIdentifier,
+    ClipIdentifier,
+    ClipSearchIdentifier,
     Identifier,
     RecordingIdentifier,
 )
 from homeassistant.components import media_source
 from homeassistant.components.media_source import const
-from homeassistant.components.media_source.error import MediaSourceError
+from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
 from homeassistant.components.media_source.models import PlayMedia
 from homeassistant.core import HomeAssistant
 
@@ -85,7 +86,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
                 "title": "Clips",
                 "media_class": "directory",
                 "media_content_type": "video",
-                "media_content_id": "media-source://frigate/clips//////",
+                "media_content_id": "media-source://frigate/clip-search//////",
                 "can_play": False,
                 "can_expand": True,
                 "children_media_class": "video",
@@ -106,7 +107,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
-async def test_async_browse_media_clips_root(
+async def test_async_browse_media_clip_search_root(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
     """Test browsing the media clips root."""
@@ -114,64 +115,67 @@ async def test_async_browse_media_clips_root(
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/clips",
+        f"{const.URI_SCHEME}{DOMAIN}/clip-search",
     )
 
     assert len(media.as_dict()["children"]) == 58
     assert media.as_dict()["title"] == "Clips (321)"
-    assert media.as_dict()["media_content_id"] == "media-source://frigate/clips//////"
+    assert (
+        media.as_dict()["media_content_id"]
+        == "media-source://frigate/clip-search//////"
+    )
 
     assert {
         **DRILLDOWN_BASE,
         "title": "Yesterday (53)",
-        "media_content_id": "media-source://frigate/clips/.yesterday/1622678400/1622764800///",
+        "media_content_id": "media-source://frigate/clip-search/.yesterday/1622678400/1622764800///",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
         "title": "Today (103)",
-        "media_content_id": "media-source://frigate/clips/.today/1622764800////",
+        "media_content_id": "media-source://frigate/clip-search/.today/1622764800////",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
         "title": "This Month (210)",
-        "media_content_id": "media-source://frigate/clips/.this_month/1622505600////",
+        "media_content_id": "media-source://frigate/clip-search/.this_month/1622505600////",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.last_month/1619827200/1622505600///",
+        "media_content_id": "media-source://frigate/clip-search/.last_month/1619827200/1622505600///",
         "title": "Last Month (55)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_year/1609459200////",
+        "media_content_id": "media-source://frigate/clip-search/.this_year/1609459200////",
         "title": "This Year",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door///front_door//",
+        "media_content_id": "media-source://frigate/clip-search/.front_door///front_door//",
         "title": "Front Door (321)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.person////person/",
+        "media_content_id": "media-source://frigate/clip-search/.person////person/",
         "title": "Person (321)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.steps/////steps",
+        "media_content_id": "media-source://frigate/clip-search/.steps/////steps",
         "title": "Steps (52)",
     } in media.as_dict()["children"]
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
-async def test_async_browse_media_clips_drilldown(
+async def test_async_browse_media_clip_search_drilldown(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
     """Test drilling down through clips."""
@@ -179,7 +183,7 @@ async def test_async_browse_media_clips_drilldown(
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
     media = await media_source.async_browse_media(
-        hass, f"{const.URI_SCHEME}{DOMAIN}/clips/.front_door/////"
+        hass, f"{const.URI_SCHEME}{DOMAIN}/clip-search/.front_door/////"
     )
 
     assert len(media.as_dict()["children"]) == 58
@@ -196,43 +200,43 @@ async def test_async_browse_media_clips_drilldown(
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door.this_month/1622505600////",
+        "media_content_id": "media-source://frigate/clip-search/.front_door.this_month/1622505600////",
         "title": "This Month (210)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door.last_month/1619827200/1622505600///",
+        "media_content_id": "media-source://frigate/clip-search/.front_door.last_month/1619827200/1622505600///",
         "title": "Last Month (55)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door.this_year/1609459200////",
+        "media_content_id": "media-source://frigate/clip-search/.front_door.this_year/1609459200////",
         "title": "This Year",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door.front_door///front_door//",
+        "media_content_id": "media-source://frigate/clip-search/.front_door.front_door///front_door//",
         "title": "Front Door (321)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door.person////person/",
+        "media_content_id": "media-source://frigate/clip-search/.front_door.person////person/",
         "title": "Person (321)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.front_door.steps/////steps",
+        "media_content_id": "media-source://frigate/clip-search/.front_door.steps/////steps",
         "title": "Steps (52)",
     } in media.as_dict()["children"]
 
     # Drill down into this month.
     media = await media_source.async_browse_media(
-        hass, f"{const.URI_SCHEME}{DOMAIN}/clips/.this_month/1622530800////"
+        hass, f"{const.URI_SCHEME}{DOMAIN}/clip-search/.this_month/1622530800////"
     )
 
     # There are 50 events, and 5 drilldowns.
@@ -240,38 +244,38 @@ async def test_async_browse_media_clips_drilldown(
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-02/1622592000/1622678400///",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-02/1622592000/1622678400///",
         "title": "June 02 (54)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-03/1622678400/1622764800///",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-03/1622678400/1622764800///",
         "title": "June 03 (53)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.front_door/1622530800//front_door//",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.front_door/1622530800//front_door//",
         "title": "Front Door (210)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.person/1622530800///person/",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.person/1622530800///person/",
         "title": "Person (210)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.steps/1622530800////steps",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.steps/1622530800////steps",
         "title": "Steps (52)",
     } in media.as_dict()["children"]
 
     # Drill down into this day.
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/clips/.this_month.2021-06-04/1622764800/1622851200///",
+        f"{const.URI_SCHEME}{DOMAIN}/clip-search/.this_month.2021-06-04/1622764800/1622851200///",
     )
 
     # There are 50 events, and 3 drilldowns.
@@ -279,26 +283,26 @@ async def test_async_browse_media_clips_drilldown(
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-04.front_door/1622764800/1622851200/front_door//",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-04.front_door/1622764800/1622851200/front_door//",
         "title": "Front Door (103)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-04.person/1622764800/1622851200//person/",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-04.person/1622764800/1622851200//person/",
         "title": "Person (103)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-04.steps/1622764800/1622851200///steps",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-04.steps/1622764800/1622851200///steps",
         "title": "Steps (52)",
     } in media.as_dict()["children"]
 
     # Drill down into the "Front Door"
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/clips/.this_month.2021-06-04.front_door/1622764800/1622851200/front_door//",
+        f"{const.URI_SCHEME}{DOMAIN}/clip-search/.this_month.2021-06-04.front_door/1622764800/1622851200/front_door//",
     )
 
     # There are 50 events, and 2 drilldowns.
@@ -306,33 +310,33 @@ async def test_async_browse_media_clips_drilldown(
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/",
         "title": "Person (103)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-04.front_door.steps/1622764800/1622851200/front_door//steps",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-04.front_door.steps/1622764800/1622851200/front_door//steps",
         "title": "Steps (52)",
     } in media.as_dict()["children"]
 
     # Drill down into "Person"
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/clips/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/",
+        f"{const.URI_SCHEME}{DOMAIN}/clip-search/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/",
     )
 
     assert len(media.as_dict()["children"]) == 51
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/.this_month.2021-06-04.front_door.person.all/1622764800/1622851200/front_door/person/",
+        "media_content_id": "media-source://frigate/clip-search/.this_month.2021-06-04.front_door.person.all/1622764800/1622851200/front_door/person/",
         "title": "All (103)",
     } in media.as_dict()["children"]
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
-async def test_async_browse_media_clips_multi_month_drilldown(
+async def test_async_browse_media_clip_search_multi_month_drilldown(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
     """Test a multi-month drilldown."""
@@ -346,32 +350,38 @@ async def test_async_browse_media_clips_multi_month_drilldown(
 
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/clips/Title/{after}/{before}///",
+        f"{const.URI_SCHEME}{DOMAIN}/clip-search/Title/{after}/{before}///",
     )
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/Title.2021-02/1612137600/1614556800///",
+        "media_content_id": "media-source://frigate/clip-search/Title.2021-02/1612137600/1614556800///",
         "title": "February (0)",
     } in media.as_dict()["children"]
 
     assert {
         **DRILLDOWN_BASE,
-        "media_content_id": "media-source://frigate/clips/Title.2021-03/1614816000/1617494400///",
+        "media_content_id": "media-source://frigate/clip-search/Title.2021-03/1614816000/1617494400///",
         "title": "March (0)",
     } in media.as_dict()["children"]
 
 
-async def test_async_resolve_media_success(
+async def test_async_resolve_media(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
     """Test successful resolve media."""
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
+
     media = await media_source.async_resolve_media(
-        hass, f"{const.URI_SCHEME}{DOMAIN}/WHATEVER"
+        hass, f"{const.URI_SCHEME}{DOMAIN}/clips/WHATEVER"
     )
-    assert media == PlayMedia(url="/api/frigate/WHATEVER", mime_type="video/mp4")
+    assert media == PlayMedia(url="/api/frigate/clips/WHATEVER", mime_type="video/mp4")
+
+    with pytest.raises(Unresolvable):
+        media = await media_source.async_resolve_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/UNKNOWN"
+        )
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
@@ -669,7 +679,9 @@ async def test_async_browse_media_async_get_event_summary_error(
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
     with pytest.raises(MediaSourceError):
-        await media_source.async_browse_media(hass, f"{const.URI_SCHEME}{DOMAIN}/clips")
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/clip-search"
+        )
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
@@ -682,7 +694,9 @@ async def test_async_browse_media_async_get_events_error(
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
     with pytest.raises(MediaSourceError):
-        await media_source.async_browse_media(hass, f"{const.URI_SCHEME}{DOMAIN}/clips")
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/clip-search"
+        )
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
@@ -708,13 +722,13 @@ async def test_async_browse_media_async_get_recordings_folder_error(
         )
 
 
-async def test_clips_identifier() -> None:
-    """Test clips identifier."""
-    identifier_in = "clips/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/zone"
+async def test_clip_search_identifier() -> None:
+    """Test clip search identifier."""
+    identifier_in = "clip-search/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/zone"
     identifier = Identifier.from_str(identifier_in)
 
     assert identifier
-    assert isinstance(identifier, ClipsIdentifier)
+    assert isinstance(identifier, ClipSearchIdentifier)
     assert identifier.name == ".this_month.2021-06-04.front_door.person"
     assert identifier.after == 1622764800
     assert identifier.before == 1622851200
@@ -726,16 +740,16 @@ async def test_clips_identifier() -> None:
 
     # Invalid "after" time.
     assert (
-        ClipsIdentifier.from_str(
-            "clips/.this_month.2021-06-04.front_door.person/NOT_AN_INT/1622851200/front_door/person/zone"
+        ClipSearchIdentifier.from_str(
+            "clips-search/.this_month.2021-06-04.front_door.person/NOT_AN_INT/1622851200/front_door/person/zone"
         )
         is None
     )
 
     # Not a clips identifier.
-    assert ClipsIdentifier.from_str("recordings/something/something") is None
+    assert ClipSearchIdentifier.from_str("clip-search/something/something") is None
 
-    assert ClipsIdentifier().is_root()
+    assert ClipSearchIdentifier().is_root()
 
 
 async def test_recordings_identifier() -> None:
@@ -771,10 +785,20 @@ async def test_recordings_identifier() -> None:
     assert RecordingIdentifier.from_str("recordings/2021-12/28/25/front_door") is None
 
     # Not a recording identifier.
-    assert RecordingIdentifier.from_str("clips/something/something") is None
+    assert RecordingIdentifier.from_str("clip-search/something/something") is None
 
     # A missing element (no hour) in the identifier, so no path will be possible
     # beyond the path to the day.
     identifier_in = "recordings/2021-06/04//front_door"
     identifier = RecordingIdentifier.from_str(identifier_in)
     assert identifier.get_frigate_server_path() == "2021-06/04"
+
+
+async def test_clip_identifier() -> None:
+    """Test clips identifier."""
+    identifier_in = "clips/something"
+    identifier = Identifier.from_str(identifier_in)
+
+    assert identifier
+    assert isinstance(identifier, ClipIdentifier)
+    assert identifier.name == "something"

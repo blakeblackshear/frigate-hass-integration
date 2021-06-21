@@ -14,7 +14,7 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_VIDEO,
 )
 from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
-from homeassistant.components.media_source.error import MediaSourceError
+from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
     MediaSource,
@@ -62,16 +62,46 @@ class Identifier:
         return int(data) if data else None
 
     @classmethod
-    def from_str(cls, data: str) -> ClipsIdentifier | RecordingIdentifier | None:
-        """Generate a ClipsIdentifier from a string."""
-        return ClipsIdentifier.from_str(data) or RecordingIdentifier.from_str(data)
+    def from_str(
+        cls, data: str
+    ) -> ClipSearchIdentifier | ClipIdentifier | RecordingIdentifier | None:
+        """Generate a ClipSearchIdentifier from a string."""
+        return (
+            ClipSearchIdentifier.from_str(data)
+            or ClipIdentifier.from_str(data)
+            or RecordingIdentifier.from_str(data)
+        )
 
 
 @attr.s(frozen=True)
-class ClipsIdentifier(Identifier):
-    """Clips Identifier."""
+class ClipIdentifier(Identifier):
+    """Clip Identifier."""
 
     IDENTIFIER_TYPE = "clips"
+
+    name: str = attr.ib(
+        validator=[attr.validators.instance_of(str)],
+    )
+
+    def __str__(self) -> str:
+        """Convert to a string."""
+        return "/".join((self.IDENTIFIER_TYPE, self.name))
+
+    @classmethod
+    def from_str(cls, data: str) -> ClipIdentifier | None:
+        """Generate a ClipIdentifier from a string."""
+        parts = data.split("/")
+        if parts[0] != cls.IDENTIFIER_TYPE:
+            return None
+
+        return cls(name=parts[1])
+
+
+@attr.s(frozen=True)
+class ClipSearchIdentifier(Identifier):
+    """Clip Search Identifier."""
+
+    IDENTIFIER_TYPE = "clip-search"
 
     name: str = attr.ib(
         default="",
@@ -98,8 +128,8 @@ class ClipsIdentifier(Identifier):
     )
 
     @classmethod
-    def from_str(cls, data) -> ClipsIdentifier | None:
-        """Generate a ClipsIdentifier from a string."""
+    def from_str(cls, data: str) -> ClipSearchIdentifier | None:
+        """Generate a ClipSearchIdentifier from a string."""
         parts = data.split("/")
         if parts[0] != cls.IDENTIFIER_TYPE:
             return None
@@ -287,7 +317,10 @@ class FrigateMediaSource(MediaSource):
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
-        return PlayMedia(f"/api/frigate/{item.identifier}", MIME_TYPE)
+        identifier = Identifier.from_str(item.identifier)
+        if identifier:
+            return PlayMedia(f"/api/frigate/{identifier}", MIME_TYPE)
+        raise Unresolvable("Unknown identifier: %s" % item.identifier)
 
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
@@ -308,7 +341,7 @@ class FrigateMediaSource(MediaSource):
                 children=[
                     BrowseMediaSource(
                         domain=DOMAIN,
-                        identifier=ClipsIdentifier(),
+                        identifier=ClipSearchIdentifier(),
                         media_class=MEDIA_CLASS_DIRECTORY,
                         children_media_class=MEDIA_CLASS_VIDEO,
                         media_content_type=MEDIA_CLASS_VIDEO,
@@ -335,7 +368,7 @@ class FrigateMediaSource(MediaSource):
 
         identifier = Identifier.from_str(item.identifier)
 
-        if isinstance(identifier, ClipsIdentifier):
+        if isinstance(identifier, ClipSearchIdentifier):
             await self._refresh_event_summary_if_necessary()
 
             try:
@@ -390,7 +423,7 @@ class FrigateMediaSource(MediaSource):
                 )
 
     def _browse_clips(
-        self, identifier: ClipsIdentifier, events: dict[str, Any]
+        self, identifier: ClipSearchIdentifier, events: dict[str, Any]
     ) -> BrowseMediaSource:
         """Browse media."""
 
@@ -473,7 +506,7 @@ class FrigateMediaSource(MediaSource):
         return [
             BrowseMediaSource(
                 domain=DOMAIN,
-                identifier=f"clips/{event['camera']}-{event['id']}.mp4",
+                identifier=ClipIdentifier(name=f"{event['camera']}-{event['id']}.mp4"),
                 media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_TYPE_VIDEO,
                 title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{int(event['end_time']-event['start_time'])}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
@@ -485,7 +518,7 @@ class FrigateMediaSource(MediaSource):
         ]
 
     def _build_camera_sources(
-        self, identifier: ClipsIdentifier, shown_event_count: int
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
     ) -> BrowseMediaSource:
         sources = []
         for camera in self._cameras:
@@ -517,7 +550,7 @@ class FrigateMediaSource(MediaSource):
         return sources
 
     def _build_label_sources(
-        self, identifier: ClipsIdentifier, shown_event_count: int
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
     ) -> BrowseMediaSource:
         sources = []
         for label in self._labels:
@@ -549,7 +582,7 @@ class FrigateMediaSource(MediaSource):
         return sources
 
     def _build_zone_sources(
-        self, identifier: ClipsIdentifier, shown_event_count: int
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
     ) -> BrowseMediaSource:
         """Build zone media sources."""
         sources = []
@@ -577,7 +610,7 @@ class FrigateMediaSource(MediaSource):
         return sources
 
     def _build_date_sources(
-        self, identifier: ClipsIdentifier, shown_event_count: int
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
     ) -> BrowseMediaSource:
         """Build data media sources."""
         sources = []
@@ -815,7 +848,7 @@ class FrigateMediaSource(MediaSource):
 
         return sources
 
-    def _count_by(self, identifier: ClipsIdentifier) -> int:
+    def _count_by(self, identifier: ClipSearchIdentifier) -> int:
         return sum(
             [
                 d["count"]
