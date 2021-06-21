@@ -10,7 +10,11 @@ import pytest
 
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN
-from custom_components.frigate.media_source import CLIPS_ROOT, RECORDINGS_ROOT
+from custom_components.frigate.media_source import (
+    ClipsIdentifier,
+    Identifier,
+    RecordingIdentifier,
+)
 from homeassistant.components import media_source
 from homeassistant.components.media_source import const
 from homeassistant.components.media_source.error import MediaSourceError
@@ -109,7 +113,8 @@ async def test_async_browse_media_clips_root(
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
     media = await media_source.async_browse_media(
-        hass, f"{const.URI_SCHEME}{DOMAIN}/{CLIPS_ROOT}"
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}/clips",
     )
 
     assert len(media.as_dict()["children"]) == 58
@@ -394,7 +399,8 @@ async def test_async_browse_media_recordings_root(
     )
 
     media = await media_source.async_browse_media(
-        hass, f"{const.URI_SCHEME}{DOMAIN}/{RECORDINGS_ROOT}"
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}/recordings",
     )
 
     assert media.as_dict() == {
@@ -559,6 +565,13 @@ async def test_async_browse_media_recordings_root(
             hass, f"{const.URI_SCHEME}{DOMAIN}/recordings/2021-06/04/NOT_AN_HOUR/"
         )
 
+    # Ensure a syntactically correct, but semantically incorrect path will
+    # result in a MediaSourceError (there is no 29th February in 2021).
+    with pytest.raises(MediaSourceError):
+        await media_source.async_browse_media(
+            hass, f"{const.URI_SCHEME}{DOMAIN}/recordings/2021-02/29"
+        )
+
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_recordings_for_camera(
@@ -656,9 +669,7 @@ async def test_async_browse_media_async_get_event_summary_error(
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
     with pytest.raises(MediaSourceError):
-        await media_source.async_browse_media(
-            hass, f"{const.URI_SCHEME}{DOMAIN}/{CLIPS_ROOT}"
-        )
+        await media_source.async_browse_media(hass, f"{const.URI_SCHEME}{DOMAIN}/clips")
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
@@ -671,9 +682,7 @@ async def test_async_browse_media_async_get_events_error(
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
     with pytest.raises(MediaSourceError):
-        await media_source.async_browse_media(
-            hass, f"{const.URI_SCHEME}{DOMAIN}/{CLIPS_ROOT}"
-        )
+        await media_source.async_browse_media(hass, f"{const.URI_SCHEME}{DOMAIN}/clips")
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
@@ -689,7 +698,7 @@ async def test_async_browse_media_async_get_recordings_folder_error(
 
     with pytest.raises(MediaSourceError):
         await media_source.async_browse_media(
-            hass, f"{const.URI_SCHEME}{DOMAIN}/{RECORDINGS_ROOT}"
+            hass, f"{const.URI_SCHEME}{DOMAIN}/recordings"
         )
 
     with pytest.raises(MediaSourceError):
@@ -697,3 +706,74 @@ async def test_async_browse_media_async_get_recordings_folder_error(
             hass,
             f"{const.URI_SCHEME}{DOMAIN}/recordings/2021-06/04/15/front_door",
         )
+
+
+async def test_clips_identifier() -> None:
+    """Test clips identifier."""
+    identifier_in = "clips/.this_month.2021-06-04.front_door.person/1622764800/1622851200/front_door/person/zone"
+    identifier = Identifier.from_str(identifier_in)
+
+    assert identifier
+    assert isinstance(identifier, ClipsIdentifier)
+    assert identifier.name == ".this_month.2021-06-04.front_door.person"
+    assert identifier.after == 1622764800
+    assert identifier.before == 1622851200
+    assert identifier.camera == "front_door"
+    assert identifier.label == "person"
+    assert identifier.zone == "zone"
+    assert str(identifier) == identifier_in
+    assert not identifier.is_root()
+
+    # Invalid "after" time.
+    assert (
+        ClipsIdentifier.from_str(
+            "clips/.this_month.2021-06-04.front_door.person/NOT_AN_INT/1622851200/front_door/person/zone"
+        )
+        is None
+    )
+
+    # Not a clips identifier.
+    assert ClipsIdentifier.from_str("recordings/something/something") is None
+
+    assert ClipsIdentifier().is_root()
+
+
+async def test_recordings_identifier() -> None:
+    """Test recordings identifier."""
+    identifier_in = "recordings/2021-06/04/15/front_door"
+    identifier = Identifier.from_str(identifier_in)
+
+    assert identifier
+    assert isinstance(identifier, RecordingIdentifier)
+    assert identifier.year_month == "2021-06"
+    assert identifier.day == 4
+    assert identifier.hour == 15
+    assert str(identifier) == identifier_in
+
+    with pytest.raises(ValueError):
+        # The identifier is fully specified, there's no next available attribute.
+        identifier.get_changes_to_set_next_empty("value")
+
+    # Year is not an int.
+    assert (
+        RecordingIdentifier.from_str("recordings/NOT_AN_INT-06/04/15/front_door")
+        is None
+    )
+
+    # No 13th month.
+    assert RecordingIdentifier.from_str("recordings/2021-13/04/15/front_door") is None
+
+    # No 32nd day.
+    assert RecordingIdentifier.from_str("recordings/2021-12/32/15/front_door") is None
+
+    # No 25th hour.
+    assert RecordingIdentifier.from_str("recordings/2021-12/28/25/front_door") is None
+
+    # Not a recording identifier.
+    assert RecordingIdentifier.from_str("clips/something/something") is None
+
+    # A missing element (no hour) in the identifier, so no path will be possible
+    # beyond the path to the day.
+    identifier_in = "recordings/2021-06/04//front_door"
+    identifier = RecordingIdentifier.from_str(identifier_in)
+    assert identifier.get_frigate_server_path() == "2021-06/04"
