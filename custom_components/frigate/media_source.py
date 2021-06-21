@@ -297,6 +297,25 @@ class RecordingIdentifier(Identifier):
         raise ValueError("No empty attribute available")
 
 
+@attr.s(frozen=True)
+class EventSummaryData:
+    """Summary data from Frigate events."""
+
+    data: dict[str, Any] = attr.ib()
+    cameras: list[dict[str, Any]] = attr.ib()
+    labels: list[dict[str, Any]] = attr.ib()
+    zones: list[dict[str, Any]] = attr.ib()
+
+    @classmethod
+    def from_raw_data(cls, summary_data: dict[str, Any]) -> None:
+        """Generate an EventSummaryData object from raw data."""
+
+        cameras = list({d["camera"] for d in summary_data})
+        labels = list({d["label"] for d in summary_data})
+        zones = list({zone for d in summary_data for zone in d["zones"]})
+        return cls(summary_data, cameras, labels, zones)
+
+
 class FrigateMediaSource(MediaSource):
     """Provide Frigate camera recordings as media sources."""
 
@@ -309,11 +328,6 @@ class FrigateMediaSource(MediaSource):
         self._client = FrigateApiClient(
             self.hass.data[DOMAIN]["host"], async_get_clientsession(hass)
         )
-        self._last_summary_refresh = None
-        self._summary_data = None
-        self._cameras = []
-        self._labels = []
-        self._zones = []
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
@@ -369,8 +383,6 @@ class FrigateMediaSource(MediaSource):
         identifier = Identifier.from_str(item.identifier)
 
         if isinstance(identifier, ClipSearchIdentifier):
-            await self._refresh_event_summary_if_necessary()
-
             try:
                 events = await self._client.async_get_events(
                     after=identifier.after,
@@ -383,7 +395,9 @@ class FrigateMediaSource(MediaSource):
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
-            return self._browse_clips(identifier, events)
+            return self._browse_clips(
+                await self._get_event_summary_data(), identifier, events
+            )
 
         if isinstance(identifier, RecordingIdentifier):
             path = identifier.get_frigate_server_path()
@@ -398,36 +412,32 @@ class FrigateMediaSource(MediaSource):
 
         raise MediaSourceError("Invalid media source identifier: %s" % item.identifier)
 
-    async def _refresh_event_summary_if_necessary(self) -> None:
-        """Refresh event data if necessary."""
-        if (
-            self._last_summary_refresh is None
-            or dt.datetime.now().timestamp() - self._last_summary_refresh > 60
-        ):
-            self._last_summary_refresh = dt.datetime.now().timestamp()
-            try:
-                self._summary_data = await self._client.async_get_event_summary()
-            except FrigateApiClientError as exc:
-                raise MediaSourceError from exc
+    async def _get_event_summary_data(self) -> EventSummaryData:
+        """Get event summary data."""
 
-            self._cameras = list({d["camera"] for d in self._summary_data})
-            self._labels = list({d["label"] for d in self._summary_data})
-            self._zones = list(
-                {zone for d in self._summary_data for zone in d["zones"]}
+        try:
+            summary_data = await self._client.async_get_event_summary()
+        except FrigateApiClientError as exc:
+            raise MediaSourceError from exc
+
+        # Add timestamps to raw data.
+        for data in summary_data:
+            data["timestamp"] = int(
+                dt.datetime.strptime(data["day"], "%Y-%m-%d")
+                .astimezone(DEFAULT_TIME_ZONE)
+                .timestamp()
             )
-            for data in self._summary_data:
-                data["timestamp"] = int(
-                    dt.datetime.strptime(data["day"], "%Y-%m-%d")
-                    .astimezone(DEFAULT_TIME_ZONE)
-                    .timestamp()
-                )
+
+        return EventSummaryData.from_raw_data(summary_data)
 
     def _browse_clips(
-        self, identifier: ClipSearchIdentifier, events: dict[str, Any]
+        self,
+        summary_data: EventSummaryData,
+        identifier: ClipSearchIdentifier,
+        events: dict[str, Any],
     ) -> BrowseMediaSource:
-        """Browse media."""
-
-        count = self._count_by(identifier)
+        """Browse clips."""
+        count = self._count_by(summary_data, identifier)
 
         if identifier.is_root():
             title = f"Clips ({count})"
@@ -459,19 +469,19 @@ class FrigateMediaSource(MediaSource):
 
         drilldown_sources = []
         drilldown_sources.extend(
-            self._build_date_sources(identifier, len(base.children))
+            self._build_date_sources(summary_data, identifier, len(base.children))
         )
         if not identifier.camera:
             drilldown_sources.extend(
-                self._build_camera_sources(identifier, len(base.children))
+                self._build_camera_sources(summary_data, identifier, len(base.children))
             )
         if not identifier.label:
             drilldown_sources.extend(
-                self._build_label_sources(identifier, len(base.children))
+                self._build_label_sources(summary_data, identifier, len(base.children))
             )
         if not identifier.zone:
             drilldown_sources.extend(
-                self._build_zone_sources(identifier, len(base.children))
+                self._build_zone_sources(summary_data, identifier, len(base.children))
             )
 
         # only show the drill down options if there are more than 10 events
@@ -518,15 +528,19 @@ class FrigateMediaSource(MediaSource):
         ]
 
     def _build_camera_sources(
-        self, identifier: ClipSearchIdentifier, shown_event_count: int
+        self,
+        summary_data: EventSummaryData,
+        identifier: ClipSearchIdentifier,
+        shown_event_count: int,
     ) -> BrowseMediaSource:
         sources = []
-        for camera in self._cameras:
+        for camera in summary_data.cameras:
             count = self._count_by(
+                summary_data,
                 attr.evolve(
                     identifier,
                     camera=camera,
-                )
+                ),
             )
             if count in (0, shown_event_count):
                 continue
@@ -550,15 +564,19 @@ class FrigateMediaSource(MediaSource):
         return sources
 
     def _build_label_sources(
-        self, identifier: ClipSearchIdentifier, shown_event_count: int
+        self,
+        summary_data: EventSummaryData,
+        identifier: ClipSearchIdentifier,
+        shown_event_count: int,
     ) -> BrowseMediaSource:
         sources = []
-        for label in self._labels:
+        for label in summary_data.labels:
             count = self._count_by(
+                summary_data,
                 attr.evolve(
                     identifier,
                     label=label,
-                )
+                ),
             )
             if count in (0, shown_event_count):
                 continue
@@ -582,12 +600,15 @@ class FrigateMediaSource(MediaSource):
         return sources
 
     def _build_zone_sources(
-        self, identifier: ClipSearchIdentifier, shown_event_count: int
+        self,
+        summary_data: EventSummaryData,
+        identifier: ClipSearchIdentifier,
+        shown_event_count: int,
     ) -> BrowseMediaSource:
         """Build zone media sources."""
         sources = []
-        for zone in self._zones:
-            count = self._count_by(attr.evolve(identifier, zone=zone))
+        for zone in summary_data.zones:
+            count = self._count_by(summary_data, attr.evolve(identifier, zone=zone))
             if count in (0, shown_event_count):
                 continue
             sources.append(
@@ -610,7 +631,10 @@ class FrigateMediaSource(MediaSource):
         return sources
 
     def _build_date_sources(
-        self, identifier: ClipSearchIdentifier, shown_event_count: int
+        self,
+        summary_data: EventSummaryData,
+        identifier: ClipSearchIdentifier,
+        shown_event_count: int,
     ) -> BrowseMediaSource:
         """Build data media sources."""
         sources = []
@@ -626,33 +650,39 @@ class FrigateMediaSource(MediaSource):
         )
         start_of_year = int(today.replace(month=1, day=1).timestamp())
 
-        count_today = self._count_by(attr.evolve(identifier, after=start_of_today))
+        count_today = self._count_by(
+            summary_data, attr.evolve(identifier, after=start_of_today)
+        )
 
         count_yesterday = self._count_by(
+            summary_data,
             attr.evolve(
                 identifier,
                 after=start_of_yesterday,
                 before=start_of_today,
-            )
+            ),
         )
         count_this_month = self._count_by(
+            summary_data,
             attr.evolve(
                 identifier,
                 after=start_of_month,
-            )
+            ),
         )
         count_last_month = self._count_by(
+            summary_data,
             attr.evolve(
                 identifier,
                 after=start_of_last_month,
                 before=start_of_month,
-            )
+            ),
         )
         count_this_year = self._count_by(
+            summary_data,
             attr.evolve(
                 identifier,
                 after=start_of_year,
-            )
+            ),
         )
 
         # if a date range has already been selected
@@ -674,11 +704,12 @@ class FrigateMediaSource(MediaSource):
                         (current_date + relativedelta(months=+1)).timestamp()
                     )
                     count_current = self._count_by(
+                        summary_data,
                         attr.evolve(
                             identifier,
                             after=start_of_current_month,
                             before=start_of_next_month,
-                        )
+                        ),
                     )
                     sources.append(
                         BrowseMediaSource(
@@ -713,11 +744,12 @@ class FrigateMediaSource(MediaSource):
                     start_of_current_day = int(current_date.timestamp())
                     start_of_next_day = start_of_current_day + SECONDS_IN_DAY
                     count_current = self._count_by(
+                        summary_data,
                         attr.evolve(
                             identifier,
                             after=start_of_current_day,
                             before=start_of_next_day,
-                        )
+                        ),
                     )
                     if count_current > 0:
                         sources.append(
@@ -848,11 +880,14 @@ class FrigateMediaSource(MediaSource):
 
         return sources
 
-    def _count_by(self, identifier: ClipSearchIdentifier) -> int:
+    def _count_by(
+        self, summary_data: EventSummaryData, identifier: ClipSearchIdentifier
+    ) -> int:
+        """Return count of events that match the identifier."""
         return sum(
             [
                 d["count"]
-                for d in self._summary_data
+                for d in summary_data.data
                 if (
                     (identifier.after is None or d["timestamp"] >= identifier.after)
                     and (
