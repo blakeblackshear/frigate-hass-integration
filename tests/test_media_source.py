@@ -95,7 +95,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
                 "title": "Recordings",
                 "media_class": "directory",
                 "media_content_type": "video",
-                "media_content_id": "media-source://frigate/recordings////",
+                "media_content_id": "media-source://frigate/recordings/////",
                 "can_play": False,
                 "can_expand": True,
                 "children_media_class": "video",
@@ -407,7 +407,7 @@ async def test_async_browse_media_recordings_root(
         "title": "Recordings",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/recordings////",
+        "media_content_id": "media-source://frigate/recordings/////",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "video",
@@ -418,7 +418,7 @@ async def test_async_browse_media_recordings_root(
                 "can_play": False,
                 "children_media_class": "video",
                 "media_class": "directory",
-                "media_content_id": "media-source://frigate/recordings/2021-06///",
+                "media_content_id": "media-source://frigate/recordings/2021-06////",
                 "media_content_type": "video",
                 "thumbnail": None,
                 "title": "June 2021",
@@ -449,7 +449,7 @@ async def test_async_browse_media_recordings_root(
         "title": "June 2021",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/recordings/2021-06///",
+        "media_content_id": "media-source://frigate/recordings/2021-06////",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "video",
@@ -460,7 +460,7 @@ async def test_async_browse_media_recordings_root(
                 "can_play": False,
                 "children_media_class": "video",
                 "media_class": "directory",
-                "media_content_id": "media-source://frigate/recordings/2021-06/04//",
+                "media_content_id": "media-source://frigate/recordings/2021-06/04///",
                 "media_content_type": "video",
                 "thumbnail": None,
                 "title": "June 04",
@@ -488,7 +488,7 @@ async def test_async_browse_media_recordings_root(
         "title": "June 04",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/recordings/2021-06/04//",
+        "media_content_id": "media-source://frigate/recordings/2021-06/04///",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "video",
@@ -499,7 +499,7 @@ async def test_async_browse_media_recordings_root(
                 "can_play": False,
                 "children_media_class": "video",
                 "media_class": "directory",
-                "media_content_id": "media-source://frigate/recordings/2021-06/04/15/",
+                "media_content_id": "media-source://frigate/recordings/2021-06/04/15//",
                 "media_content_type": "video",
                 "thumbnail": None,
                 "title": "15:00:00",
@@ -530,7 +530,7 @@ async def test_async_browse_media_recordings_root(
         "title": "15:00:00",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/recordings/2021-06/04/15/",
+        "media_content_id": "media-source://frigate/recordings/2021-06/04/15//",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "video",
@@ -541,7 +541,7 @@ async def test_async_browse_media_recordings_root(
                 "can_play": False,
                 "children_media_class": "video",
                 "media_class": "directory",
-                "media_content_id": "media-source://frigate/recordings/2021-06/04/15/front_door",
+                "media_content_id": "media-source://frigate/recordings/2021-06/04/15/front_door/",
                 "media_content_type": "video",
                 "thumbnail": None,
                 "title": "Front Door",
@@ -551,7 +551,7 @@ async def test_async_browse_media_recordings_root(
                 "can_play": False,
                 "children_media_class": "video",
                 "media_class": "directory",
-                "media_content_id": "media-source://frigate/recordings/2021-06/04/15/sitting_room",
+                "media_content_id": "media-source://frigate/recordings/2021-06/04/15/sitting_room/",
                 "media_content_type": "video",
                 "thumbnail": None,
                 "title": "Sitting Room",
@@ -607,7 +607,7 @@ async def test_async_browse_media_recordings_for_camera(
         "title": "Front Door",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/recordings/2021-06/04/15/front_door",
+        "media_content_id": "media-source://frigate/recordings/2021-06/04/15/front_door/",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "video",
@@ -740,7 +740,7 @@ async def test_clips_identifier() -> None:
 
 async def test_recordings_identifier() -> None:
     """Test recordings identifier."""
-    identifier_in = "recordings/2021-06/04/15/front_door"
+    identifier_in = "recordings/2021-06/04/15/front_door/media.mp4"
     identifier = Identifier.from_str(identifier_in)
 
     assert identifier
@@ -748,6 +748,7 @@ async def test_recordings_identifier() -> None:
     assert identifier.year_month == "2021-06"
     assert identifier.day == 4
     assert identifier.hour == 15
+    assert identifier.recording_name == "media.mp4"
     assert str(identifier) == identifier_in
 
     with pytest.raises(ValueError):

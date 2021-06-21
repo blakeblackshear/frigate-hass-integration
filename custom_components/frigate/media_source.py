@@ -197,6 +197,10 @@ class RecordingIdentifier(Identifier):
         default=None, validator=[attr.validators.instance_of((str, type(None)))]
     )
 
+    recording_name: str | None = attr.ib(
+        default=None, validator=[attr.validators.instance_of((str, type(None)))]
+    )
+
     @classmethod
     def from_str(cls, data: str) -> RecordingIdentifier | None:
         """Generate a RecordingIdentifier from a string."""
@@ -210,6 +214,7 @@ class RecordingIdentifier(Identifier):
                 day=cls._get_index(parts, 2),
                 hour=cls._get_index(parts, 3),
                 camera=cls._get_index(parts, 4),
+                recording_name=cls._get_index(parts, 5),
             )
         except ValueError:
             return None
@@ -225,6 +230,7 @@ class RecordingIdentifier(Identifier):
                     f"{self.day:02}" if self.day is not None else None,
                     f"{self.hour:02}" if self.hour is not None else None,
                     self.camera,
+                    self.recording_name,
                 )
             ]
         )
@@ -243,6 +249,7 @@ class RecordingIdentifier(Identifier):
             f"{self.day:02}" if self.day is not None else None,
             f"{self.hour:02}" if self.hour is not None else None,
             self.camera,
+            self.recording_name,
         ]
 
         out_parts = []
@@ -940,7 +947,9 @@ class FrigateMediaSource(MediaSource):
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier}/{recording['name']}",
+                    identifier=attr.evolve(
+                        identifier, recording_name=recording["name"]
+                    ),
                     media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_TYPE_VIDEO,
                     title=title,
