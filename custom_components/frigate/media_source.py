@@ -5,6 +5,7 @@ import datetime as dt
 import logging
 from typing import Any
 
+import attr
 from dateutil.relativedelta import relativedelta
 
 from homeassistant.components.media_player.const import (
@@ -13,7 +14,7 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_VIDEO,
 )
 from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
-from homeassistant.components.media_source.error import MediaSourceError
+from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
     MediaSource,
@@ -34,13 +35,266 @@ MIME_TYPE = "video/mp4"
 ITEM_LIMIT = 50
 SECONDS_IN_DAY = 60 * 60 * 24
 SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
-CLIPS_ROOT = "clips//////"
-RECORDINGS_ROOT = "recordings////"
 
 
 async def async_get_media_source(hass: HomeAssistant):
     """Set up Frigate media source."""
     return FrigateMediaSource(hass)
+
+
+class Identifier:
+    """Base class for Identifiers."""
+
+    @classmethod
+    def _get_index(cls, data: list, index: int, default: Any = None) -> Any:
+        try:
+            return data[index] if data[index] != "" else default
+        except IndexError:
+            return default
+
+    @classmethod
+    def _empty_if_none(cls, data: Any) -> str:
+        """Return an empty string if data is None."""
+        return str(data) if data is not None else ""
+
+    @classmethod
+    def _to_int_or_none(cls, data: str) -> int | None:
+        return int(data) if data else None
+
+    @classmethod
+    def from_str(
+        cls, data: str
+    ) -> ClipSearchIdentifier | ClipIdentifier | RecordingIdentifier | None:
+        """Generate a ClipSearchIdentifier from a string."""
+        return (
+            ClipSearchIdentifier.from_str(data)
+            or ClipIdentifier.from_str(data)
+            or RecordingIdentifier.from_str(data)
+        )
+
+
+@attr.s(frozen=True)
+class ClipIdentifier(Identifier):
+    """Clip Identifier."""
+
+    IDENTIFIER_TYPE = "clips"
+
+    name: str = attr.ib(
+        validator=[attr.validators.instance_of(str)],
+    )
+
+    def __str__(self) -> str:
+        """Convert to a string."""
+        return "/".join((self.IDENTIFIER_TYPE, self.name))
+
+    @classmethod
+    def from_str(cls, data: str) -> ClipIdentifier | None:
+        """Generate a ClipIdentifier from a string."""
+        parts = data.split("/")
+        if parts[0] != cls.IDENTIFIER_TYPE:
+            return None
+
+        return cls(name=parts[1])
+
+
+@attr.s(frozen=True)
+class ClipSearchIdentifier(Identifier):
+    """Clip Search Identifier."""
+
+    IDENTIFIER_TYPE = "clip-search"
+
+    name: str = attr.ib(
+        default="",
+        validator=[attr.validators.instance_of(str)],
+    )
+    after: int | None = attr.ib(
+        default=None,
+        converter=Identifier._to_int_or_none,
+        validator=[attr.validators.instance_of((int, type(None)))],
+    )
+    before: int | None = attr.ib(
+        default=None,
+        converter=Identifier._to_int_or_none,
+        validator=[attr.validators.instance_of((int, type(None)))],
+    )
+    camera: str | None = attr.ib(
+        default=None, validator=[attr.validators.instance_of((str, type(None)))]
+    )
+    label: str | None = attr.ib(
+        default=None, validator=[attr.validators.instance_of((str, type(None)))]
+    )
+    zone: str | None = attr.ib(
+        default=None, validator=[attr.validators.instance_of((str, type(None)))]
+    )
+
+    @classmethod
+    def from_str(cls, data: str) -> ClipSearchIdentifier | None:
+        """Generate a ClipSearchIdentifier from a string."""
+        parts = data.split("/")
+        if parts[0] != cls.IDENTIFIER_TYPE:
+            return None
+
+        try:
+            return cls(
+                name=cls._get_index(parts, 1, ""),
+                after=cls._get_index(parts, 2),
+                before=cls._get_index(parts, 3),
+                camera=cls._get_index(parts, 4),
+                label=cls._get_index(parts, 5),
+                zone=cls._get_index(parts, 6),
+            )
+        except ValueError:
+            return None
+
+    def __str__(self) -> str:
+        """Convert to a string."""
+
+        return "/".join(
+            [self.IDENTIFIER_TYPE]
+            + [
+                self._empty_if_none(val)
+                for val in (
+                    self.name,
+                    self.after,
+                    self.before,
+                    self.camera,
+                    self.label,
+                    self.zone,
+                )
+            ]
+        )
+
+    def is_root(self) -> str:
+        """Determine if an identifier is a clips root."""
+        return not any(
+            [self.name, self.after, self.before, self.camera, self.label, self.zone]
+        )
+
+
+def _validate_year_month(inst: attr.s, attribute: str, data: str | None) -> None:
+    """Validate input."""
+    if data:
+        year, month = data.split("-")
+        if int(year) < 0 or int(month) <= 0 or int(month) > 12:
+            raise ValueError("Invalid year-month in identifier: %s" % data)
+
+
+def _validate_day(inst: attr.s, attribute: str, value: int | None):
+    """Determine if a value is a valid day."""
+    if value is not None and (int(value) < 1 or int(value) > 31):
+        raise ValueError("Invalid day in identifier: %s" % value)
+
+
+def _validate_hour(inst: attr.s, attribute: str, value: int | None):
+    """Determine if a value is a valid hour."""
+    if value is not None and (int(value) < 1 or int(value) > 23):
+        raise ValueError("Invalid hour in identifier: %s" % value)
+
+
+@attr.s(frozen=True)
+class RecordingIdentifier(Identifier):
+    """Recording Identifier."""
+
+    IDENTIFIER_TYPE = "recordings"
+
+    year_month: str | None = attr.ib(
+        default=None,
+        validator=[
+            attr.validators.instance_of((str, type(None))),
+            _validate_year_month,
+        ],
+    )
+
+    day: int | None = attr.ib(
+        default=None,
+        converter=Identifier._to_int_or_none,
+        validator=[
+            attr.validators.instance_of((int, type(None))),
+            _validate_day,
+        ],
+    )
+
+    hour: int | None = attr.ib(
+        default=None,
+        converter=Identifier._to_int_or_none,
+        validator=[
+            attr.validators.instance_of((int, type(None))),
+            _validate_hour,
+        ],
+    )
+
+    camera: str | None = attr.ib(
+        default=None, validator=[attr.validators.instance_of((str, type(None)))]
+    )
+
+    recording_name: str | None = attr.ib(
+        default=None, validator=[attr.validators.instance_of((str, type(None)))]
+    )
+
+    @classmethod
+    def from_str(cls, data: str) -> RecordingIdentifier | None:
+        """Generate a RecordingIdentifier from a string."""
+        parts = data.split("/")
+        if parts[0] != cls.IDENTIFIER_TYPE:
+            return None
+
+        try:
+            return cls(
+                year_month=cls._get_index(parts, 1),
+                day=cls._get_index(parts, 2),
+                hour=cls._get_index(parts, 3),
+                camera=cls._get_index(parts, 4),
+                recording_name=cls._get_index(parts, 5),
+            )
+        except ValueError:
+            return None
+
+    def __str__(self) -> str:
+        """Convert to a string."""
+        return "/".join(
+            [self.IDENTIFIER_TYPE]
+            + [
+                self._empty_if_none(val)
+                for val in (
+                    self.year_month,
+                    f"{self.day:02}" if self.day is not None else None,
+                    f"{self.hour:02}" if self.hour is not None else None,
+                    self.camera,
+                    self.recording_name,
+                )
+            ]
+        )
+
+    def get_frigate_server_path(self) -> str:
+        """Get the equivalent Frigate server path."""
+
+        # The attributes of this class represent a path that the recording can
+        # be retrieved from the Frigate server. If there are holes in the path
+        # (i.e. missing attributes) the path won't work on the Frigate server,
+        # so the path returned is either complete or up until the first "hole" /
+        # missing attribute.
+
+        in_parts = [
+            self.year_month,
+            f"{self.day:02}" if self.day is not None else None,
+            f"{self.hour:02}" if self.hour is not None else None,
+            self.camera,
+            self.recording_name,
+        ]
+
+        out_parts = []
+        for val in in_parts:
+            if val is None:
+                break
+            out_parts.append(str(val))
+        return "/".join(out_parts)
+
+    def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
+        """Get the changes that would set the next attribute in the hierarchy."""
+        for attribute in self.__attrs_attrs__:
+            if getattr(self, attribute.name) is None:
+                return {attribute.name: data}
+        raise ValueError("No empty attribute available")
 
 
 class FrigateMediaSource(MediaSource):
@@ -63,7 +317,10 @@ class FrigateMediaSource(MediaSource):
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
-        return PlayMedia(f"/api/frigate/{item.identifier}", MIME_TYPE)
+        identifier = Identifier.from_str(item.identifier)
+        if identifier:
+            return PlayMedia(f"/api/frigate/{identifier}", MIME_TYPE)
+        raise Unresolvable("Unknown identifier: %s" % item.identifier)
 
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
@@ -84,7 +341,7 @@ class FrigateMediaSource(MediaSource):
                 children=[
                     BrowseMediaSource(
                         domain=DOMAIN,
-                        identifier=CLIPS_ROOT,
+                        identifier=ClipSearchIdentifier(),
                         media_class=MEDIA_CLASS_DIRECTORY,
                         children_media_class=MEDIA_CLASS_VIDEO,
                         media_content_type=MEDIA_CLASS_VIDEO,
@@ -96,7 +353,7 @@ class FrigateMediaSource(MediaSource):
                     ),
                     BrowseMediaSource(
                         domain=DOMAIN,
-                        identifier=RECORDINGS_ROOT,
+                        identifier=RecordingIdentifier(),
                         media_class=MEDIA_CLASS_DIRECTORY,
                         children_media_class=MEDIA_CLASS_VIDEO,
                         media_content_type=MEDIA_CLASS_VIDEO,
@@ -109,103 +366,77 @@ class FrigateMediaSource(MediaSource):
                 ],
             )
 
-        if item.identifier.startswith("clips"):
-            identifier = None
+        identifier = Identifier.from_str(item.identifier)
 
-            # If the summary data is old, refresh it.
-            if (
-                self._last_summary_refresh is None
-                or dt.datetime.now().timestamp() - self._last_summary_refresh > 60
-            ):
-                self._last_summary_refresh = dt.datetime.now().timestamp()
-                try:
-                    self._summary_data = await self._client.async_get_event_summary()
-                except FrigateApiClientError as exc:
-                    raise MediaSourceError from exc
-
-                self._cameras = list({d["camera"] for d in self._summary_data})
-                self._labels = list({d["label"] for d in self._summary_data})
-                self._zones = list(
-                    {zone for d in self._summary_data for zone in d["zones"]}
-                )
-                for data in self._summary_data:
-                    data["timestamp"] = int(
-                        dt.datetime.strptime(data["day"], "%Y-%m-%d")
-                        .astimezone(DEFAULT_TIME_ZONE)
-                        .timestamp()
-                    )
-
-            identifier_parts = item.identifier.split("/")
-            identifier = {
-                "original": item.identifier,
-                "name": identifier_parts[1],
-                "after": identifier_parts[2],
-                "before": identifier_parts[3],
-                "camera": identifier_parts[4],
-                "label": identifier_parts[5],
-                "zone": identifier_parts[6],
-            }
+        if isinstance(identifier, ClipSearchIdentifier):
+            await self._refresh_event_summary_if_necessary()
 
             try:
                 events = await self._client.async_get_events(
-                    after=identifier["after"],
-                    before=identifier["before"],
-                    camera=identifier["camera"],
-                    label=identifier["label"],
-                    zone=identifier["zone"],
-                    limit=10000 if identifier["name"].endswith(".all") else ITEM_LIMIT,
+                    after=identifier.after,
+                    before=identifier.before,
+                    camera=identifier.camera,
+                    label=identifier.label,
+                    zone=identifier.zone,
+                    limit=10000 if identifier.name.endswith(".all") else ITEM_LIMIT,
                 )
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
             return self._browse_clips(identifier, events)
 
-        if item.identifier.startswith("recordings"):
-            identifier_parts = item.identifier.split("/")
-            identifier = {
-                "original": item.identifier,
-                "year_month": identifier_parts[1],
-                "day": identifier_parts[2],
-                "hour": identifier_parts[3],
-                "camera": identifier_parts[4],
-            }
-
-            if identifier["camera"] == "":
-                path = "/".join([s for s in item.identifier.split("/")[1:] if s != ""])
-                try:
-                    folders = await self._client.async_get_recordings_folder(path)
-                except FrigateApiClientError as exc:
-                    raise MediaSourceError from exc
-                return self._browse_recording_folders(identifier, folders)
-
-            path = "/".join([s for s in item.identifier.split("/")[1:] if s != ""])
+        if isinstance(identifier, RecordingIdentifier):
+            path = identifier.get_frigate_server_path()
             try:
-                recordings = await self._client.async_get_recordings_folder(path)
+                recordings_folder = await self._client.async_get_recordings_folder(path)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
-            return self._browse_recordings(identifier, recordings)
 
-    def _browse_clips(self, identifier, events) -> BrowseMediaSource:
+            if identifier.camera:
+                return self._browse_recordings(identifier, recordings_folder)
+            return self._browse_recording_folders(identifier, recordings_folder)
+
+        raise MediaSourceError("Invalid media source identifier: %s" % item.identifier)
+
+    async def _refresh_event_summary_if_necessary(self) -> None:
+        """Refresh event data if necessary."""
+        if (
+            self._last_summary_refresh is None
+            or dt.datetime.now().timestamp() - self._last_summary_refresh > 60
+        ):
+            self._last_summary_refresh = dt.datetime.now().timestamp()
+            try:
+                self._summary_data = await self._client.async_get_event_summary()
+            except FrigateApiClientError as exc:
+                raise MediaSourceError from exc
+
+            self._cameras = list({d["camera"] for d in self._summary_data})
+            self._labels = list({d["label"] for d in self._summary_data})
+            self._zones = list(
+                {zone for d in self._summary_data for zone in d["zones"]}
+            )
+            for data in self._summary_data:
+                data["timestamp"] = int(
+                    dt.datetime.strptime(data["day"], "%Y-%m-%d")
+                    .astimezone(DEFAULT_TIME_ZONE)
+                    .timestamp()
+                )
+
+    def _browse_clips(
+        self, identifier: ClipSearchIdentifier, events: dict[str, Any]
+    ) -> BrowseMediaSource:
         """Browse media."""
 
-        after = int(identifier["after"]) if not identifier["after"] == "" else None
-        before = int(identifier["before"]) if not identifier["before"] == "" else None
-        count = self._count_by(
-            after=after,
-            before=before,
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
-        )
+        count = self._count_by(identifier)
 
-        if identifier["original"] == CLIPS_ROOT:
+        if identifier.is_root():
             title = f"Clips ({count})"
         else:
-            title = f"{' > '.join([s for s in get_friendly_name(identifier['name']).split('.') if s != '']).title()} ({count})"
+            title = f"{' > '.join([s for s in get_friendly_name(identifier.name).split('.') if s != '']).title()} ({count})"
 
         base = BrowseMediaSource(
             domain=DOMAIN,
-            identifier=identifier["original"],
+            identifier=identifier,
             media_class=MEDIA_CLASS_DIRECTORY,
             children_media_class=MEDIA_CLASS_VIDEO,
             media_content_type=MEDIA_CLASS_VIDEO,
@@ -219,11 +450,7 @@ class FrigateMediaSource(MediaSource):
         event_items = self._build_clip_response(events)
 
         # if you are at the limit, but not at the root
-        if (
-            count > 0
-            and len(event_items) == ITEM_LIMIT
-            and not identifier["original"] == CLIPS_ROOT
-        ):
+        if count > 0 and len(event_items) == ITEM_LIMIT and identifier.is_root():
             # only render if > 10% is represented in view
             if ITEM_LIMIT / float(count) > 0.1:
                 base.children.extend(event_items)
@@ -234,15 +461,15 @@ class FrigateMediaSource(MediaSource):
         drilldown_sources.extend(
             self._build_date_sources(identifier, len(base.children))
         )
-        if identifier["camera"] == "":
+        if not identifier.camera:
             drilldown_sources.extend(
                 self._build_camera_sources(identifier, len(base.children))
             )
-        if identifier["label"] == "":
+        if not identifier.label:
             drilldown_sources.extend(
                 self._build_label_sources(identifier, len(base.children))
             )
-        if identifier["zone"] == "":
+        if not identifier.zone:
             drilldown_sources.extend(
                 self._build_zone_sources(identifier, len(base.children))
             )
@@ -255,13 +482,13 @@ class FrigateMediaSource(MediaSource):
         # add an all source if there are no drilldowns available and you are at the item limit
         if (
             (len(base.children) == 0 or len(base.children) == len(event_items))
-            and not identifier["name"].endswith(".all")
+            and not identifier.name.endswith(".all")
             and len(event_items) == ITEM_LIMIT
         ):
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.all/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(identifier, name=f"{identifier.name}.all"),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -279,7 +506,7 @@ class FrigateMediaSource(MediaSource):
         return [
             BrowseMediaSource(
                 domain=DOMAIN,
-                identifier=f"clips/{event['camera']}-{event['id']}.mp4",
+                identifier=ClipIdentifier(name=f"{event['camera']}-{event['id']}.mp4"),
                 media_class=MEDIA_CLASS_VIDEO,
                 media_content_type=MEDIA_TYPE_VIDEO,
                 title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{int(event['end_time']-event['start_time'])}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
@@ -290,26 +517,27 @@ class FrigateMediaSource(MediaSource):
             for event in events
         ]
 
-    def _build_camera_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
+    def _build_camera_sources(
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
+    ) -> BrowseMediaSource:
         sources = []
         for camera in self._cameras:
-            after = int(identifier["after"]) if not identifier["after"] == "" else None
-            before = (
-                int(identifier["before"]) if not identifier["before"] == "" else None
-            )
             count = self._count_by(
-                after=after,
-                before=before,
-                camera=camera,
-                label=identifier["label"],
-                zone=identifier["zone"],
+                attr.evolve(
+                    identifier,
+                    camera=camera,
+                )
             )
             if count in (0, shown_event_count):
                 continue
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{camera}/{identifier['after']}/{identifier['before']}/{camera}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.{camera}",
+                        camera=camera,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -321,26 +549,27 @@ class FrigateMediaSource(MediaSource):
             )
         return sources
 
-    def _build_label_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
+    def _build_label_sources(
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
+    ) -> BrowseMediaSource:
         sources = []
         for label in self._labels:
-            after = int(identifier["after"]) if not identifier["after"] == "" else None
-            before = (
-                int(identifier["before"]) if not identifier["before"] == "" else None
-            )
             count = self._count_by(
-                after=after,
-                before=before,
-                camera=identifier["camera"],
-                label=label,
-                zone=identifier["zone"],
+                attr.evolve(
+                    identifier,
+                    label=label,
+                )
             )
             if count in (0, shown_event_count):
                 continue
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{label}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{label}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.{label}",
+                        label=label,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -352,26 +581,23 @@ class FrigateMediaSource(MediaSource):
             )
         return sources
 
-    def _build_zone_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
+    def _build_zone_sources(
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
+    ) -> BrowseMediaSource:
+        """Build zone media sources."""
         sources = []
         for zone in self._zones:
-            after = int(identifier["after"]) if not identifier["after"] == "" else None
-            before = (
-                int(identifier["before"]) if not identifier["before"] == "" else None
-            )
-            count = self._count_by(
-                after=after,
-                before=before,
-                camera=identifier["camera"],
-                label=identifier["label"],
-                zone=zone,
-            )
+            count = self._count_by(attr.evolve(identifier, zone=zone))
             if count in (0, shown_event_count):
                 continue
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.{zone}/{identifier['after']}/{identifier['before']}/{identifier['camera']}/{identifier['label']}/{zone}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.{zone}",
+                        zone=zone,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -383,7 +609,10 @@ class FrigateMediaSource(MediaSource):
             )
         return sources
 
-    def _build_date_sources(self, identifier, shown_event_count) -> BrowseMediaSource:
+    def _build_date_sources(
+        self, identifier: ClipSearchIdentifier, shown_event_count: int
+    ) -> BrowseMediaSource:
+        """Build data media sources."""
         sources = []
 
         now = dt.datetime.now(DEFAULT_TIME_ZONE)
@@ -397,51 +626,39 @@ class FrigateMediaSource(MediaSource):
         )
         start_of_year = int(today.replace(month=1, day=1).timestamp())
 
-        count_today = self._count_by(
-            after=start_of_today,
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
-        )
+        count_today = self._count_by(attr.evolve(identifier, after=start_of_today))
+
         count_yesterday = self._count_by(
-            after=start_of_yesterday,
-            before=start_of_today,
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
+            attr.evolve(
+                identifier,
+                after=start_of_yesterday,
+                before=start_of_today,
+            )
         )
         count_this_month = self._count_by(
-            after=start_of_month,
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
+            attr.evolve(
+                identifier,
+                after=start_of_month,
+            )
         )
         count_last_month = self._count_by(
-            after=start_of_last_month,
-            before=start_of_month,
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
+            attr.evolve(
+                identifier,
+                after=start_of_last_month,
+                before=start_of_month,
+            )
         )
         count_this_year = self._count_by(
-            after=start_of_year,
-            camera=identifier["camera"],
-            label=identifier["label"],
-            zone=identifier["zone"],
+            attr.evolve(
+                identifier,
+                after=start_of_year,
+            )
         )
 
         # if a date range has already been selected
-        if identifier["before"] != "" or identifier["after"] != "":
-            before = (
-                int(now.timestamp())
-                if identifier["before"] == ""
-                else int(identifier["before"])
-            )
-            after = (
-                int(now.timestamp())
-                if identifier["after"] == ""
-                else int(identifier["after"])
-            )
+        if identifier.before or identifier.after:
+            before = identifier.before if identifier.before else int(now.timestamp())
+            after = identifier.after if identifier.after else int(now.timestamp())
 
             # if we are looking at years, split into months
             if before - after > SECONDS_IN_MONTH:
@@ -457,16 +674,21 @@ class FrigateMediaSource(MediaSource):
                         (current_date + relativedelta(months=+1)).timestamp()
                     )
                     count_current = self._count_by(
-                        after=start_of_current_month,
-                        before=start_of_next_month,
-                        camera=identifier["camera"],
-                        label=identifier["label"],
-                        zone=identifier["zone"],
+                        attr.evolve(
+                            identifier,
+                            after=start_of_current_month,
+                            before=start_of_next_month,
+                        )
                     )
                     sources.append(
                         BrowseMediaSource(
                             domain=DOMAIN,
-                            identifier=f"clips/{identifier['name']}.{current_date.strftime('%Y-%m')}/{start_of_current_month}/{start_of_next_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                            identifier=attr.evolve(
+                                identifier,
+                                name=f"{identifier.name}.{current_date.strftime('%Y-%m')}",
+                                after=start_of_current_month,
+                                before=start_of_next_month,
+                            ),
                             media_class=MEDIA_CLASS_DIRECTORY,
                             children_media_class=MEDIA_CLASS_VIDEO,
                             media_content_type=MEDIA_CLASS_VIDEO,
@@ -491,17 +713,22 @@ class FrigateMediaSource(MediaSource):
                     start_of_current_day = int(current_date.timestamp())
                     start_of_next_day = start_of_current_day + SECONDS_IN_DAY
                     count_current = self._count_by(
-                        after=start_of_current_day,
-                        before=start_of_next_day,
-                        camera=identifier["camera"],
-                        label=identifier["label"],
-                        zone=identifier["zone"],
+                        attr.evolve(
+                            identifier,
+                            after=start_of_current_day,
+                            before=start_of_next_day,
+                        )
                     )
                     if count_current > 0:
                         sources.append(
                             BrowseMediaSource(
                                 domain=DOMAIN,
-                                identifier=f"clips/{identifier['name']}.{current_date.strftime('%Y-%m-%d')}/{start_of_current_day}/{start_of_next_day}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                                identifier=attr.evolve(
+                                    identifier,
+                                    name=f"{identifier.name}.{current_date.strftime('%Y-%m-%d')}",
+                                    after=start_of_current_day,
+                                    before=start_of_next_day,
+                                ),
                                 media_class=MEDIA_CLASS_DIRECTORY,
                                 children_media_class=MEDIA_CLASS_VIDEO,
                                 media_content_type=MEDIA_CLASS_VIDEO,
@@ -520,7 +747,11 @@ class FrigateMediaSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.today/{start_of_today}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.today",
+                        after=start_of_today,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -535,7 +766,12 @@ class FrigateMediaSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.yesterday/{start_of_yesterday}/{start_of_today}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.yesterday",
+                        after=start_of_yesterday,
+                        before=start_of_today,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -553,7 +789,11 @@ class FrigateMediaSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.this_month/{start_of_month}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.this_month",
+                        after=start_of_month,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -568,7 +808,12 @@ class FrigateMediaSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.last_month/{start_of_last_month}/{start_of_month}/{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.last_month",
+                        after=start_of_last_month,
+                        before=start_of_month,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -586,7 +831,11 @@ class FrigateMediaSource(MediaSource):
             sources.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"clips/{identifier['name']}.this_year/{start_of_year}//{identifier['camera']}/{identifier['label']}/{identifier['zone']}",
+                    identifier=attr.evolve(
+                        identifier,
+                        name=f"{identifier.name}.this_year",
+                        after=start_of_year,
+                    ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_CLASS_VIDEO,
@@ -599,78 +848,70 @@ class FrigateMediaSource(MediaSource):
 
         return sources
 
-    def _count_by(self, after=None, before=None, camera="", label="", zone=""):
+    def _count_by(self, identifier: ClipSearchIdentifier) -> int:
         return sum(
             [
                 d["count"]
                 for d in self._summary_data
                 if (
-                    (after is None or d["timestamp"] >= after)
-                    and (before is None or d["timestamp"] < before)
-                    and (camera == "" or camera in d["camera"])
-                    and (label == "" or label in d["label"])
-                    and (zone == "" or zone in d["zones"])
+                    (identifier.after is None or d["timestamp"] >= identifier.after)
+                    and (
+                        identifier.before is None or d["timestamp"] < identifier.before
+                    )
+                    and (identifier.camera is None or identifier.camera in d["camera"])
+                    and (identifier.label is None or identifier.label in d["label"])
+                    and (identifier.zone is None or identifier.zone in d["zones"])
                 )
             ]
         )
 
     @classmethod
-    def _create_recordings_folder_identifier(cls, identifier, folder):
-        identifier_fragments = [
-            s for s in identifier["original"].split("/") if s != ""
-        ] + [folder["name"]]
-        identifier_fragments += [""] * (5 - len(identifier_fragments))
-        return "/".join(identifier_fragments)
-
-    @classmethod
     def _generate_recording_title(
-        cls, identifier: dict[str, Any], folder: str = None
+        cls, identifier: RecordingIdentifier, folder: str = None
     ) -> str | None:
         """Generate recording title."""
         try:
-            if identifier["camera"] != "":
+            if identifier.camera:
                 if folder is None:
-                    return get_friendly_name(identifier["camera"])
+                    return get_friendly_name(identifier.camera)
                 minute_seconds = folder["name"].replace(".mp4", "")
                 return dt.datetime.strptime(
-                    f"{identifier['hour']}.{minute_seconds}", "%H.%M.%S"
+                    f"{identifier.hour}.{minute_seconds}", "%H.%M.%S"
                 ).strftime("%T")
 
-            if identifier["hour"] != "":
+            if identifier.hour:
                 if folder is None:
                     return dt.datetime.strptime(
-                        f"{identifier['hour']}.00.00", "%H.%M.%S"
+                        f"{identifier.hour}.00.00", "%H.%M.%S"
                     ).strftime("%T")
                 return get_friendly_name(folder["name"])
 
-            if identifier["day"] != "":
+            if identifier.day:
                 if folder is None:
                     return dt.datetime.strptime(
-                        f"{identifier['year_month']}-{identifier['day']}", "%Y-%m-%d"
+                        f"{identifier.year_month}-{identifier.day}", "%Y-%m-%d"
                     ).strftime("%B %d")
                 return dt.datetime.strptime(
                     f"{folder['name']}.00.00", "%H.%M.%S"
                 ).strftime("%T")
 
-            if identifier["year_month"] != "":
+            if identifier.year_month:
                 if folder is None:
                     return dt.datetime.strptime(
-                        f"{identifier['year_month']}", "%Y-%m"
+                        f"{identifier.year_month}", "%Y-%m"
                     ).strftime("%B %Y")
                 return dt.datetime.strptime(
-                    f"{identifier['year_month']}-{folder['name']}", "%Y-%m-%d"
+                    f"{identifier.year_month}-{folder['name']}", "%Y-%m-%d"
                 ).strftime("%B %d")
 
             if folder is None:
-                return [s for s in identifier["original"].split("/") if s != ""][
-                    -1
-                ].title()
+                return "Recordings"
             return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
         except ValueError:
             return None
 
     def _get_recording_base_media_source(
-        self, identifier: dict[str, Any]
+        self, identifier: RecordingIdentifier
     ) -> BrowseMediaSource:
         """Get the base BrowseMediaSource object for a recording identifier."""
         title = self._generate_recording_title(identifier)
@@ -681,7 +922,7 @@ class FrigateMediaSource(MediaSource):
 
         return BrowseMediaSource(
             domain=DOMAIN,
-            identifier=identifier["original"],
+            identifier=identifier,
             media_class=MEDIA_CLASS_DIRECTORY,
             children_media_class=MEDIA_CLASS_VIDEO,
             media_content_type=MEDIA_CLASS_VIDEO,
@@ -693,7 +934,7 @@ class FrigateMediaSource(MediaSource):
         )
 
     def _browse_recording_folders(
-        self, identifier: dict[str, Any], folders: dict[str, Any]
+        self, identifier: RecordingIdentifier, folders: dict[str, Any]
     ) -> BrowseMediaSource:
         """Browse Frigate recording folders."""
         base = self._get_recording_base_media_source(identifier)
@@ -708,8 +949,9 @@ class FrigateMediaSource(MediaSource):
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=self._create_recordings_folder_identifier(
-                        identifier, folder
+                    identifier=attr.evolve(
+                        identifier,
+                        **identifier.get_changes_to_set_next_empty(folder["name"]),
                     ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_VIDEO,
@@ -723,7 +965,7 @@ class FrigateMediaSource(MediaSource):
         return base
 
     def _browse_recordings(
-        self, identifier: dict[str, Any], recordings: dict[str, Any]
+        self, identifier: RecordingIdentifier, recordings: dict[str, Any]
     ) -> BrowseMediaSource:
         """Browse Frigate recordings."""
         base = self._get_recording_base_media_source(identifier)
@@ -738,7 +980,9 @@ class FrigateMediaSource(MediaSource):
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"{identifier['original']}/{recording['name']}",
+                    identifier=attr.evolve(
+                        identifier, recording_name=recording["name"]
+                    ),
                     media_class=MEDIA_CLASS_VIDEO,
                     media_content_type=MEDIA_TYPE_VIDEO,
                     title=title,
