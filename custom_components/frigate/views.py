@@ -14,9 +14,24 @@ from yarl import URL
 from custom_components.frigate.const import DOMAIN
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.components.http.const import KEY_HASS
-from homeassistant.const import CONF_HOST, CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND
+from homeassistant.const import CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
+
+
+def get_default_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
+    """Get the default Frigate config entry.
+
+    This is for backwards compatibility for when only a single instance was
+    supported. If there's more than one instance configured, then there is no
+    default and the user must specify explicitly which instance they want.
+    """
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    if len(frigate_entries) == 1:
+        return frigate_entries[0]
+    return None
 
 
 class ProxyView(HomeAssistantView):
@@ -39,11 +54,9 @@ class ProxyView(HomeAssistantView):
             if entry:
                 return entry.data[CONF_URL]
         else:
-            # No config entry id specified. If there's only one Frigate
-            # instance, use that.
-            frigate_entries = hass.config_entries.async_entries(DOMAIN)
-            if len(frigate_entries) == 1:
-                return frigate_entries[0].data[CONF_URL]
+            default_config_entry = get_default_config_entry(hass)
+            if default_config_entry:
+                return default_config_entry.data[CONF_URL]
         return None
 
     def _create_path(self, **kwargs) -> str | None:

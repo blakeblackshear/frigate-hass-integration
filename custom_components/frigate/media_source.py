@@ -29,6 +29,7 @@ from homeassistant.util.dt import DEFAULT_TIME_ZONE
 from . import get_friendly_name
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import ATTR_CLIENT, DOMAIN, NAME
+from .views import get_default_config_entry
 
 _LOGGER = logging.getLogger(__name__)
 MIME_TYPE = "video/mp4"
@@ -389,15 +390,9 @@ class FrigateMediaSource(MediaSource):
     def _get_default_config_entry_id(self) -> str | None:
         """Get the default config_entry_id for an identifier."""
 
-        frigate_config_entries = self.hass.config_entries.async_entries(DOMAIN)
-
-        if len(frigate_config_entries) == 1:
-            # For backwards compatibility if there's only a single Frigate
-            # instance, the config entry defaults to that entry.
-            return frigate_config_entries[0].entry_id
-
-        # If there isn't exactly 1 Frigate instance, there is no default (and
-        # the identifier must specify explicitly).
+        default_config_entry = get_default_config_entry(self.hass)
+        if default_config_entry:
+            return default_config_entry.entry_id
         return None
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
