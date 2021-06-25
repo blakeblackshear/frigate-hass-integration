@@ -388,12 +388,9 @@ class FrigateMediaSource(MediaSource):
         return client
 
     def _get_default_config_entry_id(self) -> str | None:
-        """Get the default config_entry_id for an identifier."""
-
+        """Get the default config_entry_id if any."""
         default_config_entry = get_default_config_entry(self.hass)
-        if default_config_entry:
-            return default_config_entry.entry_id
-        return None
+        return default_config_entry.entry_id if default_config_entry else None
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
