@@ -75,11 +75,9 @@ class FrigateApiClient:
         """Get data from the API."""
         return await self.api_wrapper("get", str(URL(self._host) / "api/config"))
 
-    async def async_get_recordings_folder(self, path) -> dict:
+    async def async_get_path(self, path) -> dict:
         """Get data from the API."""
-        return await self.api_wrapper(
-            "get", str(URL(self._host) / f"recordings/{path}/")
-        )
+        return await self.api_wrapper("get", str(URL(self._host) / f"{path}/"))
 
     async def api_wrapper(
         self,

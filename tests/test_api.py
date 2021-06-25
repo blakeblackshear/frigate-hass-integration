@@ -146,10 +146,10 @@ async def test_async_get_config(
     assert config_in == await frigate_client.async_get_config()
 
 
-async def test_async_get_recordings_folder(
+async def test_async_get_path(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
-    """Test async_get_recordings_folder."""
+    """Test async_get_path."""
     recordings_in = [
         {
             "name": "2021-05",
@@ -165,7 +165,7 @@ async def test_async_get_recordings_folder(
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
-    assert recordings_in == await frigate_client.async_get_recordings_folder("moo")
+    assert recordings_in == await frigate_client.async_get_path("recordings/moo")
 
 
 async def test_api_wrapper_methods(

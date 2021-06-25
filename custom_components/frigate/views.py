@@ -11,24 +11,43 @@ from aiohttp.web_exceptions import HTTPBadGateway
 from multidict import CIMultiDict
 from yarl import URL
 
+from custom_components.frigate.const import DOMAIN
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.const import HTTP_NOT_FOUND
+from homeassistant.components.http.const import KEY_HASS
+from homeassistant.const import CONF_HOST, CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 class ProxyView(HomeAssistantView):
-    """Hass.io view to handle base part."""
+    """HomeAssistant view."""
 
     requires_auth = True
 
-    def __init__(self, host: str, websession: aiohttp.ClientSession):
+    def __init__(self, websession: aiohttp.ClientSession):
         """Initialize the frigate clips proxy view."""
-        self._host = host
         self._websession = websession
 
-    def _create_url(self, **kwargs) -> str | None:
-        """Create a URL."""
+    def _get_base_url(
+        self, request: web.Request, config_entry_id: str | None
+    ) -> str | None:
+        """Get a Frigate base URL."""
+        hass = request.app[KEY_HASS]
+
+        if config_entry_id:
+            entry = hass.config_entries.async_get_entry(config_entry_id)
+            if entry:
+                return entry.data[CONF_URL]
+        else:
+            # No config entry id specified. If there's only one Frigate
+            # instance, use that.
+            frigate_entries = hass.config_entries.async_entries(DOMAIN)
+            if len(frigate_entries) == 1:
+                return frigate_entries[0].data[CONF_URL]
+        return None
+
+    def _create_path(self, **kwargs) -> str | None:
+        """Create path."""
         raise NotImplementedError  # pragma: no cover
 
     async def get(
@@ -46,13 +65,22 @@ class ProxyView(HomeAssistantView):
         raise HTTPBadGateway() from None
 
     async def _handle_request(
-        self, request: web.Request, **kwargs: Any
+        self,
+        request: web.Request,
+        path: str,
+        config_entry_id: str | None = None,
+        **kwargs: Any,
     ) -> web.Response | web.StreamResponse:
         """Handle route for request."""
-        url = self._create_url(**kwargs)
-        if not url:
+        base_url = self._get_base_url(request, config_entry_id)
+        if not base_url:
+            return web.Response(status=HTTP_BAD_REQUEST)
+
+        path = self._create_path(path=path, **kwargs)
+        if not path:
             return web.Response(status=HTTP_NOT_FOUND)
 
+        url = str(URL(base_url) / path)
         data = await request.read()
         source_header = _init_header(request)
 
@@ -84,43 +112,49 @@ class ProxyView(HomeAssistantView):
 class ClipsProxyView(ProxyView):
     """A proxy for clips."""
 
-    url = "/api/frigate/clips/{path:.*}"
+    url = "/api/frigate/{config_entry_id:.+}/clips/{path:.*}"
+    extra_urls = ["/api/frigate/clips/{path:.*}"]
+
     name = "api:frigate:clips"
 
-    def _create_url(self, path: str) -> str:
-        """Create URL."""
-        return str(URL(self._host) / "clips" / path)
+    def _create_path(self, path: str) -> str:
+        """Create path."""
+        return f"clips/{path}"
 
 
 class RecordingsProxyView(ProxyView):
     """A proxy for recordings."""
 
-    url = "/api/frigate/recordings/{path:.*}"
+    url = "/api/frigate/{config_entry_id:.+}/recordings/{path:.*}"
+    extra_urls = ["/api/frigate/recordings/{path:.*}"]
+
     name = "api:frigate:recordings"
 
-    def _create_url(self, path: str) -> str:
-        """Create URL."""
-        return str(URL(self._host) / "recordings" / path)
+    def _create_path(self, path: str) -> str:
+        """Create path."""
+        return f"recordings/{path}"
 
 
 class NotificationsProxyView(ProxyView):
     """A proxy for notifications."""
 
-    url = "/api/frigate/notifications/{event_id}/{path:.*}"
+    url = "/api/frigate/{config_entry_id:.+}/notifications/{event_id}/{path:.*}"
+    extra_urls = ["/api/frigate/notifications/{event_id}/{path:.*}"]
+
     name = "api:frigate:notification"
     requires_auth = False
 
-    def _create_url(self, event_id: str, path: str) -> str | None:
-        """Create URL to service."""
+    def _create_path(self, event_id: str, path: str) -> str | None:
+        """Create path."""
         if path == "thumbnail.jpg":
-            return str(URL(self._host) / f"api/events/{event_id}/thumbnail.jpg")
+            return f"api/events/{event_id}/thumbnail.jpg"
 
         if path == "snapshot.jpg":
-            return str(URL(self._host) / f"api/events/{event_id}/snapshot.jpg")
+            return f"api/events/{event_id}/snapshot.jpg"
 
         camera = path.split("/")[0]
         if path.endswith("clip.mp4"):
-            return str(URL(self._host) / f"clips/{camera}-{event_id}.mp4")
+            return f"clips/{camera}-{event_id}.mp4"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:

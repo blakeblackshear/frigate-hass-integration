@@ -19,6 +19,7 @@ from . import (
     get_frigate_entity_unique_id,
 )
 from .const import (
+    ATTR_CONFIG,
     DOMAIN,
     ICON_FILM_MULTIPLE,
     ICON_IMAGE_MULTIPLE,
@@ -34,7 +35,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Switch entry setup."""
-    frigate_config = hass.data[DOMAIN]["config"]
+    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
 
     entities = []
     for camera in frigate_config["cameras"].keys():

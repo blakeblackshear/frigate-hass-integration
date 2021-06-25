@@ -14,7 +14,7 @@
             "invalid_url": "Invalid URL"
         },
         "abort": {
-            "single_instance_allowed": "Only a single configuration of Frigate is allowed."
+            "already_configured": "Device is already configured"
         }
     }
 }

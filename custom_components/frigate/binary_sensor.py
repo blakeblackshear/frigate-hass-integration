@@ -20,7 +20,7 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import DOMAIN, NAME, VERSION
+from .const import ATTR_CONFIG, DOMAIN, NAME, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Binary sensor entry setup."""
-    frigate_config = hass.data[DOMAIN]["config"]
+    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     async_add_entities(
         [
             FrigateMotionSensor(entry, frigate_config, cam_name, obj)

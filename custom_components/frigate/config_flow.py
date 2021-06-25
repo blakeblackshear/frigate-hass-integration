@@ -28,10 +28,6 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> dict[str, Any]:
         """Handle a flow initialized by the user."""
 
-        # Check if another instance is already configured.
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
-
         if user_input is None:
             return self._show_config_form()
 
@@ -49,7 +45,12 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         except FrigateApiClientError:
             return self._show_config_form(user_input, errors={"base": "cannot_connect"})
 
-        return self.async_create_entry(title="Frigate", data=user_input)
+        # Search for duplicates with the same Frigate CONF_HOST value.
+        for existing_entry in self._async_current_entries(include_ignore=False):
+            if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
+                return self.async_abort(reason="already_configured")
+
+        return self.async_create_entry(title=f"{user_input[CONF_URL]}", data=user_input)
 
     def _show_config_form(
         self,

@@ -4,9 +4,11 @@ from __future__ import annotations
 import logging
 from unittest.mock import AsyncMock, patch
 
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import DOMAIN, NAME
-from homeassistant import config_entries
+from custom_components.frigate.const import DOMAIN
+from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
@@ -41,7 +43,7 @@ async def test_user_success(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result["type"] == "create_entry"
-    assert result["title"] == NAME
+    assert result["title"] == TEST_URL
     assert result["data"] == {
         CONF_URL: TEST_URL,
     }
@@ -50,15 +52,14 @@ async def test_user_success(hass: HomeAssistant) -> None:
 
 
 async def test_user_multiple_instances(hass: HomeAssistant) -> None:
-    """Test multiple instances."""
+    """Test multiple instances will be allowed."""
     # Create another config for this domain.
-    create_mock_frigate_config_entry(hass)
+    create_mock_frigate_config_entry(hass, entry_id="another_id")
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    assert result["type"] == "abort"
-    assert result["reason"] == "single_instance_allowed"
+    assert result["type"] == "form"
 
 
 async def test_user_connection_failure(hass: HomeAssistant) -> None:
@@ -106,3 +107,41 @@ async def test_user_invalid_url(hass: HomeAssistant) -> None:
 
     assert result["type"] == "form"
     assert result["errors"]["base"] == "invalid_url"
+
+
+async def test_duplicate(hass: HomeAssistant) -> None:
+    """Test that a duplicate entry (same host) is rejected."""
+    config_data = {
+        CONF_URL: TEST_URL,
+    }
+
+    # Add an existing entry with the same host.
+    existing_entry: MockConfigEntry = MockConfigEntry(
+        domain=DOMAIN,
+        data=config_data,
+    )
+    existing_entry.add_to_hass(hass)
+
+    # Now do the usual config entry process, and verify it is rejected.
+    create_mock_frigate_config_entry(hass, data=config_data)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    assert result["type"] == "form"
+    assert not result["errors"]
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            config_data,
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
+    assert result["reason"] == "already_configured"

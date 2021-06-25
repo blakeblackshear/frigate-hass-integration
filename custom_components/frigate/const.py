@@ -2,7 +2,6 @@
 # Base component constants
 NAME = "Frigate"
 DOMAIN = "frigate"
-DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "0.0.1"
 ISSUE_URL = "https://github.com/blakeblackshear/frigate-hass-integration/issues"
 
@@ -28,8 +27,10 @@ PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR]
 FPS = "fps"
 MS = "ms"
 
-# Configuration and options
-CONF_ENABLED = "enabled"
+# Attributes
+ATTR_CLIENT = "client"
+ATTR_CONFIG = "config"
+ATTR_COORDINATOR = "coordinator"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

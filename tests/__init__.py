@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from aiohttp import web
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.frigate.const import DOMAIN, NAME
+from custom_components.frigate.const import DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
@@ -262,13 +262,15 @@ def create_mock_frigate_config_entry(
     hass: HomeAssistant,
     data: dict[str, Any] | None = None,
     options: dict[str, Any] | None = None,
+    entry_id: str | None = TEST_CONFIG_ENTRY_ID,
+    title: str | None = TEST_URL,
 ) -> ConfigEntry:
     """Add a test config entry."""
     config_entry: MockConfigEntry = MockConfigEntry(
-        entry_id=TEST_CONFIG_ENTRY_ID,
+        entry_id=entry_id,
         domain=DOMAIN,
         data=data or {CONF_URL: TEST_URL},
-        title=NAME,
+        title=title,
         options=options or {},
         version=2,
     )
@@ -288,8 +290,6 @@ async def setup_mock_frigate_config_entry(
     with patch(
         "custom_components.frigate.FrigateApiClient",
         return_value=client,
-    ), patch(
-        "custom_components.frigate.media_source.FrigateApiClient", return_value=client
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
