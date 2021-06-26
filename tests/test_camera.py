@@ -9,7 +9,12 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import DOMAIN, NAME, VERSION
+from custom_components.frigate.const import (
+    CONF_RTMP_URL_TEMPLATE,
+    DOMAIN,
+    NAME,
+    VERSION,
+)
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -20,6 +25,7 @@ from . import (
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
     create_mock_frigate_client,
+    create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
 )
 
@@ -143,3 +149,18 @@ async def test_camera_unique_id(entityid_to_uniqueid, hass: HomeAssistant):
     registry_entry = er.async_get(hass).async_get(entity_id)
     assert registry_entry
     assert registry_entry.unique_id == unique_id
+
+
+async def test_camera_option_stream_url_template(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify camera with the RTMP URL template option."""
+
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_RTMP_URL_TEMPLATE: ("rtmp://localhost/{{ name }}")}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert source
+    assert source == "rtmp://localhost/front_door"
