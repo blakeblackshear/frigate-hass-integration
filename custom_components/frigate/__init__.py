@@ -11,6 +11,7 @@ import logging
 import re
 from typing import Any, Final
 
+from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import Message
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
@@ -24,7 +25,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import slugify
 
 from .api import FrigateApiClient, FrigateApiClientError
-from .const import DOMAIN, PLATFORMS, STARTUP_MESSAGE
+from .const import (
+    ATTR_CLIENT,
+    ATTR_CONFIG,
+    ATTR_COORDINATOR,
+    DOMAIN,
+    PLATFORMS,
+    STARTUP_MESSAGE,
+)
 from .views import ClipsProxyView, NotificationsProxyView, RecordingsProxyView
 
 SCAN_INTERVAL = timedelta(seconds=5)
@@ -76,39 +84,34 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> {(str, str)}:
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
+    _LOGGER.info(STARTUP_MESSAGE)
+
+    hass.data.setdefault(DOMAIN, {})
+
+    session = async_get_clientsession(hass)
+    hass.http.register_view(ClipsProxyView(session))
+    hass.http.register_view(RecordingsProxyView(session))
+    hass.http.register_view(NotificationsProxyView(session))
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
-    if hass.data.get(DOMAIN) is None:
-        hass.data.setdefault(DOMAIN, {})
-        _LOGGER.info(STARTUP_MESSAGE)
 
-    frigate_url = hass.data[DOMAIN][CONF_URL] = entry.data.get(CONF_URL)
-
-    # register views
-    websession = hass.helpers.aiohttp_client.async_get_clientsession()
-    hass.http.register_view(ClipsProxyView(frigate_url, websession))
-    hass.http.register_view(RecordingsProxyView(frigate_url, websession))
-    hass.http.register_view(NotificationsProxyView(frigate_url, websession))
-
-    # setup api polling
-    session = async_get_clientsession(hass)
-    client = FrigateApiClient(frigate_url, session)
-
-    # start the coordinator
+    client = FrigateApiClient(entry.data.get(CONF_URL), async_get_clientsession(hass))
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
-
-    hass.data[DOMAIN][entry.entry_id] = coordinator
 
     try:
         config = await client.async_get_config()
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
 
-    hass.data[DOMAIN]["config"] = config
+    hass.data[DOMAIN][entry.entry_id] = {
+        ATTR_COORDINATOR: coordinator,
+        ATTR_CLIENT: client,
+        ATTR_CONFIG: config,
+    }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.add_update_listener(_async_entry_updated)
@@ -155,7 +158,9 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
         data = {**config_entry.data}
         data[CONF_URL] = data.pop(CONF_HOST)
-        hass.config_entries.async_update_entry(config_entry, data=data)
+        hass.config_entries.async_update_entry(
+            config_entry, data=data, title=get_config_entry_title(data[CONF_URL])
+        )
         config_entry.version = 2
 
         @callback

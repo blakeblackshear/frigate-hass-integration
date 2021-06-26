@@ -24,7 +24,7 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
+from .const import ATTR_CONFIG, DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def async_setup_entry(
 ) -> None:
     """Camera entry setup."""
 
-    config = hass.data[DOMAIN]["config"]
+    config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
 
     async_add_entities(
         [

@@ -9,11 +9,13 @@ import aiohttp
 from aiohttp import hdrs, web
 import pytest
 
-from homeassistant.const import CONF_URL, HTTP_NOT_FOUND, HTTP_OK
+from custom_components.frigate.const import DOMAIN
+from homeassistant.const import CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_OK
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
 from . import (
+    TEST_FRIGATE_INSTANCE_ID,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
@@ -202,3 +204,87 @@ async def test_headers(
         headers={hdrs.X_FORWARDED_FOR: "forwarded_for"},
     )
     assert resp.status == HTTP_OK
+
+
+async def test_clips_with_frigate_instance_id(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test clips with config entry ids."""
+
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    assert frigate_entries
+
+    # A Frigate instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/present"
+    )
+    assert resp.status == HTTP_OK
+
+    # An invalid instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/NOT_A_REAL_ID/clips/present"
+    )
+    assert resp.status == HTTP_BAD_REQUEST
+
+    # No default allowed when there are multiple entries.
+    create_mock_frigate_config_entry(hass, entry_id="another_id")
+    resp = await hass_client_local_frigate.get("/api/frigate/clips/present")
+    assert resp.status == HTTP_BAD_REQUEST
+
+
+async def test_recordings_with_frigate_instance_id(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test recordings with config entry ids."""
+
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    assert frigate_entries
+
+    # A Frigate instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/present"
+    )
+    assert resp.status == HTTP_OK
+
+    # An invalid instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/NOT_A_REAL_ID/recordings/present"
+    )
+    assert resp.status == HTTP_BAD_REQUEST
+
+    # No default allowed when there are multiple entries.
+    create_mock_frigate_config_entry(hass, entry_id="another_id")
+    resp = await hass_client_local_frigate.get("/api/frigate/recordings/present")
+    assert resp.status == HTTP_BAD_REQUEST
+
+
+async def test_notifications_with_frigate_instance_id(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test notifications with config entry ids."""
+
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    assert frigate_entries
+
+    # A Frigate instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}"
+        "/notifications/event_id/snapshot.jpg"
+    )
+    assert resp.status == HTTP_OK
+
+    # An invalid instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/NOT_A_REAL_ID/notifications/event_id/snapshot.jpg"
+    )
+    assert resp.status == HTTP_BAD_REQUEST
+
+    # No default allowed when there are multiple entries.
+    create_mock_frigate_config_entry(hass, entry_id="another_id")
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/notifications/event_id/snapshot.jpg"
+    )
+    assert resp.status == HTTP_BAD_REQUEST

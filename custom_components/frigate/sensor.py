@@ -21,6 +21,8 @@ from . import (
     get_frigate_entity_unique_id,
 )
 from .const import (
+    ATTR_CONFIG,
+    ATTR_COORDINATOR,
     DOMAIN,
     FPS,
     ICON_CAR,
@@ -43,7 +45,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Sensor entry setup."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
     entities = []
     for key, value in coordinator.data.items():
@@ -61,7 +63,7 @@ async def async_setup_entry(
                 [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
             )
 
-    frigate_config = hass.data[DOMAIN]["config"]
+    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     entities.extend(
         [
             FrigateObjectCountSensor(entry, frigate_config, cam_name, obj)

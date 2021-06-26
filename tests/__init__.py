@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from aiohttp import web
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.frigate.const import DOMAIN, NAME
+from custom_components.frigate.const import DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
@@ -33,6 +33,7 @@ TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
+TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
 TEST_CONFIG = {
     "cameras": {
         "front_door": {
@@ -113,7 +114,7 @@ TEST_CONFIG = {
     "logger": {"default": "INFO", "logs": {}},
     "model": {"height": 320, "width": 320},
     "mqtt": {
-        "client_id": "frigate",
+        "client_id": TEST_FRIGATE_INSTANCE_ID,
         "host": "mqtt",
         "port": 1883,
         "stats_interval": 60,
@@ -262,13 +263,15 @@ def create_mock_frigate_config_entry(
     hass: HomeAssistant,
     data: dict[str, Any] | None = None,
     options: dict[str, Any] | None = None,
+    entry_id: str | None = TEST_CONFIG_ENTRY_ID,
+    title: str | None = TEST_URL,
 ) -> ConfigEntry:
     """Add a test config entry."""
     config_entry: MockConfigEntry = MockConfigEntry(
-        entry_id=TEST_CONFIG_ENTRY_ID,
+        entry_id=entry_id,
         domain=DOMAIN,
         data=data or {CONF_URL: TEST_URL},
-        title=NAME,
+        title=title,
         options=options or {},
         version=2,
     )
@@ -288,8 +291,6 @@ async def setup_mock_frigate_config_entry(
     with patch(
         "custom_components.frigate.FrigateApiClient",
         return_value=client,
-    ), patch(
-        "custom_components.frigate.media_source.FrigateApiClient", return_value=client
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()

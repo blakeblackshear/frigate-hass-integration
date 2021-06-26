@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
+from yarl import URL
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_URL
@@ -17,6 +18,15 @@ from .const import DEFAULT_HOST, DOMAIN
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+def get_config_entry_title(url_str: str) -> str:
+    """Get the title of a config entry from the URL."""
+
+    # Strip the scheme from the URL as it's not that interesting in the title
+    # and space is limited on the integrations page.
+    url = URL(url_str)
+    return str(url)[len(url.scheme + "://") :]
+
+
 class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Frigate."""
 
@@ -27,10 +37,6 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] = None
     ) -> dict[str, Any]:
         """Handle a flow initialized by the user."""
-
-        # Check if another instance is already configured.
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
 
         if user_input is None:
             return self._show_config_form()
@@ -49,7 +55,14 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         except FrigateApiClientError:
             return self._show_config_form(user_input, errors={"base": "cannot_connect"})
 
-        return self.async_create_entry(title="Frigate", data=user_input)
+        # Search for duplicates with the same Frigate CONF_HOST value.
+        for existing_entry in self._async_current_entries(include_ignore=False):
+            if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
+                return self.async_abort(reason="already_configured")
+
+        return self.async_create_entry(
+            title=get_config_entry_title(user_input[CONF_URL]), data=user_input
+        )
 
     def _show_config_form(
         self,

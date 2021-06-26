@@ -76,8 +76,8 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host"},
-        title="http://host",
+        data={CONF_HOST: "http://host:456"},
+        title="Frigate",
         version=1,
     )
 
@@ -121,6 +121,7 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
     assert CONF_HOST not in config_entry.data
     assert CONF_URL in config_entry.data
     assert config_entry.version == 2
+    assert config_entry.title == "host:456"
 
     # Ensure all the old entity unique ids are removed.
     for platform, unique_id in old_unique_ids:
