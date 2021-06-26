@@ -21,7 +21,6 @@ from homeassistant.components.media_source.models import (
     MediaSourceItem,
     PlayMedia,
 )
-from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE

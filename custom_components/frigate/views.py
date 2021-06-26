@@ -14,8 +14,8 @@ from yarl import URL
 from custom_components.frigate.const import DOMAIN
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.components.http.const import KEY_HASS
-from homeassistant.const import CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND
 from homeassistant.core import HomeAssistant
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
