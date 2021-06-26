@@ -43,7 +43,7 @@ async def test_user_success(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result["type"] == "create_entry"
-    assert result["title"] == TEST_URL
+    assert result["title"] == "example.com"
     assert result["data"] == {
         CONF_URL: TEST_URL,
     }

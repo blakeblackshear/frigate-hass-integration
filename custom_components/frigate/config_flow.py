@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
+from yarl import URL
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_URL
@@ -15,6 +16,15 @@ from .api import FrigateApiClient, FrigateApiClientError
 from .const import DEFAULT_HOST, DOMAIN
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
+
+
+def get_config_entry_title(url_str: str) -> str:
+    """Get the title of a config entry from the URL."""
+
+    # Strip the scheme from the URL as it's not that interesting in the title
+    # and space is limited on the integrations page.
+    url = URL(url_str)
+    return str(url)[len(url.scheme + "://") :]
 
 
 class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -50,7 +60,9 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
                 return self.async_abort(reason="already_configured")
 
-        return self.async_create_entry(title=f"{user_input[CONF_URL]}", data=user_input)
+        return self.async_create_entry(
+            title=get_config_entry_title(user_input[CONF_URL]), data=user_input
+        )
 
     def _show_config_form(
         self,

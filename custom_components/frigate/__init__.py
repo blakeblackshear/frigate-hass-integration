@@ -11,6 +11,7 @@ import logging
 import re
 from typing import Any, Final
 
+from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import Message
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
@@ -157,7 +158,9 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
         data = {**config_entry.data}
         data[CONF_URL] = data.pop(CONF_HOST)
-        hass.config_entries.async_update_entry(config_entry, data=data)
+        hass.config_entries.async_update_entry(
+            config_entry, data=data, title=get_config_entry_title(data[CONF_URL])
+        )
         config_entry.version = 2
 
         @callback
