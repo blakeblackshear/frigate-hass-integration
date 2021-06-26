@@ -18,6 +18,7 @@ from . import (
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
+    get_frigate_entity_unique_id,
 )
 from .const import (
     DOMAIN,
@@ -83,7 +84,9 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_detection_fps"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, "sensor_fps", "detection"
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -140,7 +143,9 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._detector_name}_inference_speed"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, "sensor_detector_speed", self._detector_name
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -203,7 +208,11 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._cam_name}_{self._fps_type}_fps"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_fps",
+            f"{self._cam_name}_{self._fps_type}",
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -298,7 +307,11 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._cam_name}_{self._obj_name}"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_object_count",
+            f"{self._cam_name}_{self._obj_name}",
+        )
 
     @property
     def device_info(self) -> DeviceInfo:

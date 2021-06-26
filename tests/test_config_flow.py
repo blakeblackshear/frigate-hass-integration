@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, patch
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
-from . import TEST_HOST, create_mock_frigate_client, create_mock_frigate_config_entry
+from . import TEST_URL, create_mock_frigate_client, create_mock_frigate_config_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def test_user_success(hass: HomeAssistant) -> None:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
-                CONF_HOST: TEST_HOST,
+                CONF_URL: TEST_URL,
             },
         )
         await hass.async_block_till_done()
@@ -43,7 +43,7 @@ async def test_user_success(hass: HomeAssistant) -> None:
     assert result["type"] == "create_entry"
     assert result["title"] == NAME
     assert result["data"] == {
-        CONF_HOST: TEST_HOST,
+        CONF_URL: TEST_URL,
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
@@ -79,7 +79,7 @@ async def test_user_connection_failure(hass: HomeAssistant) -> None:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
-                CONF_HOST: TEST_HOST,
+                CONF_URL: TEST_URL,
             },
         )
         await hass.async_block_till_done()
@@ -99,7 +99,7 @@ async def test_user_invalid_url(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
-            CONF_HOST: "THIS IS NOT A URL",
+            CONF_URL: "THIS IS NOT A URL",
         },
     )
     await hass.async_block_till_done()

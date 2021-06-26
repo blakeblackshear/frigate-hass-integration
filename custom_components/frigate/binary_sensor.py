@@ -18,6 +18,7 @@ from . import (
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
+    get_frigate_entity_unique_id,
 )
 from .const import DOMAIN, NAME, VERSION
 
@@ -75,7 +76,11 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     @property
     def unique_id(self) -> str:
         """Return a unique ID for this entity."""
-        return f"{DOMAIN}_{self._cam_name}_{self._obj_name}_binary_sensor"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "motion_sensor",
+            f"{self._cam_name}_{self._obj_name}",
+        )
 
     @property
     def device_info(self) -> dict[str, Any]:

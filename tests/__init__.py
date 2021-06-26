@@ -9,7 +9,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
 TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID = (
@@ -25,14 +25,14 @@ TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person"
 TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID = "sensor.front_door_person"
 TEST_SENSOR_DETECTION_FPS_ENTITY_ID = "sensor.detection_fps"
 TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID = "sensor.cpu1_inference_speed"
-TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID = "sensor.cpu1_inference_speed"
+TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID = "sensor.cpu2_inference_speed"
 TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID = "sensor.front_door_camera_fps"
 TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID = "sensor.front_door_detection_fps"
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
-TEST_HOST = "http://example.com"
+TEST_URL = "http://example.com"
 TEST_CONFIG = {
     "cameras": {
         "front_door": {
@@ -267,9 +267,10 @@ def create_mock_frigate_config_entry(
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data=data or {CONF_HOST: TEST_HOST},
+        data=data or {CONF_URL: TEST_URL},
         title=NAME,
         options=options or {},
+        version=2,
     )
     config_entry.add_to_hass(hass)
     return config_entry

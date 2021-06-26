@@ -21,6 +21,7 @@ from homeassistant.components.media_source.models import (
     MediaSourceItem,
     PlayMedia,
 )
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.template import DATE_STR_FORMAT
@@ -326,7 +327,7 @@ class FrigateMediaSource(MediaSource):
         super().__init__(DOMAIN)
         self.hass = hass
         self._client = FrigateApiClient(
-            self.hass.data[DOMAIN]["host"], async_get_clientsession(hass)
+            self.hass.data[DOMAIN][CONF_URL], async_get_clientsession(hass)
         )
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:

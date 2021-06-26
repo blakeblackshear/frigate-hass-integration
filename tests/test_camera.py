@@ -6,6 +6,7 @@ import logging
 from typing import Any
 from unittest.mock import AsyncMock
 
+import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.const import DOMAIN, NAME, VERSION
@@ -17,6 +18,7 @@ from . import (
     TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
+    TEST_CONFIG_ENTRY_ID,
     create_mock_frigate_client,
     setup_mock_frigate_config_entry,
 )
@@ -120,3 +122,24 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
     ]
     assert TEST_CAMERA_FRONT_DOOR_ENTITY_ID in entities_from_device
     assert TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID in entities_from_device
+
+
+@pytest.mark.parametrize(
+    "entityid_to_uniqueid",
+    [
+        (TEST_CAMERA_FRONT_DOOR_ENTITY_ID, f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
+        (
+            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person",
+        ),
+    ],
+)
+async def test_camera_unique_id(entityid_to_uniqueid, hass: HomeAssistant):
+    """Verify entity unique_id(s)."""
+    entity_id, unique_id = entityid_to_uniqueid
+
+    await setup_mock_frigate_config_entry(hass)
+
+    registry_entry = er.async_get(hass).async_get(entity_id)
+    assert registry_entry
+    assert registry_entry.unique_id == unique_id

@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
+    TEST_CONFIG_ENTRY_ID,
     TEST_SWITCH_FRONT_DOOR_CLIPS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
@@ -140,3 +141,15 @@ async def test_switch_icon(hass: HomeAssistant) -> None:
         entity_state = hass.states.get(entity_id)
         assert entity_state
         assert entity_state.attributes["icon"] == icon
+
+
+async def test_switch_unique_id(hass: HomeAssistant):
+    """Verify entity unique_id(s)."""
+    await setup_mock_frigate_config_entry(hass)
+    registry_entry = er.async_get(hass).async_get(
+        TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID
+    )
+    assert registry_entry
+    assert (
+        registry_entry.unique_id == f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_detect"
+    )
