@@ -62,6 +62,16 @@ def get_config_entry_for_frigate_instance_id(
     return None
 
 
+def get_frigate_instance_id_for_config_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+) -> ConfigEntry | None:
+    """Get a frigate_instance_id for a ConfigEntry."""
+
+    config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
+    return get_frigate_instance_id(config) if config else None
+
+
 class ProxyView(HomeAssistantView):
     """HomeAssistant view."""
 

@@ -28,7 +28,11 @@ from homeassistant.util.dt import DEFAULT_TIME_ZONE
 from . import get_friendly_name
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import ATTR_CLIENT, DOMAIN, NAME
-from .views import get_default_config_entry
+from .views import (
+    get_config_entry_for_frigate_instance_id,
+    get_default_config_entry,
+    get_frigate_instance_id_for_config_entry,
+)
 
 _LOGGER = logging.getLogger(__name__)
 MIME_TYPE = "video/mp4"
@@ -48,7 +52,7 @@ class Identifier:
 
     IDENTIFIER_TYPE = None
 
-    config_entry_id: str = attr.ib(
+    frigate_instance_id: str = attr.ib(
         validator=[attr.validators.instance_of(str)],
     )
 
@@ -72,13 +76,13 @@ class Identifier:
     def from_str(
         cls,
         data: str,
-        default_config_entry_id: str | None = None,
+        default_frigate_instance_id: str | None = None,
     ) -> ClipSearchIdentifier | ClipIdentifier | RecordingIdentifier | None:
         """Generate a ClipSearchIdentifier from a string."""
         return (
-            ClipSearchIdentifier.from_str(data, default_config_entry_id)
-            or ClipIdentifier.from_str(data, default_config_entry_id)
-            or RecordingIdentifier.from_str(data, default_config_entry_id)
+            ClipSearchIdentifier.from_str(data, default_frigate_instance_id)
+            or ClipIdentifier.from_str(data, default_frigate_instance_id)
+            or RecordingIdentifier.from_str(data, default_frigate_instance_id)
         )
 
     def get_frigate_server_path(self) -> str:
@@ -86,15 +90,15 @@ class Identifier:
         raise NotImplementedError
 
     @classmethod
-    def _add_config_entry_to_parts_if_absent(
-        self, parts: list[str], default_config_entry_id: str | None = None
+    def _add_frigate_instance_id_to_parts_if_absent(
+        self, parts: list[str], default_frigate_instance_id: str | None = None
     ):
-        """Add a config entry default if it's not specified."""
+        """Add a frigate instance id if it's not specified."""
         if (
             self._get_index(parts, 0) == self.IDENTIFIER_TYPE
-            and default_config_entry_id is not None
+            and default_frigate_instance_id is not None
         ):
-            parts.insert(0, default_config_entry_id)
+            parts.insert(0, default_frigate_instance_id)
         return parts
 
 
@@ -110,21 +114,21 @@ class ClipIdentifier(Identifier):
 
     def __str__(self) -> str:
         """Convert to a string."""
-        return "/".join((self.config_entry_id, self.IDENTIFIER_TYPE, self.name))
+        return "/".join((self.frigate_instance_id, self.IDENTIFIER_TYPE, self.name))
 
     @classmethod
     def from_str(
-        cls, data: str, default_config_entry_id: str | None = None
+        cls, data: str, default_frigate_instance_id: str | None = None
     ) -> ClipIdentifier | None:
         """Generate a ClipIdentifier from a string."""
-        parts = cls._add_config_entry_to_parts_if_absent(
-            data.split("/"), default_config_entry_id
+        parts = cls._add_frigate_instance_id_to_parts_if_absent(
+            data.split("/"), default_frigate_instance_id
         )
 
         if len(parts) != 3 or parts[1] != cls.IDENTIFIER_TYPE:
             return None
 
-        return cls(config_entry_id=parts[0], name=parts[2])
+        return cls(frigate_instance_id=parts[0], name=parts[2])
 
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
@@ -163,11 +167,11 @@ class ClipSearchIdentifier(Identifier):
 
     @classmethod
     def from_str(
-        cls, data: str, default_config_entry_id: str | None = None
+        cls, data: str, default_frigate_instance_id: str | None = None
     ) -> ClipSearchIdentifier | None:
         """Generate a ClipSearchIdentifier from a string."""
-        parts = cls._add_config_entry_to_parts_if_absent(
-            data.split("/"), default_config_entry_id
+        parts = cls._add_frigate_instance_id_to_parts_if_absent(
+            data.split("/"), default_frigate_instance_id
         )
 
         if len(parts) < 2 or parts[1] != cls.IDENTIFIER_TYPE:
@@ -175,7 +179,7 @@ class ClipSearchIdentifier(Identifier):
 
         try:
             return cls(
-                config_entry_id=cls._get_index(parts, 0),
+                frigate_instance_id=cls._get_index(parts, 0),
                 name=cls._get_index(parts, 2, ""),
                 after=cls._get_index(parts, 3),
                 before=cls._get_index(parts, 4),
@@ -190,7 +194,7 @@ class ClipSearchIdentifier(Identifier):
         """Convert to a string."""
 
         return "/".join(
-            [self.config_entry_id, self.IDENTIFIER_TYPE]
+            [self.frigate_instance_id, self.IDENTIFIER_TYPE]
             + [
                 self._empty_if_none(val)
                 for val in (
@@ -273,11 +277,11 @@ class RecordingIdentifier(Identifier):
 
     @classmethod
     def from_str(
-        cls, data: str, default_config_entry_id: str | None = None
+        cls, data: str, default_frigate_instance_id: str | None = None
     ) -> RecordingIdentifier | None:
         """Generate a RecordingIdentifier from a string."""
-        parts = cls._add_config_entry_to_parts_if_absent(
-            data.split("/"), default_config_entry_id
+        parts = cls._add_frigate_instance_id_to_parts_if_absent(
+            data.split("/"), default_frigate_instance_id
         )
 
         if len(parts) < 2 or parts[1] != cls.IDENTIFIER_TYPE:
@@ -285,7 +289,7 @@ class RecordingIdentifier(Identifier):
 
         try:
             return cls(
-                config_entry_id=parts[0],
+                frigate_instance_id=parts[0],
                 year_month=cls._get_index(parts, 2),
                 day=cls._get_index(parts, 3),
                 hour=cls._get_index(parts, 4),
@@ -298,7 +302,7 @@ class RecordingIdentifier(Identifier):
     def __str__(self) -> str:
         """Convert to a string."""
         return "/".join(
-            [self.config_entry_id, self.IDENTIFIER_TYPE]
+            [self.frigate_instance_id, self.IDENTIFIER_TYPE]
             + [
                 self._empty_if_none(val)
                 for val in (
@@ -375,32 +379,41 @@ class FrigateMediaSource(MediaSource):
 
     def _get_client(self, identifier: Identifier) -> FrigateApiClient:
         """Get client for a given identifier."""
-
-        client = (
-            self.hass.data[DOMAIN].get(identifier.config_entry_id, {}).get(ATTR_CLIENT)
+        config_entry = get_config_entry_for_frigate_instance_id(
+            self.hass, identifier.frigate_instance_id
         )
-        if not client:
-            raise MediaSourceError(
-                "Could not find client for config entry: %s"
-                % identifier.config_entry_id
-            )
-        return client
 
-    def _get_default_config_entry_id(self) -> str | None:
-        """Get the default config_entry_id if any."""
+        if config_entry:
+            client = (
+                self.hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CLIENT)
+            )
+            if client:
+                return client
+
+        raise MediaSourceError(
+            "Could not find client for frigate instance id: %s"
+            % identifier.frigate_instance_id
+        )
+
+    def _get_default_frigate_instance_id(self) -> str | None:
+        """Get the default frigate_instance_id if any."""
         default_config_entry = get_default_config_entry(self.hass)
-        return default_config_entry.entry_id if default_config_entry else None
+        if default_config_entry:
+            return get_frigate_instance_id_for_config_entry(
+                self.hass, default_config_entry
+            )
+        return None
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
         identifier = Identifier.from_str(
             item.identifier,
-            default_config_entry_id=self._get_default_config_entry_id(),
+            default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
         if identifier:
             server_path = identifier.get_frigate_server_path()
             return PlayMedia(
-                f"/api/frigate/{identifier.config_entry_id}/{server_path}",
+                f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 MIME_TYPE,
             )
         raise Unresolvable("Unknown identifier: %s" % item.identifier)
@@ -424,39 +437,43 @@ class FrigateMediaSource(MediaSource):
                 children=[],
             )
             for config_entry in self.hass.config_entries.async_entries(DOMAIN):
-                base.children.extend(
-                    [
-                        BrowseMediaSource(
-                            domain=DOMAIN,
-                            identifier=ClipSearchIdentifier(config_entry.entry_id),
-                            media_class=MEDIA_CLASS_DIRECTORY,
-                            children_media_class=MEDIA_CLASS_VIDEO,
-                            media_content_type=MEDIA_CLASS_VIDEO,
-                            title=f"Clips [{config_entry.title}]",
-                            can_play=False,
-                            can_expand=True,
-                            thumbnail=None,
-                            children=[],
-                        ),
-                        BrowseMediaSource(
-                            domain=DOMAIN,
-                            identifier=RecordingIdentifier(config_entry.entry_id),
-                            media_class=MEDIA_CLASS_DIRECTORY,
-                            children_media_class=MEDIA_CLASS_VIDEO,
-                            media_content_type=MEDIA_CLASS_VIDEO,
-                            title=f"Recordings [{config_entry.title}]",
-                            can_play=False,
-                            can_expand=True,
-                            thumbnail=None,
-                            children=[],
-                        ),
-                    ],
+                frigate_instance_id = get_frigate_instance_id_for_config_entry(
+                    self.hass, config_entry
                 )
+                if frigate_instance_id:
+                    base.children.extend(
+                        [
+                            BrowseMediaSource(
+                                domain=DOMAIN,
+                                identifier=ClipSearchIdentifier(frigate_instance_id),
+                                media_class=MEDIA_CLASS_DIRECTORY,
+                                children_media_class=MEDIA_CLASS_VIDEO,
+                                media_content_type=MEDIA_CLASS_VIDEO,
+                                title=f"Clips [{config_entry.title}]",
+                                can_play=False,
+                                can_expand=True,
+                                thumbnail=None,
+                                children=[],
+                            ),
+                            BrowseMediaSource(
+                                domain=DOMAIN,
+                                identifier=RecordingIdentifier(frigate_instance_id),
+                                media_class=MEDIA_CLASS_DIRECTORY,
+                                children_media_class=MEDIA_CLASS_VIDEO,
+                                media_content_type=MEDIA_CLASS_VIDEO,
+                                title=f"Recordings [{config_entry.title}]",
+                                can_play=False,
+                                can_expand=True,
+                                thumbnail=None,
+                                children=[],
+                            ),
+                        ],
+                    )
             return base
 
         identifier = Identifier.from_str(
             item.identifier,
-            default_config_entry_id=self._get_default_config_entry_id(),
+            default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
 
         if isinstance(identifier, ClipSearchIdentifier):
@@ -598,7 +615,7 @@ class FrigateMediaSource(MediaSource):
             BrowseMediaSource(
                 domain=DOMAIN,
                 identifier=ClipIdentifier(
-                    identifier.config_entry_id,
+                    identifier.frigate_instance_id,
                     name=f"{event['camera']}-{event['id']}.mp4",
                 ),
                 media_class=MEDIA_CLASS_VIDEO,
