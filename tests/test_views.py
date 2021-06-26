@@ -9,7 +9,7 @@ import aiohttp
 from aiohttp import hdrs, web
 import pytest
 
-from homeassistant.const import CONF_HOST, HTTP_NOT_FOUND, HTTP_OK
+from homeassistant.const import CONF_URL, HTTP_NOT_FOUND, HTTP_OK
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -81,7 +81,7 @@ async def hass_client_local_frigate(
 
     client = create_mock_frigate_client()
     config_entry = create_mock_frigate_config_entry(
-        hass, data={CONF_HOST: str(server.make_url("/"))}
+        hass, data={CONF_URL: str(server.make_url("/"))}
     )
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client

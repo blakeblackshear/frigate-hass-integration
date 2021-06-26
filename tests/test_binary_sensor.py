@@ -16,6 +16,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID,
+    TEST_CONFIG_ENTRY_ID,
     create_mock_frigate_client,
     setup_mock_frigate_config_entry,
 )
@@ -109,3 +110,16 @@ async def test_binary_sensor_device_info(
         for entry in er.async_entries_for_device(entity_registry, device.id)
     ]
     assert entity in entities_from_device
+
+
+async def test_binary_sensor_unique_id(hass: HomeAssistant):
+    """Verify entity unique_id(s)."""
+    await setup_mock_frigate_config_entry(hass)
+    registry_entry = er.async_get(hass).async_get(
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+    )
+    assert registry_entry
+    assert (
+        registry_entry.unique_id
+        == f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"
+    )

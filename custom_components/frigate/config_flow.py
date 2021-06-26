@@ -7,7 +7,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_URL
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
@@ -20,7 +20,7 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Frigate."""
 
-    VERSION = 1
+    VERSION = 2
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
     async def async_step_user(
@@ -38,13 +38,13 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             # Cannot use cv.url validation in the schema itself, so
             # apply extra validation here.
-            cv.url(user_input[CONF_HOST])
+            cv.url(user_input[CONF_URL])
         except vol.Invalid:
             return self._show_config_form(user_input, errors={"base": "invalid_url"})
 
         try:
             session = async_create_clientsession(self.hass)
-            client = FrigateApiClient(user_input[CONF_HOST], session)
+            client = FrigateApiClient(user_input[CONF_URL], session)
             await client.async_get_stats()
         except FrigateApiClientError:
             return self._show_config_form(user_input, errors={"base": "cannot_connect"})
@@ -65,7 +65,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        CONF_HOST, default=user_input.get(CONF_HOST, DEFAULT_HOST)
+                        CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
                     ): str
                 }
             ),

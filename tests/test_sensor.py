@@ -32,6 +32,7 @@ import homeassistant.util.dt as dt_util
 
 from . import (
     TEST_CONFIG,
+    TEST_CONFIG_ENTRY_ID,
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
@@ -295,3 +296,47 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+
+
+@pytest.mark.parametrize(
+    "entityid_to_uniqueid",
+    [
+        (
+            TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person",
+        ),
+        (
+            TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection",
+        ),
+        (
+            TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_detector_speed:cpu1",
+        ),
+        (
+            TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera",
+        ),
+        (
+            TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_detection",
+        ),
+        (
+            TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_process",
+        ),
+        (
+            TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped",
+        ),
+    ],
+)
+async def test_camera_unique_id(entityid_to_uniqueid, hass: HomeAssistant):
+    """Verify entity unique_id(s)."""
+    entity_id, unique_id = entityid_to_uniqueid
+
+    await setup_mock_frigate_config_entry(hass)
+
+    registry_entry = er.async_get(hass).async_get(entity_id)
+    assert registry_entry
+    assert registry_entry.unique_id == unique_id

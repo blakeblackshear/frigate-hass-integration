@@ -10,6 +10,7 @@ from yarl import URL
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.components.mqtt.models import Message
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -21,6 +22,7 @@ from . import (
     get_cameras_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
+    get_frigate_entity_unique_id,
 )
 from .const import DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
 
@@ -36,8 +38,8 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            FrigateCamera(entry, name, camera)
-            for name, camera in config["cameras"].items()
+            FrigateCamera(entry, cam_name, camera)
+            for cam_name, camera in config["cameras"].items()
         ]
         + [
             FrigateMqttSnapshots(entry, config, cam_name, obj_name)
@@ -50,39 +52,43 @@ class FrigateCamera(FrigateEntity, Camera):
     """Representation a Frigate camera."""
 
     def __init__(
-        self, config_entry: ConfigEntry, name: str, config: dict[str, Any]
+        self, config_entry: ConfigEntry, cam_name: str, config: dict[str, Any]
     ) -> None:
         """Initialize a Frigate camera."""
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
-        self._name = name
+        self._cam_name = cam_name
         self._config = config
-        self._host = config_entry.data["host"]
+        self._url = config_entry.data[CONF_URL]
         self._latest_url = str(
-            URL(self._host) / f"api/{self._name}/latest.jpg" % {"h": 277}
+            URL(self._url) / f"api/{self._cam_name}/latest.jpg" % {"h": 277}
         )
-        self._stream_source = f"rtmp://{URL(self._host).host}/live/{self._name}"
+        self._stream_source = f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
         self._stream_enabled = self._config["rtmp"]["enabled"]
 
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._name}_camera"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "camera",
+            self._cam_name,
+        )
 
     @property
     def name(self) -> str:
         """Return the name of the camera."""
-        return get_friendly_name(self._name)
+        return get_friendly_name(self._cam_name)
 
     @property
     def device_info(self) -> dict[str, any]:
         """Return the device information."""
         return {
             "identifiers": {
-                get_frigate_device_identifier(self._config_entry, self._name)
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._name),
+            "name": get_friendly_name(self._cam_name),
             "model": VERSION,
             "manufacturer": NAME,
         }
@@ -147,7 +153,11 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return f"{DOMAIN}_{self._cam_name}_{self._obj_name}_snapshot"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "camera_snapshots",
+            f"{self._cam_name}_{self._obj_name}",
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
