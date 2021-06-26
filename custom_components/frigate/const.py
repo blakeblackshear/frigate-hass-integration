@@ -31,6 +31,8 @@ MS = "ms"
 ATTR_CLIENT = "client"
 ATTR_CONFIG = "config"
 ATTR_COORDINATOR = "coordinator"
+ATTR_MQTT = "mqtt"
+ATTR_CLIENT_ID = "client_id"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

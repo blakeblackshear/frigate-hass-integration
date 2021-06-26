@@ -11,7 +11,12 @@ from aiohttp.web_exceptions import HTTPBadGateway
 from multidict import CIMultiDict
 from yarl import URL
 
-from custom_components.frigate.const import DOMAIN
+from custom_components.frigate.const import (
+    ATTR_CLIENT_ID,
+    ATTR_CONFIG,
+    ATTR_MQTT,
+    DOMAIN,
+)
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
@@ -34,6 +39,29 @@ def get_default_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
     return None
 
 
+def get_frigate_instance_id(config: dict[str, Any]) -> str | None:
+    """Get the Frigate instance id from a Frigate configuration."""
+
+    # Use the MQTT client_id as a way to separate the frigate instances, rather
+    # than just using the config_entry_id, in order to make URLs maximally
+    # relatable/findable by the user. The MQTT client_id value is configured by
+    # the user in their Frigate configuration and will be unique per Frigate
+    # instance (enforced in practice on the Frigate/MQTT side).
+    return config.get(ATTR_MQTT, {}).get(ATTR_CLIENT_ID)
+
+
+def get_config_entry_for_frigate_instance_id(
+    hass: HomeAssistant, frigate_instance_id: str
+) -> ConfigEntry | None:
+    """Get a ConfigEntry for a given frigate_instance_id."""
+
+    for config_entry in hass.config_entries.async_entries(DOMAIN):
+        config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
+        if config and get_frigate_instance_id(config) == frigate_instance_id:
+            return config_entry
+    return None
+
+
 class ProxyView(HomeAssistantView):
     """HomeAssistant view."""
 
@@ -44,13 +72,13 @@ class ProxyView(HomeAssistantView):
         self._websession = websession
 
     def _get_base_url(
-        self, request: web.Request, config_entry_id: str | None
+        self, request: web.Request, frigate_instance_id: str | None
     ) -> str | None:
         """Get a Frigate base URL."""
         hass = request.app[KEY_HASS]
 
-        if config_entry_id:
-            entry = hass.config_entries.async_get_entry(config_entry_id)
+        if frigate_instance_id:
+            entry = get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
             if entry:
                 return entry.data[CONF_URL]
         else:
@@ -81,11 +109,11 @@ class ProxyView(HomeAssistantView):
         self,
         request: web.Request,
         path: str,
-        config_entry_id: str | None = None,
+        frigate_instance_id: str | None = None,
         **kwargs: Any,
     ) -> web.Response | web.StreamResponse:
         """Handle route for request."""
-        base_url = self._get_base_url(request, config_entry_id)
+        base_url = self._get_base_url(request, frigate_instance_id)
         if not base_url:
             return web.Response(status=HTTP_BAD_REQUEST)
 
@@ -125,7 +153,7 @@ class ProxyView(HomeAssistantView):
 class ClipsProxyView(ProxyView):
     """A proxy for clips."""
 
-    url = "/api/frigate/{config_entry_id:.+}/clips/{path:.*}"
+    url = "/api/frigate/{frigate_instance_id:.+}/clips/{path:.*}"
     extra_urls = ["/api/frigate/clips/{path:.*}"]
 
     name = "api:frigate:clips"
@@ -138,7 +166,7 @@ class ClipsProxyView(ProxyView):
 class RecordingsProxyView(ProxyView):
     """A proxy for recordings."""
 
-    url = "/api/frigate/{config_entry_id:.+}/recordings/{path:.*}"
+    url = "/api/frigate/{frigate_instance_id:.+}/recordings/{path:.*}"
     extra_urls = ["/api/frigate/recordings/{path:.*}"]
 
     name = "api:frigate:recordings"
@@ -151,7 +179,7 @@ class RecordingsProxyView(ProxyView):
 class NotificationsProxyView(ProxyView):
     """A proxy for notifications."""
 
-    url = "/api/frigate/{config_entry_id:.+}/notifications/{event_id}/{path:.*}"
+    url = "/api/frigate/{frigate_instance_id:.+}/notifications/{event_id}/{path:.*}"
     extra_urls = ["/api/frigate/notifications/{event_id}/{path:.*}"]
 
     name = "api:frigate:notification"

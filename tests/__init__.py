@@ -33,6 +33,7 @@ TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
+TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
 TEST_CONFIG = {
     "cameras": {
         "front_door": {
@@ -113,7 +114,7 @@ TEST_CONFIG = {
     "logger": {"default": "INFO", "logs": {}},
     "model": {"height": 320, "width": 320},
     "mqtt": {
-        "client_id": "frigate",
+        "client_id": TEST_FRIGATE_INSTANCE_ID,
         "host": "mqtt",
         "port": 1883,
         "stats_interval": 60,
