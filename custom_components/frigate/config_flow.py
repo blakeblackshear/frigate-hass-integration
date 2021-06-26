@@ -9,11 +9,12 @@ from yarl import URL
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_URL
+from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
-from .const import DEFAULT_HOST, DOMAIN
+from .const import CONF_RTMP_URL_TEMPLATE, DEFAULT_HOST, DOMAIN
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -84,3 +85,46 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> FrigateOptionsFlowHandler:
+        """Get the Hyperion Options flow."""
+        return FrigateOptionsFlowHandler(config_entry)
+
+
+class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
+    """Frigate options flow."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry):
+        """Initialize a Frigate options flow."""
+        self._config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        schema: dict[Any, Any] = {}
+
+        if self.show_advanced_options:
+            # The input URL is not validated as being a URL to allow for the
+            # possibility the template input won't be a valid URL until after
+            # it's rendered.
+            schema.update(
+                {
+                    vol.Required(
+                        CONF_RTMP_URL_TEMPLATE,
+                        default=self._config_entry.options.get(
+                            CONF_RTMP_URL_TEMPLATE,
+                            "",
+                        ),
+                    ): str,
+                }
+            )
+
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

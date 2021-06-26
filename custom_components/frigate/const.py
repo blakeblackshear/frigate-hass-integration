@@ -34,6 +34,9 @@ ATTR_COORDINATOR = "coordinator"
 ATTR_MQTT = "mqtt"
 ATTR_CLIENT_ID = "client_id"
 
+# Configuration and options
+CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
+
 # Defaults
 DEFAULT_NAME = DOMAIN
 DEFAULT_HOST = "http://ccab4aaf-frigate:5000"

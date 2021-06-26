@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 import async_timeout
+from jinja2 import Template
 from yarl import URL
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
@@ -24,7 +25,15 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import ATTR_CONFIG, DOMAIN, NAME, STATE_DETECTED, STATE_IDLE, VERSION
+from .const import (
+    ATTR_CONFIG,
+    CONF_RTMP_URL_TEMPLATE,
+    DOMAIN,
+    NAME,
+    STATE_DETECTED,
+    STATE_IDLE,
+    VERSION,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -38,8 +47,8 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            FrigateCamera(entry, cam_name, camera)
-            for cam_name, camera in config["cameras"].items()
+            FrigateCamera(entry, cam_name, camera_config)
+            for cam_name, camera_config in config["cameras"].items()
         ]
         + [
             FrigateMqttSnapshots(entry, config, cam_name, obj_name)
@@ -52,19 +61,33 @@ class FrigateCamera(FrigateEntity, Camera):
     """Representation a Frigate camera."""
 
     def __init__(
-        self, config_entry: ConfigEntry, cam_name: str, config: dict[str, Any]
+        self, config_entry: ConfigEntry, cam_name: str, camera_config: dict[str, Any]
     ) -> None:
         """Initialize a Frigate camera."""
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
         self._cam_name = cam_name
-        self._config = config
+        self._camera_config = camera_config
         self._url = config_entry.data[CONF_URL]
         self._latest_url = str(
             URL(self._url) / f"api/{self._cam_name}/latest.jpg" % {"h": 277}
         )
-        self._stream_source = f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
-        self._stream_enabled = self._config["rtmp"]["enabled"]
+        self._stream_enabled = self._camera_config["rtmp"]["enabled"]
+
+        streaming_template = config_entry.options.get(
+            CONF_RTMP_URL_TEMPLATE, ""
+        ).strip()
+
+        if streaming_template:
+            # Can't use homeassistant.helpers.template as it requires hass which
+            # is not available in the constructor, so use direct jinja2
+            # template instead. This means templates cannot access HomeAssistant
+            # state, but rather only the camera config.
+            self._stream_source = Template(streaming_template).render(
+                **self._camera_config
+            )
+        else:
+            self._stream_source = f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
 
     @property
     def unique_id(self) -> str:

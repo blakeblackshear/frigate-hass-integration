@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import DOMAIN
+from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
@@ -145,3 +145,32 @@ async def test_duplicate(hass: HomeAssistant) -> None:
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_advanced_options(hass: HomeAssistant) -> None:
+    """Check an options flow with advanced options."""
+
+    config_entry = create_mock_frigate_config_entry(hass)
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ):
+        await hass.async_block_till_done()
+
+        result = await hass.config_entries.options.async_init(
+            config_entry.entry_id, context={"show_advanced_options": True}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_RTMP_URL_TEMPLATE: "http://moo",
+            },
+        )
+        await hass.async_block_till_done()
+        assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+        assert result["data"][CONF_RTMP_URL_TEMPLATE] == "http://moo"

@@ -16,5 +16,14 @@
         "abort": {
             "already_configured": "Device is already configured"
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "rtmp_url_template": "RTMP URL template (see documentation)"
+                }
+            }
+        }
     }
 }
