@@ -1,7 +1,7 @@
 {
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
-    "python.pythonPath": "/home/dizer/.virtualenvs/hass-frigate/bin/python",
+    "python.pythonPath": "/usr/local/bin/python",
     "python.formatting.provider": "black",
     "files.associations": {
         "*.yaml": "home-assistant"
