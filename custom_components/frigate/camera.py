@@ -80,7 +80,7 @@ class FrigateCamera(FrigateEntity, Camera):
 
         if streaming_template:
             # Can't use homeassistant.helpers.template as it requires hass which
-            # is not available in the constructior, so use direct jinja2
+            # is not available in the constructor, so use direct jinja2
             # template instead. This means templates cannot access HomeAssistant
             # state, but rather only the camera config.
             self._stream_source = Template(streaming_template).render(
