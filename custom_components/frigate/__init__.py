@@ -15,7 +15,7 @@ from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import Message
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_URL
+from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
@@ -118,14 +118,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     try:
+        server_version = await client.async_get_version()
         config = await client.async_get_config()
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
+
+    model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
 
     hass.data[DOMAIN][entry.entry_id] = {
         ATTR_COORDINATOR: coordinator,
         ATTR_CLIENT: client,
         ATTR_CONFIG: config,
+        ATTR_MODEL: model,
     }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
@@ -246,6 +250,10 @@ class FrigateEntity(Entity):  # type: ignore[misc]
     def available(self) -> bool:
         """Return the availability of the entity."""
         return self._available
+
+    def _get_model(self) -> str:
+        """Get the Frigate device model string."""
+        return self.hass.data[DOMAIN][self._config_entry.entry_id][ATTR_MODEL]
 
 
 class FrigateMQTTEntity(FrigateEntity):

@@ -2,7 +2,7 @@
 # Base component constants
 NAME = "Frigate"
 DOMAIN = "frigate"
-VERSION = "0.0.1"
+
 # Icons
 ICON_CAR = "mdi:shield-car"
 ICON_CAT = "mdi:cat"

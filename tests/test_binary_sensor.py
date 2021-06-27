@@ -9,7 +9,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import DOMAIN, NAME, VERSION
+from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
@@ -17,6 +17,7 @@ from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID,
     TEST_CONFIG_ENTRY_ID,
+    TEST_SERVER_VERSION,
     create_mock_frigate_client,
     setup_mock_frigate_config_entry,
 )
@@ -103,7 +104,7 @@ async def test_binary_sensor_device_info(
     )
     assert device
     assert device.manufacturer == NAME
-    assert device.model == VERSION
+    assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = [
         entry.entity_id

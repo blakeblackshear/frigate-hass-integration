@@ -13,7 +13,7 @@ import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
 
-from . import start_frigate_server
+from . import TEST_SERVER_VERSION, start_frigate_server
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -236,3 +236,20 @@ async def test_api_wrapper_exceptions(
             await frigate_client.api_wrapper(method="get", url=server.make_url("/get"))
             assert "Error fetching information" in caplog.text
     caplog.clear()
+
+
+async def test_async_get_version(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_version."""
+
+    async def version_handler(request: web.Request) -> web.Response:
+        """Events summary handler."""
+        return web.Response(text=TEST_SERVER_VERSION)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get("/api/version", version_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert TEST_SERVER_VERSION == await frigate_client.async_get_version()

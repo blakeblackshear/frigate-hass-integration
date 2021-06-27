@@ -6,7 +6,7 @@ from typing import Any
 
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import DOMAIN, NAME, VERSION
+from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
@@ -14,6 +14,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
     TEST_CONFIG_ENTRY_ID,
+    TEST_SERVER_VERSION,
     TEST_SWITCH_FRONT_DOOR_CLIPS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
@@ -116,7 +117,7 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
-    assert device.model == VERSION
+    assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entity_registry = await er.async_get_registry(hass)
     entities_from_device = [

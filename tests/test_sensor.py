@@ -24,7 +24,6 @@ from custom_components.frigate.const import (
     ICON_SPEEDOMETER,
     MS,
     NAME,
-    VERSION,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -42,6 +41,7 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
+    TEST_SERVER_VERSION,
     TEST_STATS,
     create_mock_frigate_client,
     setup_mock_frigate_config_entry,
@@ -148,7 +148,7 @@ async def test_per_camerazone_device_info(
     )
     assert device
     assert device.manufacturer == NAME
-    assert device.model == VERSION
+    assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = {
         entry.entity_id
@@ -209,7 +209,7 @@ async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
-    assert device.model == VERSION
+    assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = [
         entry.entity_id

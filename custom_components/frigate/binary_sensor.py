@@ -20,7 +20,7 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import ATTR_CONFIG, DOMAIN, NAME, VERSION
+from .const import ATTR_CONFIG, DOMAIN, NAME
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
-            "model": VERSION,
+            "model": self._get_model(),
             "manufacturer": NAME,
         }
 
