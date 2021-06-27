@@ -22,6 +22,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
 from .api import FrigateApiClient, FrigateApiClientError
@@ -30,6 +31,7 @@ from .const import (
     ATTR_CONFIG,
     ATTR_COORDINATOR,
     DOMAIN,
+    NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
 )
@@ -91,7 +93,13 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
-    _LOGGER.info(STARTUP_MESSAGE)
+    integration = await async_get_integration(hass, DOMAIN)
+    _LOGGER.info(
+        STARTUP_MESSAGE.format(
+            title=NAME,
+            integration_version=integration.version,
+        )
+    )
 
     hass.data.setdefault(DOMAIN, {})
 

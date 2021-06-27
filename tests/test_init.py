@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -12,6 +13,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.loader import async_get_integration
 
 from . import (
     TEST_CONFIG_ENTRY_ID,
@@ -154,3 +156,13 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
         assert (
             entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is not None
         )
+
+
+async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
+    """Test the startup message."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    integration = await async_get_integration(hass, DOMAIN)
+    assert integration.version in caplog.text
+    assert "This is a custom integration" in caplog.text
