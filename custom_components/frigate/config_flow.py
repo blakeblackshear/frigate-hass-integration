@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Dict, cast
 
 import voluptuous as vol
 from yarl import URL
@@ -28,14 +28,14 @@ def get_config_entry_title(url_str: str) -> str:
     return str(url)[len(url.scheme + "://") :]
 
 
-class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg,misc]
     """Config flow for Frigate."""
 
     VERSION = 2
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
     async def async_step_user(
-        self, user_input: dict[str, Any] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Handle a flow initialized by the user."""
 
@@ -59,35 +59,43 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         # Search for duplicates with the same Frigate CONF_HOST value.
         for existing_entry in self._async_current_entries(include_ignore=False):
             if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
-                return self.async_abort(reason="already_configured")
+                return cast(
+                    Dict[str, Any], self.async_abort(reason="already_configured")
+                )
 
-        return self.async_create_entry(
-            title=get_config_entry_title(user_input[CONF_URL]), data=user_input
+        return cast(
+            Dict[str, Any],
+            self.async_create_entry(
+                title=get_config_entry_title(user_input[CONF_URL]), data=user_input
+            ),
         )
 
     def _show_config_form(
         self,
         user_input: dict[str, Any] | None = None,
         errors: dict[str, Any] | None = None,
-    ):  # pylint: disable=unused-argument
+    ) -> dict[str, Any]:  # pylint: disable=unused-argument
         """Show the configuration form."""
         if user_input is None:
             user_input = {}
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
-                    ): str
-                }
+        return cast(
+            Dict[str, Any],
+            self.async_show_form(
+                step_id="user",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
+                        ): str
+                    }
+                ),
+                errors=errors,
             ),
-            errors=errors,
         )
 
     @staticmethod
-    @callback
+    @callback  # type: ignore[misc]
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> FrigateOptionsFlowHandler:
@@ -95,7 +103,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return FrigateOptionsFlowHandler(config_entry)
 
 
-class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
+class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[misc]
     """Frigate options flow."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
@@ -107,7 +115,9 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
     ) -> dict[str, Any]:
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            return cast(
+                Dict[str, Any], self.async_create_entry(title="", data=user_input)
+            )
 
         schema: dict[Any, Any] = {}
 
@@ -127,4 +137,7 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
                 }
             )
 
-        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
+        return cast(
+            Dict[str, Any],
+            self.async_show_form(step_id="init", data_schema=vol.Schema(schema)),
+        )

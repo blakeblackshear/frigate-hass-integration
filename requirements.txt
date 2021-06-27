@@ -1,3 +1,4 @@
+aiohttp
 aiohttp_cors==0.7.0
 attr
 homeassistant==2021.6.2

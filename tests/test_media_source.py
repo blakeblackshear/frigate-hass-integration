@@ -1,4 +1,7 @@
 """Test Frigate Media Source."""
+from __future__ import annotations
+
+from collections.abc import Generator
 import copy
 import datetime
 import json
@@ -9,7 +12,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from custom_components.frigate.api import FrigateApiClientError
+from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
 from custom_components.frigate.const import ATTR_CLIENT_ID, ATTR_MQTT, DOMAIN
 from custom_components.frigate.media_source import (
     ClipIdentifier,
@@ -36,7 +39,7 @@ from . import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def _get_fixed_datetime():
+def _get_fixed_datetime() -> datetime.datetime:
     """Get a fixed-in-time datetime."""
     datetime_today = Mock(wraps=datetime.datetime)
     datetime_today.now = Mock(
@@ -46,7 +49,7 @@ def _get_fixed_datetime():
 
 
 TODAY = _get_fixed_datetime()
-DRILLDOWN_BASE = {
+DRILLDOWN_BASE: dict[str, Any] = {
     "media_class": "directory",
     "media_content_type": "video",
     "can_play": False,
@@ -58,7 +61,7 @@ EVENTS_FIXTURE_FILE = "events_front_door.json"
 
 
 @pytest.fixture
-def frigate_client() -> AsyncMock:
+def frigate_client() -> Generator[FrigateApiClient, None, None]:
     """Fixture that creates a frigate client."""
 
     def load_json(filename: str) -> Any:
@@ -79,7 +82,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass)
 
     # Create an additional test Frigate instance with a different config.
-    another_config = copy.deepcopy(TEST_CONFIG)
+    another_config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     another_config[ATTR_MQTT][ATTR_CLIENT_ID] = "another_client_id"
     another_client = create_mock_frigate_client()
     another_client.async_get_config = AsyncMock(return_value=another_config)
@@ -962,6 +965,17 @@ async def test_async_browse_media_async_get_path_error(
         )
 
 
+async def test_identifier() -> None:
+    """Test base identifier."""
+    identifier = Identifier("foo")
+    assert identifier.frigate_instance_id == "foo"
+
+    # Base identifiers do not have a type and are not intended to be used
+    # directly.
+    with pytest.raises(NotImplementedError):
+        identifier.get_identifier_type()
+
+
 async def test_clip_search_identifier() -> None:
     """Test clip search identifier."""
     identifier_in = (
@@ -1073,6 +1087,7 @@ async def test_recordings_identifier() -> None:
     # beyond the path to the day.
     identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04//front_door"
     identifier = RecordingIdentifier.from_str(identifier_in)
+    assert identifier
     assert identifier.get_frigate_server_path() == "recordings/2021-06/04"
 
 
@@ -1087,7 +1102,7 @@ async def test_clip_identifier() -> None:
     assert identifier.name == "something"
 
 
-async def test_get_client_non_existent(hass) -> None:
+async def test_get_client_non_existent(hass: HomeAssistant) -> None:
     """Test getting a FrigateApiClient for a non-existent config entry id."""
 
     await setup_mock_frigate_config_entry(hass)
@@ -1099,7 +1114,7 @@ async def test_get_client_non_existent(hass) -> None:
 
 
 async def test_backwards_compatability_identifier_without_frigate_instance_id(
-    hass,
+    hass: HomeAssistant,
 ) -> None:
     """Test identifiers without an explicit instance id continue to work.
 

@@ -143,7 +143,7 @@ async def test_switch_icon(hass: HomeAssistant) -> None:
         assert entity_state.attributes["icon"] == icon
 
 
-async def test_switch_unique_id(hass: HomeAssistant):
+async def test_switch_unique_id(hass: HomeAssistant) -> None:
     """Verify entity unique_id(s)."""
     await setup_mock_frigate_config_entry(hass)
     registry_entry = er.async_get(hass).async_get(

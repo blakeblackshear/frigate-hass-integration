@@ -62,7 +62,7 @@ async def test_frigate_camera_setup(
 async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
     """Set up a camera without streaming."""
 
-    config = copy.deepcopy(TEST_CONFIG)
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["cameras"]["front_door"]["rtmp"]["enabled"] = False
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -140,7 +140,9 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
         ),
     ],
 )
-async def test_camera_unique_id(entityid_to_uniqueid, hass: HomeAssistant):
+async def test_camera_unique_id(
+    entityid_to_uniqueid: tuple[str, str], hass: HomeAssistant
+) -> None:
     """Verify entity unique_id(s)."""
     entity_id, unique_id = entityid_to_uniqueid
 
