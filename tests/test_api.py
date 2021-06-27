@@ -252,4 +252,4 @@ async def test_async_get_version(
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
-    assert TEST_SERVER_VERSION == await frigate_client.async_get_version()
+    assert await frigate_client.async_get_version() == TEST_SERVER_VERSION
