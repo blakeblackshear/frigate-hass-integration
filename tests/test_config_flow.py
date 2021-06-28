@@ -8,6 +8,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
+    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
@@ -151,7 +152,7 @@ async def test_duplicate(hass: HomeAssistant) -> None:
     assert result["reason"] == "already_configured"
 
 
-async def test_advanced_options(hass: HomeAssistant) -> None:
+async def test_options_advanced(hass: HomeAssistant) -> None:
     """Check an options flow with advanced options."""
 
     config_entry = create_mock_frigate_config_entry(hass)
@@ -180,3 +181,30 @@ async def test_advanced_options(hass: HomeAssistant) -> None:
         assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
         assert result["data"][CONF_RTMP_URL_TEMPLATE] == "http://moo"
         assert not result["data"][CONF_NOTIFICATION_PROXY_ENABLE]
+
+
+async def test_options(hass: HomeAssistant) -> None:
+    """Check an options flow without advanced options."""
+
+    config_entry = create_mock_frigate_config_entry(hass)
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ):
+        await hass.async_block_till_done()
+
+        result = await hass.config_entries.options.async_init(
+            config_entry.entry_id,
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 1000},
+        )
+        await hass.async_block_till_done()
+        assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+        assert result["data"][CONF_CAMERA_STATIC_IMAGE_HEIGHT] == 1000

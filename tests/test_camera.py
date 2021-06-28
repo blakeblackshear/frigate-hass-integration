@@ -9,7 +9,12 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME
+from custom_components.frigate.const import (
+    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+    CONF_RTMP_URL_TEMPLATE,
+    DOMAIN,
+    NAME,
+)
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -47,12 +52,33 @@ async def test_frigate_camera_setup(
 
     aioclient_mock.get(
         "http://example.com/api/front_door/latest.jpg?h=277",
-        content=b"data",
+        content=b"data-277",
     )
 
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert image
-    assert image.content == b"data"
+    assert image.content == b"data-277"
+
+
+async def test_frigate_camera_image_height_option(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+) -> None:
+    """Set up a camera with a custom static image height."""
+
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 1000}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    aioclient_mock.get(
+        "http://example.com/api/front_door/latest.jpg?h=1000",
+        content=b"data-1000",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert image
+    assert image.content == b"data-1000"
 
 
 async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
