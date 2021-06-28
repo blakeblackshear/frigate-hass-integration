@@ -89,11 +89,10 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
 
     def _get_config_entry_for_request(
         self, request: web.Request, frigate_instance_id: str | None
-    ) -> str | None:
+    ) -> ConfigEntry | None:
         """Get a ConfigEntry for a given request."""
         hass = request.app[KEY_HASS]
 
-        entry = None
         if frigate_instance_id:
             return get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
         return get_default_config_entry(hass)
@@ -135,11 +134,11 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         if not self._permit_request(request, config_entry):
             return web.Response(status=HTTP_FORBIDDEN)
 
-        path = self._create_path(path=path, **kwargs)
-        if not path:
+        full_path = self._create_path(path=path, **kwargs)
+        if not full_path:
             return web.Response(status=HTTP_NOT_FOUND)
 
-        url = str(URL(config_entry.data[CONF_URL]) / path)
+        url = str(URL(config_entry.data[CONF_URL]) / full_path)
         data = await request.read()
         source_header = _init_header(request)
 
@@ -219,7 +218,7 @@ class NotificationsProxyView(ProxyView):
 
     def _permit_request(self, request: web.Request, config_entry: ConfigEntry) -> bool:
         """Determine whether to permit a request."""
-        return config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True)
+        return bool(config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True))
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:

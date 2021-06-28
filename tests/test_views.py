@@ -319,7 +319,7 @@ async def test_notifications_with_disabled_option(
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
-    private_config = copy.deepcopy(TEST_CONFIG)
+    private_config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     private_config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
     private_client = create_mock_frigate_client()
     private_client.async_get_config = AsyncMock(return_value=private_config)
