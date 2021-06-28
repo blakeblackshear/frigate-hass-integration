@@ -112,7 +112,7 @@ async def test_binary_sensor_device_info(
     assert entity in entities_from_device
 
 
-async def test_binary_sensor_unique_id(hass: HomeAssistant):
+async def test_binary_sensor_unique_id(hass: HomeAssistant) -> None:
     """Verify entity unique_id(s)."""
     await setup_mock_frigate_config_entry(hass)
     registry_entry = er.async_get(hass).async_get(

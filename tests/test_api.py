@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncGenerator
 import logging
 from typing import Any
 from unittest.mock import Mock, patch
 
 import aiohttp
-from aiohttp import web  # type: ignore
+from aiohttp import web
 import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
@@ -24,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture
-async def aiohttp_session() -> aiohttp.ClientSession:
+async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession, None]:
     """Test fixture for aiohttp.ClientSerssion."""
     async with aiohttp.ClientSession() as session:
         yield session
@@ -81,9 +82,9 @@ async def test_async_get_events(
                 "camera": "test_camera",
                 "label": "test_label",
                 "zone": "test_zone",
-                "after": "test_after",
-                "before": "test_before",
-                "limit": "test_limit",
+                "after": "1",
+                "before": "2",
+                "limit": "3",
                 "has_clip": "1",
             },
         )
@@ -98,9 +99,9 @@ async def test_async_get_events(
         camera="test_camera",
         label="test_label",
         zone="test_zone",
-        after="test_after",
-        before="test_before",
-        limit="test_limit",
+        after=1,
+        before=2,
+        limit=3,
     )
 
 

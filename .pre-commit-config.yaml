@@ -62,3 +62,10 @@ repos:
         language: system
         types: [python]
         args: ["--errors-only"]
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [python]
+        require_serial: true
+        files: ^(custom_components/frigate|tests)/.+\.py$

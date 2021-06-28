@@ -98,10 +98,12 @@ async def test_object_count_sensor(hass: HomeAssistant) -> None:
         ("SOMETHING_ELSE", ICON_OTHER),
     ],
 )
-async def test_object_count_icon(object_icon, hass: HomeAssistant) -> None:
+async def test_object_count_icon(
+    object_icon: tuple[str, str], hass: HomeAssistant
+) -> None:
     """Test FrigateObjectCountSensor car icon."""
     object, icon = object_icon
-    config = copy.deepcopy(TEST_CONFIG)
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["cameras"]["front_door"]["objects"]["track"] = [object]
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -230,7 +232,7 @@ async def test_detector_speed_sensor(hass: HomeAssistant) -> None:
     assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
     assert entity_state.attributes["unit_of_measurement"] == MS
 
-    stats = copy.deepcopy(TEST_STATS)
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
     stats["detectors"]["cpu1"]["inference_speed"] = 11.5
@@ -270,7 +272,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
     assert entity_state.attributes["unit_of_measurement"] == FPS
 
-    stats = copy.deepcopy(TEST_STATS)
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
     stats["front_door"]["camera_fps"] = 3.9
@@ -331,7 +333,9 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
         ),
     ],
 )
-async def test_camera_unique_id(entityid_to_uniqueid, hass: HomeAssistant):
+async def test_camera_unique_id(
+    entityid_to_uniqueid: tuple[str, str], hass: HomeAssistant
+) -> None:
     """Verify entity unique_id(s)."""
     entity_id, unique_id = entityid_to_uniqueid
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
+from typing import Any, Dict, List, cast
 
 import aiohttp
 import async_timeout
@@ -34,19 +35,22 @@ class FrigateApiClient:
         self._host = host
         self._session = session
 
-    async def async_get_stats(self) -> dict:
+    async def async_get_stats(self) -> dict[str, Any]:
         """Get data from the API."""
-        return await self.api_wrapper("get", str(URL(self._host) / "api/stats"))
+        return cast(
+            Dict[str, Any],
+            await self.api_wrapper("get", str(URL(self._host) / "api/stats")),
+        )
 
     async def async_get_events(
         self,
-        camera=None,
-        label=None,
-        zone=None,
-        after=None,
-        before=None,
-        limit: int = None,
-    ) -> dict:
+        camera: str | None = None,
+        label: str | None = None,
+        zone: str | None = None,
+        after: int | None = None,
+        before: int | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
             "camera": camera,
@@ -58,24 +62,35 @@ class FrigateApiClient:
             "has_clip": 1,
         }
 
-        return await self.api_wrapper(
-            "get",
-            str(
-                URL(self._host) / "api/events" % {k: v for k, v in params.items() if v}
+        return cast(
+            List[Dict[str, Any]],
+            await self.api_wrapper(
+                "get",
+                str(
+                    URL(self._host)
+                    / "api/events"
+                    % {k: v for k, v in params.items() if v}
+                ),
             ),
         )
 
-    async def async_get_event_summary(self) -> dict:
+    async def async_get_event_summary(self) -> list[dict[str, Any]]:
         """Get data from the API."""
-        return await self.api_wrapper(
-            "get", str(URL(self._host) / "api/events/summary" % {"has_clip": 1})
+        return cast(
+            List[Dict[str, Any]],
+            await self.api_wrapper(
+                "get", str(URL(self._host) / "api/events/summary" % {"has_clip": 1})
+            ),
         )
 
-    async def async_get_config(self) -> dict:
+    async def async_get_config(self) -> dict[str, Any]:
         """Get data from the API."""
-        return await self.api_wrapper("get", str(URL(self._host) / "api/config"))
+        return cast(
+            Dict[str, Any],
+            await self.api_wrapper("get", str(URL(self._host) / "api/config")),
+        )
 
-    async def async_get_path(self, path) -> dict:
+    async def async_get_path(self, path: str) -> Any:
         """Get data from the API."""
         return await self.api_wrapper("get", str(URL(self._host) / f"{path}/"))
 
@@ -85,7 +100,7 @@ class FrigateApiClient:
         url: str,
         data: dict | None = None,
         headers: dict | None = None,
-    ) -> dict:
+    ) -> Any:
         """Get information from the API."""
         if data is None:
             data = {}

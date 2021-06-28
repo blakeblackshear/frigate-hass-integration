@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from ipaddress import ip_address
 import logging
-from typing import Any
+from typing import Any, Optional, cast
 
 import aiohttp
 from aiohttp import hdrs, web
@@ -47,7 +47,7 @@ def get_frigate_instance_id(config: dict[str, Any]) -> str | None:
     # relatable/findable by the user. The MQTT client_id value is configured by
     # the user in their Frigate configuration and will be unique per Frigate
     # instance (enforced in practice on the Frigate/MQTT side).
-    return config.get(ATTR_MQTT, {}).get(ATTR_CLIENT_ID)
+    return cast(Optional[str], config.get(ATTR_MQTT, {}).get(ATTR_CLIENT_ID))
 
 
 def get_config_entry_for_frigate_instance_id(
@@ -72,7 +72,7 @@ def get_frigate_instance_id_for_config_entry(
     return get_frigate_instance_id(config) if config else None
 
 
-class ProxyView(HomeAssistantView):
+class ProxyView(HomeAssistantView):  # type: ignore[misc]
     """HomeAssistant view."""
 
     requires_auth = True
@@ -87,24 +87,24 @@ class ProxyView(HomeAssistantView):
         """Get a Frigate base URL."""
         hass = request.app[KEY_HASS]
 
+        entry = None
         if frigate_instance_id:
             entry = get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
-            if entry:
-                return entry.data[CONF_URL]
         else:
-            default_config_entry = get_default_config_entry(hass)
-            if default_config_entry:
-                return default_config_entry.data[CONF_URL]
+            entry = get_default_config_entry(hass)
+
+        if entry:
+            return cast(str, entry.data[CONF_URL])
         return None
 
-    def _create_path(self, **kwargs) -> str | None:
+    def _create_path(self, path: str, **kwargs: Any) -> str | None:
         """Create path."""
         raise NotImplementedError  # pragma: no cover
 
     async def get(
         self,
         request: web.Request,
-        **kwargs,
+        **kwargs: Any,
     ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
         """Route data to service."""
         try:
@@ -127,11 +127,11 @@ class ProxyView(HomeAssistantView):
         if not base_url:
             return web.Response(status=HTTP_BAD_REQUEST)
 
-        path = self._create_path(path=path, **kwargs)
-        if not path:
+        full_path = self._create_path(path=path, **kwargs)
+        if not full_path:
             return web.Response(status=HTTP_NOT_FOUND)
 
-        url = str(URL(base_url) / path)
+        url = str(URL(base_url) / full_path)
         data = await request.read()
         source_header = _init_header(request)
 
@@ -168,7 +168,7 @@ class ClipsProxyView(ProxyView):
 
     name = "api:frigate:clips"
 
-    def _create_path(self, path: str) -> str:
+    def _create_path(self, path: str, **kwargs: Any) -> str:
         """Create path."""
         return f"clips/{path}"
 
@@ -181,7 +181,7 @@ class RecordingsProxyView(ProxyView):
 
     name = "api:frigate:recordings"
 
-    def _create_path(self, path: str) -> str:
+    def _create_path(self, path: str, **kwargs: Any) -> str:
         """Create path."""
         return f"recordings/{path}"
 
@@ -195,8 +195,9 @@ class NotificationsProxyView(ProxyView):
     name = "api:frigate:notification"
     requires_auth = False
 
-    def _create_path(self, event_id: str, path: str) -> str | None:
+    def _create_path(self, path: str, **kwargs: Any) -> str | None:
         """Create path."""
+        event_id = kwargs["event_id"]
         if path == "thumbnail.jpg":
             return f"api/events/{event_id}/thumbnail.jpg"
 
@@ -206,6 +207,7 @@ class NotificationsProxyView(ProxyView):
         camera = path.split("/")[0]
         if path.endswith("clip.mp4"):
             return f"clips/{camera}-{event_id}.mp4"
+        return None
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
@@ -227,6 +229,7 @@ def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
 
     # Set X-Forwarded-For
     forward_for = request.headers.get(hdrs.X_FORWARDED_FOR)
+    assert request.transport
     connected_ip = ip_address(request.transport.get_extra_info("peername")[0])
     if forward_for:
         forward_for = f"{forward_for}, {connected_ip!s}"

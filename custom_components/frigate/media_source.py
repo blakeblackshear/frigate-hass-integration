@@ -41,7 +41,7 @@ SECONDS_IN_DAY = 60 * 60 * 24
 SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
 
 
-async def async_get_media_source(hass: HomeAssistant):
+async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
     """Set up Frigate media source."""
     return FrigateMediaSource(hass)
 
@@ -49,8 +49,6 @@ async def async_get_media_source(hass: HomeAssistant):
 @attr.s(frozen=True)
 class Identifier:
     """Base class for Identifiers."""
-
-    IDENTIFIER_TYPE = None
 
     frigate_instance_id: str = attr.ib(
         validator=[attr.validators.instance_of(str)],
@@ -69,10 +67,6 @@ class Identifier:
         return str(data) if data is not None else ""
 
     @classmethod
-    def _to_int_or_none(cls, data: str) -> int | None:
-        return int(data) if data else None
-
-    @classmethod
     def from_str(
         cls,
         data: str,
@@ -85,6 +79,11 @@ class Identifier:
             or RecordingIdentifier.from_str(data, default_frigate_instance_id)
         )
 
+    @classmethod
+    def get_identifier_type(cls) -> str:
+        """Get the identifier type."""
+        raise NotImplementedError
+
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
         raise NotImplementedError
@@ -92,10 +91,10 @@ class Identifier:
     @classmethod
     def _add_frigate_instance_id_to_parts_if_absent(
         self, parts: list[str], default_frigate_instance_id: str | None = None
-    ):
+    ) -> list[str]:
         """Add a frigate instance id if it's not specified."""
         if (
-            self._get_index(parts, 0) == self.IDENTIFIER_TYPE
+            self._get_index(parts, 0) == self.get_identifier_type()
             and default_frigate_instance_id is not None
         ):
             parts.insert(0, default_frigate_instance_id)
@@ -106,15 +105,15 @@ class Identifier:
 class ClipIdentifier(Identifier):
     """Clip Identifier."""
 
-    IDENTIFIER_TYPE = "clips"
-
     name: str = attr.ib(
         validator=[attr.validators.instance_of(str)],
     )
 
     def __str__(self) -> str:
         """Convert to a string."""
-        return "/".join((self.frigate_instance_id, self.IDENTIFIER_TYPE, self.name))
+        return "/".join(
+            (self.frigate_instance_id, self.get_identifier_type(), self.name)
+        )
 
     @classmethod
     def from_str(
@@ -125,21 +124,29 @@ class ClipIdentifier(Identifier):
             data.split("/"), default_frigate_instance_id
         )
 
-        if len(parts) != 3 or parts[1] != cls.IDENTIFIER_TYPE:
+        if len(parts) != 3 or parts[1] != cls.get_identifier_type():
             return None
 
         return cls(frigate_instance_id=parts[0], name=parts[2])
 
+    @classmethod
+    def get_identifier_type(cls) -> str:
+        """Get the identifier type."""
+        return "clips"
+
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
-        return "/".join((self.IDENTIFIER_TYPE, self.name))
+        return "/".join((self.get_identifier_type(), self.name))
+
+
+def _to_int_or_none(data: str) -> int | None:
+    """Convert to an integer or None."""
+    return int(data) if data else None
 
 
 @attr.s(frozen=True)
 class ClipSearchIdentifier(Identifier):
     """Clip Search Identifier."""
-
-    IDENTIFIER_TYPE = "clip-search"
 
     name: str = attr.ib(
         default="",
@@ -147,12 +154,12 @@ class ClipSearchIdentifier(Identifier):
     )
     after: int | None = attr.ib(
         default=None,
-        converter=Identifier._to_int_or_none,
+        converter=_to_int_or_none,
         validator=[attr.validators.instance_of((int, type(None)))],
     )
     before: int | None = attr.ib(
         default=None,
-        converter=Identifier._to_int_or_none,
+        converter=_to_int_or_none,
         validator=[attr.validators.instance_of((int, type(None)))],
     )
     camera: str | None = attr.ib(
@@ -174,7 +181,7 @@ class ClipSearchIdentifier(Identifier):
             data.split("/"), default_frigate_instance_id
         )
 
-        if len(parts) < 2 or parts[1] != cls.IDENTIFIER_TYPE:
+        if len(parts) < 2 or parts[1] != cls.get_identifier_type():
             return None
 
         try:
@@ -194,7 +201,7 @@ class ClipSearchIdentifier(Identifier):
         """Convert to a string."""
 
         return "/".join(
-            [self.frigate_instance_id, self.IDENTIFIER_TYPE]
+            [self.frigate_instance_id, self.get_identifier_type()]
             + [
                 self._empty_if_none(val)
                 for val in (
@@ -208,14 +215,21 @@ class ClipSearchIdentifier(Identifier):
             ]
         )
 
-    def is_root(self) -> str:
+    def is_root(self) -> bool:
         """Determine if an identifier is a clips root for a given server."""
         return not any(
             [self.name, self.after, self.before, self.camera, self.label, self.zone]
         )
 
+    @classmethod
+    def get_identifier_type(cls) -> str:
+        """Get the identifier type."""
+        return "clip-search"
 
-def _validate_year_month(inst: attr.s, attribute: str, data: str | None) -> None:
+
+def _validate_year_month(
+    inst: RecordingIdentifier, attribute: attr.Attribute, data: str | None
+) -> None:
     """Validate input."""
     if data:
         year, month = data.split("-")
@@ -223,13 +237,17 @@ def _validate_year_month(inst: attr.s, attribute: str, data: str | None) -> None
             raise ValueError("Invalid year-month in identifier: %s" % data)
 
 
-def _validate_day(inst: attr.s, attribute: str, value: int | None):
+def _validate_day(
+    inst: RecordingIdentifier, attribute: attr.Attribute, value: int | None
+) -> None:
     """Determine if a value is a valid day."""
     if value is not None and (int(value) < 1 or int(value) > 31):
         raise ValueError("Invalid day in identifier: %s" % value)
 
 
-def _validate_hour(inst: attr.s, attribute: str, value: int | None):
+def _validate_hour(
+    inst: RecordingIdentifier, attribute: attr.Attribute, value: int | None
+) -> None:
     """Determine if a value is a valid hour."""
     if value is not None and (int(value) < 1 or int(value) > 23):
         raise ValueError("Invalid hour in identifier: %s" % value)
@@ -238,8 +256,6 @@ def _validate_hour(inst: attr.s, attribute: str, value: int | None):
 @attr.s(frozen=True)
 class RecordingIdentifier(Identifier):
     """Recording Identifier."""
-
-    IDENTIFIER_TYPE = "recordings"
 
     year_month: str | None = attr.ib(
         default=None,
@@ -251,7 +267,7 @@ class RecordingIdentifier(Identifier):
 
     day: int | None = attr.ib(
         default=None,
-        converter=Identifier._to_int_or_none,
+        converter=_to_int_or_none,
         validator=[
             attr.validators.instance_of((int, type(None))),
             _validate_day,
@@ -260,7 +276,7 @@ class RecordingIdentifier(Identifier):
 
     hour: int | None = attr.ib(
         default=None,
-        converter=Identifier._to_int_or_none,
+        converter=_to_int_or_none,
         validator=[
             attr.validators.instance_of((int, type(None))),
             _validate_hour,
@@ -284,7 +300,7 @@ class RecordingIdentifier(Identifier):
             data.split("/"), default_frigate_instance_id
         )
 
-        if len(parts) < 2 or parts[1] != cls.IDENTIFIER_TYPE:
+        if len(parts) < 2 or parts[1] != cls.get_identifier_type():
             return None
 
         try:
@@ -302,7 +318,7 @@ class RecordingIdentifier(Identifier):
     def __str__(self) -> str:
         """Convert to a string."""
         return "/".join(
-            [self.frigate_instance_id, self.IDENTIFIER_TYPE]
+            [self.frigate_instance_id, self.get_identifier_type()]
             + [
                 self._empty_if_none(val)
                 for val in (
@@ -315,6 +331,11 @@ class RecordingIdentifier(Identifier):
             ]
         )
 
+    @classmethod
+    def get_identifier_type(cls) -> str:
+        """Get the identifier type."""
+        return "recordings"
+
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
 
@@ -325,7 +346,7 @@ class RecordingIdentifier(Identifier):
         # missing attribute.
 
         in_parts = [
-            self.IDENTIFIER_TYPE,
+            self.get_identifier_type(),
             self.year_month,
             f"{self.day:02}" if self.day is not None else None,
             f"{self.hour:02}" if self.hour is not None else None,
@@ -342,7 +363,7 @@ class RecordingIdentifier(Identifier):
 
     def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
         """Get the changes that would set the next attribute in the hierarchy."""
-        for attribute in self.__attrs_attrs__:
+        for attribute in self.__attrs_attrs__:  # type: ignore[attr-defined]
             if getattr(self, attribute.name) is None:
                 return {attribute.name: data}
         raise ValueError("No empty attribute available")
@@ -352,13 +373,13 @@ class RecordingIdentifier(Identifier):
 class EventSummaryData:
     """Summary data from Frigate events."""
 
-    data: dict[str, Any] = attr.ib()
-    cameras: list[dict[str, Any]] = attr.ib()
-    labels: list[dict[str, Any]] = attr.ib()
-    zones: list[dict[str, Any]] = attr.ib()
+    data: list[dict[str, Any]] = attr.ib()
+    cameras: list[str] = attr.ib()
+    labels: list[str] = attr.ib()
+    zones: list[str] = attr.ib()
 
     @classmethod
-    def from_raw_data(cls, summary_data: dict[str, Any]) -> None:
+    def from_raw_data(cls, summary_data: list[dict[str, Any]]) -> EventSummaryData:
         """Generate an EventSummaryData object from raw data."""
 
         cameras = list({d["camera"] for d in summary_data})
@@ -367,7 +388,7 @@ class EventSummaryData:
         return cls(summary_data, cameras, labels, zones)
 
 
-class FrigateMediaSource(MediaSource):
+class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     """Provide Frigate camera recordings as media sources."""
 
     name: str = "Frigate"
@@ -384,7 +405,7 @@ class FrigateMediaSource(MediaSource):
         )
 
         if config_entry:
-            client = (
+            client: FrigateApiClient = (
                 self.hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CLIENT)
             )
             if client:
@@ -530,7 +551,7 @@ class FrigateMediaSource(MediaSource):
         self,
         summary_data: EventSummaryData,
         identifier: ClipSearchIdentifier,
-        events: dict[str, Any],
+        events: list[dict[str, Any]],
     ) -> BrowseMediaSource:
         """Browse clips."""
         count = self._count_by(summary_data, identifier)
@@ -1003,7 +1024,7 @@ class FrigateMediaSource(MediaSource):
 
     @classmethod
     def _generate_recording_title(
-        cls, identifier: RecordingIdentifier, folder: str = None
+        cls, identifier: RecordingIdentifier, folder: dict[str, Any] | None = None
     ) -> str | None:
         """Generate recording title."""
         try:
@@ -1070,7 +1091,7 @@ class FrigateMediaSource(MediaSource):
         )
 
     def _browse_recording_folders(
-        self, identifier: RecordingIdentifier, folders: dict[str, Any]
+        self, identifier: RecordingIdentifier, folders: list[dict[str, Any]]
     ) -> BrowseMediaSource:
         """Browse Frigate recording folders."""
         base = self._get_recording_base_media_source(identifier)
@@ -1101,7 +1122,7 @@ class FrigateMediaSource(MediaSource):
         return base
 
     def _browse_recordings(
-        self, identifier: RecordingIdentifier, recordings: dict[str, Any]
+        self, identifier: RecordingIdentifier, recordings: list[dict[str, Any]]
     ) -> BrowseMediaSource:
         """Browse Frigate recordings."""
         base = self._get_recording_base_media_source(identifier)

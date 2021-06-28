@@ -36,11 +36,11 @@ class FakeStreamResponse(web.StreamResponse):
 class FakeAsyncContextManager:
     """Fake AsyncContextManager for testing purposes."""
 
-    async def __aenter__(self, *args, **kwargs):
+    async def __aenter__(self, *args: Any, **kwargs: Any) -> FakeAsyncContextManager:
         """Context manager enter."""
         return self
 
-    async def __aexit__(self, *args, **kwargs):
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         """Context manager exit."""
 
 

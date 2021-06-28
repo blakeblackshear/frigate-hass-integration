@@ -243,7 +243,9 @@ TEST_EVENT_SUMMARY = [
 ]
 
 
-async def start_frigate_server(aiohttp_server: Any, handlers: list[web.route]) -> Any:
+async def start_frigate_server(
+    aiohttp_server: Any, handlers: list[web.RouteDef]
+) -> Any:
     """Start a fake Frigate server."""
     app = web.Application()
     app.add_routes(handlers)
