@@ -15,12 +15,18 @@ from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_CONFIG,
     ATTR_MQTT,
+    CONF_NOTIFICATION_PROXY_ENABLE,
     DOMAIN,
 )
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND
+from homeassistant.const import (
+    CONF_URL,
+    HTTP_BAD_REQUEST,
+    HTTP_FORBIDDEN,
+    HTTP_NOT_FOUND,
+)
 from homeassistant.core import HomeAssistant
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -81,25 +87,23 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         """Initialize the frigate clips proxy view."""
         self._websession = websession
 
-    def _get_base_url(
+    def _get_config_entry_for_request(
         self, request: web.Request, frigate_instance_id: str | None
-    ) -> str | None:
-        """Get a Frigate base URL."""
+    ) -> ConfigEntry | None:
+        """Get a ConfigEntry for a given request."""
         hass = request.app[KEY_HASS]
 
-        entry = None
         if frigate_instance_id:
-            entry = get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
-        else:
-            entry = get_default_config_entry(hass)
-
-        if entry:
-            return cast(str, entry.data[CONF_URL])
-        return None
+            return get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
+        return get_default_config_entry(hass)
 
     def _create_path(self, path: str, **kwargs: Any) -> str | None:
         """Create path."""
         raise NotImplementedError  # pragma: no cover
+
+    def _permit_request(self, request: web.Request, config_entry: ConfigEntry) -> bool:
+        """Determine whether to permit a request."""
+        return True
 
     async def get(
         self,
@@ -123,15 +127,18 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         **kwargs: Any,
     ) -> web.Response | web.StreamResponse:
         """Handle route for request."""
-        base_url = self._get_base_url(request, frigate_instance_id)
-        if not base_url:
+        config_entry = self._get_config_entry_for_request(request, frigate_instance_id)
+        if not config_entry:
             return web.Response(status=HTTP_BAD_REQUEST)
+
+        if not self._permit_request(request, config_entry):
+            return web.Response(status=HTTP_FORBIDDEN)
 
         full_path = self._create_path(path=path, **kwargs)
         if not full_path:
             return web.Response(status=HTTP_NOT_FOUND)
 
-        url = str(URL(base_url) / full_path)
+        url = str(URL(config_entry.data[CONF_URL]) / full_path)
         data = await request.read()
         source_header = _init_header(request)
 
@@ -208,6 +215,10 @@ class NotificationsProxyView(ProxyView):
         if path.endswith("clip.mp4"):
             return f"clips/{camera}-{event_id}.mp4"
         return None
+
+    def _permit_request(self, request: web.Request, config_entry: ConfigEntry) -> bool:
+        """Determine whether to permit a request."""
+        return bool(config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True))
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
