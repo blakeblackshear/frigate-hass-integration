@@ -1,20 +1,34 @@
 """Test the frigate binary sensor."""
 from __future__ import annotations
 
+import copy
 import logging
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
 from aiohttp import hdrs, web
 import pytest
 
-from custom_components.frigate.const import DOMAIN
-from homeassistant.const import CONF_URL, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_OK
+from custom_components.frigate.const import (
+    ATTR_CLIENT_ID,
+    ATTR_MQTT,
+    CONF_NOTIFICATION_PROXY_ENABLE,
+    DOMAIN,
+)
+from homeassistant.const import (
+    CONF_URL,
+    HTTP_BAD_REQUEST,
+    HTTP_FORBIDDEN,
+    HTTP_NOT_FOUND,
+    HTTP_OK,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
 from . import (
+    TEST_CONFIG,
+    TEST_CONFIG_ENTRY_ID,
     TEST_FRIGATE_INSTANCE_ID,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
@@ -288,3 +302,40 @@ async def test_notifications_with_frigate_instance_id(
         "/api/frigate/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTP_BAD_REQUEST
+
+
+async def test_notifications_with_disabled_option(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test notifications with config entry ids."""
+
+    # Make another config entry with the same data but with
+    # CONF_NOTIFICATION_PROXY_ENABLE disabled.
+    private_config_entry = create_mock_frigate_config_entry(
+        hass,
+        entry_id="private_id",
+        options={CONF_NOTIFICATION_PROXY_ENABLE: False},
+        data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
+    )
+
+    private_config = copy.deepcopy(TEST_CONFIG)
+    private_config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
+    private_client = create_mock_frigate_client()
+    private_client.async_get_config = AsyncMock(return_value=private_config)
+
+    await setup_mock_frigate_config_entry(
+        hass, config_entry=private_config_entry, client=private_client
+    )
+
+    # Default Frigate instance should continue serving fine.
+    resp = await hass_client_local_frigate.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/notifications/event_id/snapshot.jpg"
+    )
+    assert resp.status == HTTP_OK
+
+    # Private instance will not proxy notification data.
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/private_id/notifications/event_id/snapshot.jpg"
+    )
+    assert resp.status == HTTP_FORBIDDEN

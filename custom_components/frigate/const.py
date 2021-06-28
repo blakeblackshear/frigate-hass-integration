@@ -36,6 +36,7 @@ ATTR_CLIENT_ID = "client_id"
 
 # Configuration and options
 CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
+CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
