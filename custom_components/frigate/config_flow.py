@@ -133,7 +133,7 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
                     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
                     DEFAULT_CAMERA_STATIC_IMAGE_HEIGHT,
                 ),
-            ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0)),
         }
 
         if self.show_advanced_options:

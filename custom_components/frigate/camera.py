@@ -131,7 +131,9 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
         )
 
         image_url = str(
-            URL(self._url) / f"api/{self._cam_name}/latest.jpg" % {"h": height}
+            URL(self._url)
+            / f"api/{self._cam_name}/latest.jpg"
+            % ({"h": height} if height > 0 else {})
         )
 
         with async_timeout.timeout(10):
