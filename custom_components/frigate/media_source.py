@@ -249,7 +249,7 @@ def _validate_hour(
     inst: RecordingIdentifier, attribute: attr.Attribute, value: int | None
 ) -> None:
     """Determine if a value is a valid hour."""
-    if value is not None and (int(value) < 1 or int(value) > 23):
+    if value is not None and (int(value) < 0 or int(value) > 23):
         raise ValueError("Invalid hour in identifier: %s" % value)
 
 
