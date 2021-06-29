@@ -253,7 +253,7 @@ class FrigateEntity(Entity):  # type: ignore[misc]
 
     def _get_model(self) -> str:
         """Get the Frigate device model string."""
-        return self.hass.data[DOMAIN][self._config_entry.entry_id][ATTR_MODEL]
+        return str(self.hass.data[DOMAIN][self._config_entry.entry_id][ATTR_MODEL])
 
 
 class FrigateMQTTEntity(FrigateEntity):

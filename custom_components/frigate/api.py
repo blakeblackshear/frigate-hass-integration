@@ -37,9 +37,11 @@ class FrigateApiClient:
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
-        return await cast(str, self.api_wrapper(
-            "get", str(URL(self._host) / "api/version"), decode_json=False
-        ))
+        return str(
+            self.api_wrapper(
+                "get", str(URL(self._host) / "api/version"), decode_json=False
+            )
+        )
 
     async def async_get_stats(self) -> dict[str, Any]:
         """Get data from the API."""
