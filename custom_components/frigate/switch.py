@@ -25,7 +25,6 @@ from .const import (
     ICON_IMAGE_MULTIPLE,
     ICON_MOTION_SENSOR,
     NAME,
-    VERSION,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -111,7 +110,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
-            "model": VERSION,
+            "model": self._get_model(),
             "manufacturer": NAME,
         }
 

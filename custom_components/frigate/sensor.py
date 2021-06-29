@@ -33,7 +33,6 @@ from .const import (
     ICON_SPEEDOMETER,
     MS,
     NAME,
-    VERSION,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -96,7 +95,7 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return {
             "identifiers": {get_frigate_device_identifier(self._config_entry)},
             "name": NAME,
-            "model": VERSION,
+            "model": self._get_model(),
             "manufacturer": NAME,
         }
 
@@ -155,7 +154,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         return {
             "identifiers": {get_frigate_device_identifier(self._config_entry)},
             "name": NAME,
-            "model": VERSION,
+            "model": self._get_model(),
             "manufacturer": NAME,
         }
 
@@ -225,7 +224,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
-            "model": VERSION,
+            "model": self._get_model(),
             "manufacturer": NAME,
         }
 
@@ -325,7 +324,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
-            "model": VERSION,
+            "model": self._get_model(),
             "manufacturer": NAME,
         }
 

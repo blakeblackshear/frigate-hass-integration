@@ -15,13 +15,14 @@ from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import Message
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_URL
+from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
 from .api import FrigateApiClient, FrigateApiClientError
@@ -30,6 +31,7 @@ from .const import (
     ATTR_CONFIG,
     ATTR_COORDINATOR,
     DOMAIN,
+    NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
 )
@@ -91,7 +93,13 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
-    _LOGGER.info(STARTUP_MESSAGE)
+    integration = await async_get_integration(hass, DOMAIN)
+    _LOGGER.info(
+        STARTUP_MESSAGE.format(
+            title=NAME,
+            integration_version=integration.version,
+        )
+    )
 
     hass.data.setdefault(DOMAIN, {})
 
@@ -110,14 +118,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     try:
+        server_version = await client.async_get_version()
         config = await client.async_get_config()
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
+
+    model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
 
     hass.data[DOMAIN][entry.entry_id] = {
         ATTR_COORDINATOR: coordinator,
         ATTR_CLIENT: client,
         ATTR_CONFIG: config,
+        ATTR_MODEL: model,
     }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
@@ -238,6 +250,10 @@ class FrigateEntity(Entity):  # type: ignore[misc]
     def available(self) -> bool:
         """Return the availability of the entity."""
         return self._available
+
+    def _get_model(self) -> str:
+        """Get the Frigate device model string."""
+        return str(self.hass.data[DOMAIN][self._config_entry.entry_id][ATTR_MODEL])
 
 
 class FrigateMQTTEntity(FrigateEntity):

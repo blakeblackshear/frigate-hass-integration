@@ -35,6 +35,15 @@ class FrigateApiClient:
         self._host = host
         self._session = session
 
+    async def async_get_version(self) -> str:
+        """Get data from the API."""
+        return cast(
+            str,
+            await self.api_wrapper(
+                "get", str(URL(self._host) / "api/version"), decode_json=False
+            ),
+        )
+
     async def async_get_stats(self) -> dict[str, Any]:
         """Get data from the API."""
         return cast(
@@ -100,6 +109,7 @@ class FrigateApiClient:
         url: str,
         data: dict | None = None,
         headers: dict | None = None,
+        decode_json: bool = True,
     ) -> Any:
         """Get information from the API."""
         if data is None:
@@ -113,7 +123,9 @@ class FrigateApiClient:
                     response = await self._session.get(
                         url, headers=headers, raise_for_status=True
                     )
-                    return await response.json()
+                    if decode_json:
+                        return await response.json()
+                    return await response.text()
 
                 if method == "put":
                     await self._session.put(url, headers=headers, json=data)

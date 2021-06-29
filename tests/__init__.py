@@ -31,6 +31,7 @@ TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID = "sensor.front_door_detection_fp
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 
+TEST_SERVER_VERSION = "0.8.4-09a4d6d"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
@@ -258,6 +259,7 @@ def create_mock_frigate_client() -> AsyncMock:
     mock_client.async_get_stats = AsyncMock(return_value=TEST_STATS)
     mock_client.async_get_config = AsyncMock(return_value=TEST_CONFIG)
     mock_client.async_get_event_summary = AsyncMock(return_value=TEST_EVENT_SUMMARY)
+    mock_client.async_get_version = AsyncMock(return_value=TEST_SERVER_VERSION)
     return mock_client
 
 

@@ -9,12 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import (
-    CONF_RTMP_URL_TEMPLATE,
-    DOMAIN,
-    NAME,
-    VERSION,
-)
+from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -24,6 +19,7 @@ from . import (
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
+    TEST_SERVER_VERSION,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
@@ -120,7 +116,7 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
-    assert device.model == VERSION
+    assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = [
         entry.entity_id
