@@ -163,6 +163,9 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
 
             except (aiohttp.ClientError, aiohttp.ClientPayloadError) as err:
                 _LOGGER.debug("Stream error for %s: %s", request.rel_url, err)
+            except ConnectionResetError:
+                # Connection is reset/closed by peer.
+                pass
 
             return response
 
