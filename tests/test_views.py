@@ -39,12 +39,20 @@ from . import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class FakeStreamResponse(web.StreamResponse):
-    """Fake StreamResponse for testing purposes."""
+class ClientErrorStreamResponse(web.StreamResponse):
+    """StreamResponse for testing purposes that raises a ClientError."""
 
     async def write(self, data: bytes) -> None:
         """Write data."""
         raise aiohttp.ClientError
+
+
+class ConnectionResetStreamResponse(web.StreamResponse):
+    """StreamResponse for testing purposes that raises a ConnectionResetError."""
+
+    async def write(self, data: bytes) -> None:
+        """Write data."""
+        raise ConnectionResetError
 
 
 class FakeAsyncContextManager:
@@ -125,10 +133,23 @@ async def test_clips_proxy_view_write_error(
 
     with patch(
         "custom_components.frigate.views.web.StreamResponse",
-        new=FakeStreamResponse,
+        new=ClientErrorStreamResponse,
     ):
         await hass_client_local_frigate.get("/api/frigate/clips/present")
         assert "Stream error" in caplog.text
+
+
+async def test_clips_proxy_view_connection_reset(
+    caplog: Any, hass_client_local_frigate: Any
+) -> None:
+    """Test clips request with a connection reset."""
+
+    with patch(
+        "custom_components.frigate.views.web.StreamResponse",
+        new=ConnectionResetStreamResponse,
+    ):
+        await hass_client_local_frigate.get("/api/frigate/clips/present")
+        assert "Stream error" not in caplog.text
 
 
 async def test_clips_proxy_view_read_error(
