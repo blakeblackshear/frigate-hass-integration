@@ -133,7 +133,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
-    entry.add_update_listener(_async_entry_updated)
+    entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     return True
 
 
