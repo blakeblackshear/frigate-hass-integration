@@ -15,8 +15,10 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
+    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_RTMP_URL_TEMPLATE,
+    DEFAULT_CAMERA_STATIC_IMAGE_HEIGHT,
     DEFAULT_HOST,
     DOMAIN,
 )
@@ -124,7 +126,15 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
                 Dict[str, Any], self.async_create_entry(title="", data=user_input)
             )
 
-        schema: dict[Any, Any] = {}
+        schema: dict[Any, Any] = {
+            vol.Optional(
+                CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+                default=self._config_entry.options.get(
+                    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+                    DEFAULT_CAMERA_STATIC_IMAGE_HEIGHT,
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        }
 
         if self.show_advanced_options:
             schema.update(
