@@ -138,9 +138,10 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         if not full_path:
             return web.Response(status=HTTP_NOT_FOUND)
 
-        url = str(URL(config_entry.data[CONF_URL]) / full_path)
+        base_url = URL(config_entry.data[CONF_URL])
+        url = str(base_url / full_path)
         data = await request.read()
-        source_header = _init_header(request)
+        source_header = _init_header(request, base_url.host)
 
         async with self._websession.request(
             request.method,
@@ -224,7 +225,7 @@ class NotificationsProxyView(ProxyView):
         return bool(config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True))
 
 
-def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
+def _init_header(request: web.Request, upstream_host: str) -> CIMultiDict | dict[str, str]:
     """Create initial header."""
     headers = {}
 
@@ -263,6 +264,9 @@ def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
     if not forward_proto:
         forward_proto = request.url.scheme
     headers[hdrs.X_FORWARDED_PROTO] = forward_proto
+
+    # Set Host header to upstream hostname
+    headers[hdrs.HOST] = upstream_host
 
     return headers
 
