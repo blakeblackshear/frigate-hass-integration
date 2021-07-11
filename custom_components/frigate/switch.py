@@ -41,7 +41,7 @@ async def async_setup_entry(
         entities.extend(
             [
                 FrigateSwitch(entry, frigate_config, camera, "detect"),
-                FrigateSwitch(entry, frigate_config, camera, "clips"),
+                FrigateSwitch(entry, frigate_config, camera, "recordings"),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots"),
             ]
         )
@@ -70,7 +70,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
 
         if self._switch_name == "snapshots":
             self._icon = ICON_IMAGE_MULTIPLE
-        elif self._switch_name == "clips":
+        elif self._switch_name == "recordings":
             self._icon = ICON_FILM_MULTIPLE
         else:
             self._icon = ICON_MOTION_SENSOR
