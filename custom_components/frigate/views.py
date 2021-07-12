@@ -216,12 +216,25 @@ class NotificationsProxyView(ProxyView):
 
         camera = path.split("/")[0]
         if path.endswith("clip.mp4"):
-            return f"clips/{camera}-{event_id}.mp4"
+            return f"api/events/{event_id}/clip.mp4"
         return None
 
     def _permit_request(self, request: web.Request, config_entry: ConfigEntry) -> bool:
         """Determine whether to permit a request."""
         return bool(config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True))
+
+class VodProxyView(ProxyView):
+    """A proxy for clips."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}"
+    extra_urls = ["/api/frigate/vod/{path:.*}"]
+
+    name = "api:frigate:vod"
+    requires_auth = False
+
+    def _create_path(self, path: str, **kwargs: Any) -> str:
+        """Create path."""
+        return f"vod/{path}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:

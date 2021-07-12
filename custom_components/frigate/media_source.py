@@ -39,6 +39,8 @@ from .views import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+MIME_TYPE = "application/x-mpegURL"
 ITEM_LIMIT = 50
 SECONDS_IN_DAY = 60 * 60 * 24
 SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
@@ -209,7 +211,7 @@ class EventIdentifier(Identifier):
 
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
-        return f"clips/{self.name}"
+        return f"vod/event/{self.name}/index.m3u8"
 
     @property
     def mime_type(self) -> str:
@@ -380,10 +382,6 @@ class RecordingIdentifier(Identifier):
         default=None, validator=[attr.validators.instance_of((str, type(None)))]
     )
 
-    recording_name: str | None = attr.ib(
-        default=None, validator=[attr.validators.instance_of((str, type(None)))]
-    )
-
     @classmethod
     def from_str(
         cls, data: str, default_frigate_instance_id: str | None = None
@@ -403,7 +401,6 @@ class RecordingIdentifier(Identifier):
                 day=cls._get_index(parts, 3),
                 hour=cls._get_index(parts, 4),
                 camera=cls._get_index(parts, 5),
-                recording_name=cls._get_index(parts, 6),
             )
         except ValueError:
             return None
@@ -419,7 +416,6 @@ class RecordingIdentifier(Identifier):
                     f"{self.day:02}" if self.day is not None else None,
                     f"{self.hour:02}" if self.hour is not None else None,
                     self.camera,
-                    self.recording_name,
                 )
             ]
         )
@@ -439,12 +435,11 @@ class RecordingIdentifier(Identifier):
         # missing attribute.
 
         in_parts = [
-            self.get_identifier_type(),
+            self.get_identifier_type() if not self.camera else "vod",
             self.year_month,
             f"{self.day:02}" if self.day is not None else None,
             f"{self.hour:02}" if self.hour is not None else None,
             self.camera,
-            self.recording_name,
         ]
 
         out_parts = []
@@ -452,6 +447,10 @@ class RecordingIdentifier(Identifier):
             if val is None:
                 break
             out_parts.append(str(val))
+
+        if self.camera:
+            out_parts.append("index.m3u8")
+
         return "/".join(out_parts)
 
     def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
@@ -657,7 +656,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
-            if identifier.camera:
+            if identifier.hour:
                 return self._browse_recordings(identifier, recordings_folder)
             return self._browse_recording_folders(identifier, recordings_folder)
 
@@ -1286,7 +1285,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 BrowseMediaSource(
                     domain=DOMAIN,
                     identifier=attr.evolve(
-                        identifier, recording_name=recording["name"]
+                        identifier, camera=recording["name"]
                     ),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
