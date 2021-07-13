@@ -46,7 +46,7 @@ from .const import (
     PLATFORMS,
     STARTUP_MESSAGE,
 )
-from .views import ClipsProxyView, NotificationsProxyView, RecordingsProxyView, VodProxyView
+from .views import NotificationsProxyView, VodProxyView, VodSegmentProxyView
 
 SCAN_INTERVAL = timedelta(seconds=5)
 
@@ -115,10 +115,9 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     session = async_get_clientsession(hass)
-    hass.http.register_view(ClipsProxyView(session))
-    hass.http.register_view(RecordingsProxyView(session))
     hass.http.register_view(NotificationsProxyView(session))
     hass.http.register_view(VodProxyView(session))
+    hass.http.register_view(VodSegmentProxyView(session))
     return True
 
 

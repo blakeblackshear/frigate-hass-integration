@@ -7,7 +7,8 @@ from typing import Any, Optional, cast
 
 import aiohttp
 from aiohttp import hdrs, web
-from aiohttp.web_exceptions import HTTPBadGateway
+from aiohttp.web_exceptions import HTTPBadGateway, HTTPUnauthorized
+import jwt
 from multidict import CIMultiDict
 from yarl import URL
 
@@ -19,7 +20,12 @@ from custom_components.frigate.const import (
     DOMAIN,
 )
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.components.http.const import KEY_HASS
+from homeassistant.components.http.auth import DATA_SIGN_SECRET, SIGN_QUERY_PARAM
+from homeassistant.components.http.const import (
+    KEY_HASS,
+    KEY_HASS_REFRESH_TOKEN_ID,
+    KEY_HASS_USER,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_URL,
@@ -170,32 +176,6 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
             return response
 
 
-class ClipsProxyView(ProxyView):
-    """A proxy for clips."""
-
-    url = "/api/frigate/{frigate_instance_id:.+}/clips/{path:.*}"
-    extra_urls = ["/api/frigate/clips/{path:.*}"]
-
-    name = "api:frigate:clips"
-
-    def _create_path(self, path: str, **kwargs: Any) -> str:
-        """Create path."""
-        return f"clips/{path}"
-
-
-class RecordingsProxyView(ProxyView):
-    """A proxy for recordings."""
-
-    url = "/api/frigate/{frigate_instance_id:.+}/recordings/{path:.*}"
-    extra_urls = ["/api/frigate/recordings/{path:.*}"]
-
-    name = "api:frigate:recordings"
-
-    def _create_path(self, path: str, **kwargs: Any) -> str:
-        """Create path."""
-        return f"recordings/{path}"
-
-
 class NotificationsProxyView(ProxyView):
     """A proxy for notifications."""
 
@@ -223,18 +203,83 @@ class NotificationsProxyView(ProxyView):
         """Determine whether to permit a request."""
         return bool(config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True))
 
+
 class VodProxyView(ProxyView):
     """A proxy for clips."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}"
-    extra_urls = ["/api/frigate/vod/{path:.*}"]
+    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}/{manifest:.+}.m3u8"
+    extra_urls = ["/api/frigate/vod/{path:.*}/{manifest:.+}.m3u8"]
 
-    name = "api:frigate:vod"
+    name = "api:frigate:vod:mainfest"
+
+    def _create_path(self, path: str, manifest: str, **kwargs: Any) -> str:
+        """Create path."""
+        return f"vod/{path}/{manifest}.m3u8"
+
+
+class VodSegmentProxyView(ProxyView):
+    """A proxy for clips."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}/{segment:.+}.ts"
+    extra_urls = ["/api/frigate/vod/{path:.*}/{segment:.+}.ts"]
+
+    name = "api:frigate:vod:segment"
     requires_auth = False
 
-    def _create_path(self, path: str, **kwargs: Any) -> str:
+    def _create_path(self, path: str, segment: str, **kwargs: Any) -> str:
         """Create path."""
-        return f"vod/{path}"
+        return f"vod/{path}/{segment}.ts"
+
+    async def _async_validate_signed_manifest(self, request: web.Request) -> bool:
+        """Validate the signature for the manifest of this segment."""
+        hass = request.app[KEY_HASS]
+        secret = hass.data.get(DATA_SIGN_SECRET)
+
+        if secret is None:
+            _LOGGER.debug("Missing secret.")
+            return False
+
+        signature = request.query.get(SIGN_QUERY_PARAM)
+
+        if signature is None:
+            _LOGGER.debug("Missing signature.")
+            return False
+
+        try:
+            claims = jwt.decode(
+                signature, secret, algorithms=["HS256"], options={"verify_iss": False}
+            )
+        except jwt.InvalidTokenError:
+            _LOGGER.debug("Invalid JWT.")
+            return False
+
+        # Check that the base path is the same as what was signed
+        check_path = request.path.rsplit("/", maxsplit=1)[0]
+        if not claims["path"].startswith(check_path):
+            _LOGGER.debug("%s does not start with %s", claims["path"], check_path)
+            return False
+
+        refresh_token = await hass.auth.async_get_refresh_token(claims["iss"])
+
+        if refresh_token is None:
+            _LOGGER.debug("Missing refresh token.")
+            return False
+
+        request[KEY_HASS_USER] = refresh_token.user
+        request[KEY_HASS_REFRESH_TOKEN_ID] = refresh_token.id
+        return True
+
+    async def get(
+        self,
+        request: web.Request,
+        **kwargs: Any,
+    ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
+        """Route data to service."""
+
+        if not await self._async_validate_signed_manifest(request):
+            raise HTTPUnauthorized()
+
+        return await super().get(request, **kwargs)
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
