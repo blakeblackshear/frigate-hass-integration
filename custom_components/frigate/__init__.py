@@ -27,7 +27,7 @@ from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
 # To be removed once 2021.8 has been officially released.
-if AwesomeVersion(__version__) < AwesomeVersion("2021.8.0"):
+if AwesomeVersion(__version__) < AwesomeVersion("2021.8.0.dev0"):
     from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
         Message as ReceiveMessage,
     )
