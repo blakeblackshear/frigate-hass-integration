@@ -1,6 +1,7 @@
 aiohttp
 aiohttp_cors==0.7.0
 attr
+awesomeversion
 homeassistant==2021.6.2
 paho-mqtt==1.5.1
 homeassistant==2021.6.2

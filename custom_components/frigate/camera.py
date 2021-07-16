@@ -10,7 +10,6 @@ from jinja2 import Template
 from yarl import URL
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
-from homeassistant.components.mqtt.models import Message
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -21,6 +20,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import (
     FrigateEntity,
     FrigateMQTTEntity,
+    ReceiveMessage,
     get_cameras_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -177,7 +177,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         Camera.__init__(self)
 
     @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: Message) -> None:
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._last_image = msg.payload
         super()._state_message_received(msg)

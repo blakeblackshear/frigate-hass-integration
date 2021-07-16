@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.mqtt.models import Message
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
@@ -15,6 +14,7 @@ from . import (
     FrigateDataUpdateCoordinator,
     FrigateEntity,
     FrigateMQTTEntity,
+    ReceiveMessage,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -297,7 +297,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         )
 
     @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: Message) -> None:
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
             self._state = int(msg.payload)
