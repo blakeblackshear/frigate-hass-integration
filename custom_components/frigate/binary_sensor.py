@@ -8,13 +8,13 @@ from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
     BinarySensorEntity,
 )
-from homeassistant.components.mqtt.models import Message
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
     FrigateMQTTEntity,
+    ReceiveMessage,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -65,7 +65,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
         )
 
     @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: Message) -> None:
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
             self._is_on = int(msg.payload) > 0

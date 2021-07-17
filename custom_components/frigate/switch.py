@@ -5,7 +5,6 @@ import logging
 from typing import Any
 
 from homeassistant.components.mqtt import async_publish
-from homeassistant.components.mqtt.models import Message
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -14,6 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
     FrigateMQTTEntity,
+    ReceiveMessage,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
@@ -87,7 +87,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         )
 
     @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: Message) -> None:
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = msg.payload == "ON"
         super()._state_message_received(msg)
