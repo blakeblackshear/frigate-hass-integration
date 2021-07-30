@@ -59,6 +59,8 @@ class FrigateApiClient:
         after: int | None = None,
         before: int | None = None,
         limit: int | None = None,
+        has_clip: bool | None = None,
+        has_snapshot: bool | None = None,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
@@ -68,7 +70,8 @@ class FrigateApiClient:
             "after": after,
             "before": before,
             "limit": limit,
-            "has_clip": 1,
+            "has_clip": int(has_clip) if has_clip is not None else None,
+            "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
         }
 
         return cast(
@@ -78,17 +81,31 @@ class FrigateApiClient:
                 str(
                     URL(self._host)
                     / "api/events"
-                    % {k: v for k, v in params.items() if v}
+                    % {k: v for k, v in params.items() if v is not None}
                 ),
             ),
         )
 
-    async def async_get_event_summary(self) -> list[dict[str, Any]]:
+    async def async_get_event_summary(
+        self,
+        has_clip: bool | None = None,
+        has_snapshot: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """Get data from the API."""
+        params = {
+            "has_clip": int(has_clip) if has_clip is not None else None,
+            "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
+        }
+
         return cast(
             List[Dict[str, Any]],
             await self.api_wrapper(
-                "get", str(URL(self._host) / "api/events/summary" % {"has_clip": 1})
+                "get",
+                str(
+                    URL(self._host)
+                    / "api/events/summary"
+                    % {k: v for k, v in params.items() if v is not None}
+                ),
             ),
         )
 

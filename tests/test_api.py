@@ -102,10 +102,11 @@ async def test_async_get_events(
         after=1,
         before=2,
         limit=3,
+        has_clip=True,
     )
 
 
-async def test_async_get_event_summary(
+async def test_async_get_event_summary_clips(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
     """Test async_get_event_summary."""
@@ -118,10 +119,14 @@ async def test_async_get_event_summary(
             "zones": [],
         },
     ]
+    expected_params = [
+        {"has_clip": "1"},
+        {"has_snapshot": "1"},
+    ]
 
     async def events_summary_handler(request: web.Request) -> web.Response:
         """Events summary handler."""
-        _assert_request_params(request, {"has_clip": "1"})
+        _assert_request_params(request, expected_params.pop(0))
         return web.json_response(events_summary_in)
 
     server = await start_frigate_server(
@@ -129,7 +134,13 @@ async def test_async_get_event_summary(
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
-    assert events_summary_in == await frigate_client.async_get_event_summary()
+
+    assert events_summary_in == await frigate_client.async_get_event_summary(
+        has_clip=True,
+    )
+    assert events_summary_in == await frigate_client.async_get_event_summary(
+        has_snapshot=True,
+    )
 
 
 async def test_async_get_config(
