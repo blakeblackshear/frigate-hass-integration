@@ -1,9 +1,11 @@
 ---
 name: Draft a release note
+
 on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   draft_release:
