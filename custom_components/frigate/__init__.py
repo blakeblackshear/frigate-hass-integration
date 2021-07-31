@@ -11,12 +11,10 @@ import logging
 import re
 from typing import Any, Callable, Final
 
-from awesomeversion import AwesomeVersion
-
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.subscription import async_subscribe_topics
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL, __version__
+from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
@@ -26,14 +24,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
-# To be removed once 2021.8 has been officially released.
-if AwesomeVersion(__version__) < AwesomeVersion("2021.8.0.dev0"):
-    from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
-        Message as ReceiveMessage,
-    )
-else:
+# TODO(@dermotduffy): To be removed some safe distance from the official release of 2021.8.
+try:
     from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
         ReceiveMessage,
+    )
+except ImportError:
+    from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
+        Message as ReceiveMessage,
     )
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
