@@ -1,3 +1,9 @@
+<img src="https://raw.githubusercontent.com/blakeblackshear/frigate-hass-integration/master/frigate.png"
+     alt="Frigate icon"
+     width="35%"
+     align="right"
+     style="float: right; margin: 10px 0px 20px 20px;" />
+     
 [![GitHub Release](https://img.shields.io/github/release/blakeblackshear/frigate-hass-integration.svg?style=flat-square)](https://github.com/blakeblackshear/frigate-hass-integration/releases)
 [![Build Status](https://img.shields.io/github/workflow/status/blakeblackshear/frigate-hass-integration/Build?style=flat-square)](https://github.com/blakeblackshear/frigate-hass-integration/actions/workflows/build.yaml)
 [![Test Coverage](https://img.shields.io/codecov/c/gh/blakeblackshear/frigate-hass-integration?style=flat-square)](https://app.codecov.io/gh/blakeblackshear/frigate-hass-integration/)
