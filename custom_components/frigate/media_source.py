@@ -219,7 +219,7 @@ class EventIdentifier(Identifier):
 
 def _to_int_or_none(data: str) -> int | None:
     """Convert to an integer or None."""
-    return int(data) if data else None
+    return int(data) if data is not None else None
 
 
 @attr.s(frozen=True)
@@ -1176,7 +1176,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> str | None:
         """Generate recording title."""
         try:
-            if identifier.camera:
+            if identifier.camera is not None:
                 if folder is None:
                     return get_friendly_name(identifier.camera)
                 minute_seconds = folder["name"].replace(".mp4", "")
@@ -1184,14 +1184,14 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     f"{identifier.hour}.{minute_seconds}", "%H.%M.%S"
                 ).strftime("%T")
 
-            if identifier.hour:
+            if identifier.hour is not None:
                 if folder is None:
                     return dt.datetime.strptime(
                         f"{identifier.hour}.00.00", "%H.%M.%S"
                     ).strftime("%T")
                 return get_friendly_name(folder["name"])
 
-            if identifier.day:
+            if identifier.day is not None:
                 if folder is None:
                     return dt.datetime.strptime(
                         f"{identifier.year_month}-{identifier.day}", "%Y-%m-%d"
@@ -1200,7 +1200,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     f"{folder['name']}.00.00", "%H.%M.%S"
                 ).strftime("%T")
 
-            if identifier.year_month:
+            if identifier.year_month is not None:
                 if folder is None:
                     return dt.datetime.strptime(
                         f"{identifier.year_month}", "%Y-%m"
