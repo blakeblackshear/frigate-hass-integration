@@ -10,6 +10,7 @@ import os
 from typing import Any
 from unittest.mock import AsyncMock, Mock, call, patch
 
+import attr
 import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
@@ -317,7 +318,6 @@ async def test_async_browse_media_clip_search_drilldown(
         "title": "2021-06-11 23:36:23 [8s, Person 72%]",
     } in media.as_dict()["children"]
 
-    _LOGGER.error(media.as_dict()["children"])
     assert {
         **DRILLDOWN_BASE,
         "media_content_id": (
@@ -854,6 +854,47 @@ async def test_async_browse_media_recordings_root(
             "/recordings/2021-02/29",
         )
 
+    # Fetch a recording on the zeroth hour:
+    # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
+    frigate_client.async_get_path = AsyncMock(
+        return_value=[
+            {
+                "name": "front_door",
+                "type": "directory",
+                "mtime": "Sun, 30 June 2021 23:00:50 GMT",
+            },
+        ]
+    )
+    media = await media_source.async_browse_media(
+        hass,
+        (
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+            "/recordings/2021-06/04/00/"
+        ),
+    )
+    assert media.as_dict() == {
+        "title": "00:00:00",
+        "media_class": "directory",
+        "media_content_type": "video",
+        "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06/04/00//",
+        "can_play": False,
+        "can_expand": True,
+        "children_media_class": "directory",
+        "thumbnail": None,
+        "children": [
+            {
+                "title": "Front Door",
+                "media_class": "directory",
+                "media_content_type": "video",
+                "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06/04/00/front_door/",
+                "can_play": False,
+                "can_expand": True,
+                "children_media_class": "directory",
+                "thumbnail": None,
+            }
+        ],
+    }
+
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_recordings_for_camera(
@@ -1160,6 +1201,20 @@ async def test_recordings_identifier() -> None:
     identifier = RecordingIdentifier.from_str(identifier_in)
     assert identifier
     assert identifier.get_frigate_server_path() == "recordings/2021-06/04"
+
+    # Verify a zero hour:
+    # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
+    identifier = RecordingIdentifier.from_str(
+        f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/00//"
+    )
+    assert identifier
+    identifier_out = attr.evolve(
+        identifier, **identifier.get_changes_to_set_next_empty("front_door")
+    )
+    assert (
+        str(identifier_out)
+        == f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/00/front_door/"
+    )
 
 
 async def test_event_identifier() -> None:
