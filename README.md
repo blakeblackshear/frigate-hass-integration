@@ -8,7 +8,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/blakeblackshear/frigate-hass-integration/Build?style=flat-square)](https://github.com/blakeblackshear/frigate-hass-integration/actions/workflows/build.yaml)
 [![Test Coverage](https://img.shields.io/codecov/c/gh/blakeblackshear/frigate-hass-integration?style=flat-square)](https://app.codecov.io/gh/blakeblackshear/frigate-hass-integration/)
 [![License](https://img.shields.io/github/license/blakeblackshear/frigate-hass-integration.svg?style=flat-square)](LICENSE)
-[![hacs](https://img.shields.io/badge/HACS-custom-orange.svg?style=flat-square)](https://hacs.xyz)
+[![hacs](https://img.shields.io/badge/HACS-default-orange.svg?style=flat-square)](https://hacs.xyz)
 
 # Frigate Home Assistant Integration
 
@@ -22,7 +22,16 @@ Provides the following:
 
 ## Installation
 
-Copy `custom_components/frigate` to your `custom_components` folder in Home Assistant. Also available via HACS as a [custom repository](https://hacs.xyz/docs/faq/custom_repositories). Note that HACS does not "configure" the integration for you. You must go to `Configuration > Integrations` and add Frigate after installing via HACS.
+Easiest install is via HACS:
+
+`HACS -> Explore & Add Repositories -> Frigate`
+
+Note that HACS does not "configure" the integration for you. You must go to `Configuration > Integrations` and add Frigate after installing via HACS.
+
+For manual install, copy `custom_components/frigate` to your `custom_components`
+folder in Home Assistant.
+
+### Media Browsing
 
 You will also need [media_source](https://www.home-assistant.io/integrations/media_source/) enabled in your Home Assistant configuration for the Media Browser to appear.
 
