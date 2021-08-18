@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
@@ -124,3 +124,15 @@ async def test_binary_sensor_unique_id(hass: HomeAssistant) -> None:
         registry_entry.unique_id
         == f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"
     )
+
+
+async def test_binary_sensor_unload_will_unsubscribe(hass: HomeAssistant) -> None:
+    """Verify entity unique_id(s)."""
+    mock_unsubscribe = AsyncMock()
+    with patch(
+        "custom_components.frigate.async_unsubscribe_topics", new=mock_unsubscribe
+    ):
+        config_entry = await setup_mock_frigate_config_entry(hass)
+        await hass.config_entries.async_unload(config_entry.entry_id)
+        await hass.async_block_till_done()
+        mock_unsubscribe.assert_called()

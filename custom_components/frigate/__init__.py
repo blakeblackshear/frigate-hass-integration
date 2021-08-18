@@ -12,7 +12,10 @@ import re
 from typing import Any, Callable, Final
 
 from custom_components.frigate.config_flow import get_config_entry_title
-from homeassistant.components.mqtt.subscription import async_subscribe_topics
+from homeassistant.components.mqtt.subscription import (
+    async_subscribe_topics,
+    async_unsubscribe_topics,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
@@ -298,6 +301,11 @@ class FrigateMQTTEntity(FrigateEntity):
                 },
             },
         )
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Cleanup prior to hass removal."""
+        await async_unsubscribe_topics(self.hass, self._sub_state)
+        self._sub_state = None
 
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
