@@ -176,6 +176,19 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
             return response
 
 
+class SnapshotsProxyView(ProxyView):
+    """A proxy for snapshots."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/clips/{path:.*}"
+    extra_urls = ["/api/frigate/clips/{path:.*}"]
+
+    name = "api:frigate:snapshots"
+
+    def _create_path(self, path: str, **kwargs: Any) -> str:
+        """Create path."""
+        return f"clips/{path}"
+
+
 class NotificationsProxyView(ProxyView):
     """A proxy for notifications."""
 
@@ -205,7 +218,7 @@ class NotificationsProxyView(ProxyView):
 
 
 class VodProxyView(ProxyView):
-    """A proxy for clips."""
+    """A proxy for vod playlists."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}/{manifest:.+}.m3u8"
     extra_urls = ["/api/frigate/vod/{path:.*}/{manifest:.+}.m3u8"]
@@ -218,7 +231,7 @@ class VodProxyView(ProxyView):
 
 
 class VodSegmentProxyView(ProxyView):
-    """A proxy for clips."""
+    """A proxy for vod segments."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}/{segment:.+}.ts"
     extra_urls = ["/api/frigate/vod/{path:.*}/{segment:.+}.ts"]

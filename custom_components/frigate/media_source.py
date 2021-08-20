@@ -40,7 +40,6 @@ from .views import (
 
 _LOGGER = logging.getLogger(__name__)
 
-MIME_TYPE = "application/x-mpegURL"
 ITEM_LIMIT = 50
 SECONDS_IN_DAY = 60 * 60 * 24
 SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
@@ -124,21 +123,21 @@ class Identifier:
 class FrigateMediaType(enum.Enum):
     """Type of media this identifier represents."""
 
-    CLIPS = "clips"
+    EVENTS = "events"
     SNAPSHOTS = "snapshots"
 
     @property
     def mime_type(self) -> str:
         """Get mime type for this frigate media type."""
-        if self == FrigateMediaType.CLIPS:
-            return "video/mp4"
+        if self == FrigateMediaType.EVENTS:
+            return "application/x-mpegURL"
         else:
             return "image/jpg"
 
     @property
     def media_type(self) -> str:
         """Get media type for this frigate media type."""
-        if self == FrigateMediaType.CLIPS:
+        if self == FrigateMediaType.EVENTS:
             return str(MEDIA_TYPE_VIDEO)
         else:
             return str(MEDIA_TYPE_IMAGE)
@@ -146,7 +145,7 @@ class FrigateMediaType(enum.Enum):
     @property
     def media_class(self) -> str:
         """Get media class for this frigate media type."""
-        if self == FrigateMediaType.CLIPS:
+        if self == FrigateMediaType.EVENTS:
             return str(MEDIA_CLASS_VIDEO)
         else:
             return str(MEDIA_CLASS_IMAGE)
@@ -154,8 +153,8 @@ class FrigateMediaType(enum.Enum):
     @property
     def extension(self) -> str:
         """Get filename extension."""
-        if self == FrigateMediaType.CLIPS:
-            return "mp4"
+        if self == FrigateMediaType.EVENTS:
+            return "m3u8"
         else:
             return "jpg"
 
@@ -168,7 +167,11 @@ class EventIdentifier(Identifier):
         validator=[attr.validators.in_(FrigateMediaType)]
     )
 
-    name: str = attr.ib(
+    id: str = attr.ib(
+        validator=[attr.validators.instance_of(str)],
+    )
+
+    camera: str = attr.ib(
         validator=[attr.validators.instance_of(str)],
     )
 
@@ -179,7 +182,8 @@ class EventIdentifier(Identifier):
                 self.frigate_instance_id,
                 self.get_identifier_type(),
                 self.frigate_media_type.value,
-                self.name,
+                self.camera,
+                self.id,
             )
         )
 
@@ -192,14 +196,15 @@ class EventIdentifier(Identifier):
             data.split("/"), default_frigate_instance_id
         )
 
-        if len(parts) != 4 or parts[1] != cls.get_identifier_type():
+        if len(parts) != 5 or parts[1] != cls.get_identifier_type():
             return None
 
         try:
             return cls(
                 frigate_instance_id=parts[0],
                 frigate_media_type=FrigateMediaType(parts[2]),
-                name=parts[3],
+                camera=parts[3],
+                id=parts[4],
             )
         except ValueError:
             return None
@@ -211,7 +216,10 @@ class EventIdentifier(Identifier):
 
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
-        return f"vod/event/{self.name}/index.m3u8"
+        if self.frigate_media_type == FrigateMediaType.EVENTS:
+            return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
+        else:
+            return f"clips/{self.camera}-{self.id}.{self.frigate_media_type.extension}"
 
     @property
     def mime_type(self) -> str:
@@ -463,7 +471,7 @@ class RecordingIdentifier(Identifier):
     @property
     def mime_type(self) -> str:
         """Get mime type for this identifier."""
-        return "video/mp4"
+        return "application/x-mpegURL"
 
     @property
     def media_class(self) -> str:
@@ -472,7 +480,7 @@ class RecordingIdentifier(Identifier):
 
     @property
     def media_type(self) -> str:
-        """Get mime type for this identifier."""
+        """Get media type for this identifier."""
         return str(MEDIA_TYPE_VIDEO)
 
 
@@ -569,8 +577,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     self.hass, config_entry
                 )
                 if frigate_instance_id:
-                    clips_identifier = EventSearchIdentifier(
-                        frigate_instance_id, FrigateMediaType.CLIPS
+                    events_identifier = EventSearchIdentifier(
+                        frigate_instance_id, FrigateMediaType.EVENTS
                     )
                     recording_identifier = RecordingIdentifier(frigate_instance_id)
                     snapshots_identifier = EventSearchIdentifier(
@@ -582,11 +590,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                         [
                             BrowseMediaSource(
                                 domain=DOMAIN,
-                                identifier=clips_identifier,
+                                identifier=events_identifier,
                                 media_class=MEDIA_CLASS_DIRECTORY,
-                                children_media_class=clips_identifier.media_class,
-                                media_content_type=clips_identifier.media_type,
-                                title=f"Clips [{config_entry.title}]",
+                                children_media_class=events_identifier.media_class,
+                                media_content_type=events_identifier.media_type,
+                                title=f"Events [{config_entry.title}]",
                                 can_play=False,
                                 can_expand=True,
                                 thumbnail=None,
@@ -626,7 +634,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         )
 
         if isinstance(identifier, EventSearchIdentifier):
-            if identifier.frigate_media_type == FrigateMediaType.CLIPS:
+            if identifier.frigate_media_type == FrigateMediaType.EVENTS:
                 media_kwargs = {"has_clip": True}
             else:
                 media_kwargs = {"has_snapshot": True}
@@ -668,7 +676,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         """Get event summary data."""
 
         try:
-            if identifier.frigate_media_type == FrigateMediaType.CLIPS:
+            if identifier.frigate_media_type == FrigateMediaType.EVENTS:
                 kwargs = {"has_clip": True}
             else:
                 kwargs = {"has_snapshot": True}
@@ -781,10 +789,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     identifier=EventIdentifier(
                         identifier.frigate_instance_id,
                         frigate_media_type=identifier.frigate_media_type,
-                        name=(
-                            f"{event['camera']}-{event['id']}."
-                            + identifier.frigate_media_type.extension
-                        ),
+                        camera=event["camera"],
+                        id=event["id"],
                     ),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
@@ -1284,9 +1290,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=attr.evolve(
-                        identifier, camera=recording["name"]
-                    ),
+                    identifier=attr.evolve(identifier, camera=recording["name"]),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
                     title=title,
