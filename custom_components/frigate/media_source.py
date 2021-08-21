@@ -664,9 +664,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
-            if identifier.hour:
-                return self._browse_recordings(identifier, recordings_folder)
-            return self._browse_recording_folders(identifier, recordings_folder)
+            if identifier.hour is None:
+                return self._browse_recording_folders(identifier, recordings_folder)
+            return self._browse_recordings(identifier, recordings_folder)
 
         raise MediaSourceError("Invalid media source identifier: %s" % item.identifier)
 

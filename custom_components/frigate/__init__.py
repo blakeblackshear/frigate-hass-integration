@@ -36,6 +36,7 @@ except ImportError:
     from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
         Message as ReceiveMessage,
     )
+
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
     ATTR_CLIENT,
@@ -47,8 +48,8 @@ from .const import (
     STARTUP_MESSAGE,
 )
 from .views import (
-    SnapshotsProxyView,
     NotificationsProxyView,
+    SnapshotsProxyView,
     VodProxyView,
     VodSegmentProxyView,
 )

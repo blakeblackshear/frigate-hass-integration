@@ -207,7 +207,6 @@ class NotificationsProxyView(ProxyView):
         if path == "snapshot.jpg":
             return f"api/events/{event_id}/snapshot.jpg"
 
-        camera = path.split("/")[0]
         if path.endswith("clip.mp4"):
             return f"api/events/{event_id}/clip.mp4"
         return None
