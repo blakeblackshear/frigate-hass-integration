@@ -1181,14 +1181,6 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> str | None:
         """Generate recording title."""
         try:
-            if identifier.camera is not None:
-                if folder is None:
-                    return get_friendly_name(identifier.camera)
-                minute_seconds = folder["name"].replace(".mp4", "")
-                return dt.datetime.strptime(
-                    f"{identifier.hour}.{minute_seconds}", "%H.%M.%S"
-                ).strftime("%T")
-
             if identifier.hour is not None:
                 if folder is None:
                     return dt.datetime.strptime(
@@ -1282,11 +1274,6 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
         for recording in recordings:
             title = self._generate_recording_title(identifier, recording)
-            if not title:
-                _LOGGER.warning(
-                    "Skipping non-standard recording name: %s", recording["name"]
-                )
-                continue
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,

@@ -914,7 +914,7 @@ async def test_async_browse_media_async_get_event_summary_error(
         await media_source.async_browse_media(
             hass,
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event-search/clips",
+            "/event-search/events",
         )
 
 
@@ -931,7 +931,7 @@ async def test_async_browse_media_async_get_events_error(
         await media_source.async_browse_media(
             hass,
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event-search/clips",
+            "/event-search/events",
         )
 
 
@@ -1134,6 +1134,10 @@ async def test_event_identifier() -> None:
 
     assert not Identifier.from_str(f"{TEST_FRIGATE_INSTANCE_ID}/event/events/something")
 
+    assert not Identifier.from_str(
+        f"{TEST_FRIGATE_INSTANCE_ID}/event/NOT_VALID/camera/something"
+    )
+
 
 async def test_get_client_non_existent(hass: HomeAssistant) -> None:
     """Test getting a FrigateApiClient for a non-existent config entry id."""
@@ -1142,7 +1146,7 @@ async def test_get_client_non_existent(hass: HomeAssistant) -> None:
     with pytest.raises(MediaSourceError):
         await media_source.async_browse_media(
             hass,
-            f"{const.URI_SCHEME}{DOMAIN}/NOT_A_REAL_CONFIG_ENTRY_ID/event-search/clips",
+            f"{const.URI_SCHEME}{DOMAIN}/NOT_A_REAL_CONFIG_ENTRY_ID/event-search/events",
         )
 
 
@@ -1224,7 +1228,6 @@ async def test_snapshots(hass: HomeAssistant) -> None:
 
     assert len(media.as_dict()["children"]) == 1
 
-    print(json.dumps(media.as_dict(), indent=2))
     assert media.as_dict() == {
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/event-search"
