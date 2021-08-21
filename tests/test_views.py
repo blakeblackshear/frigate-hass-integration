@@ -3,11 +3,15 @@ from __future__ import annotations
 
 import copy
 import logging
+import secrets
+import jwt
+from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
 from aiohttp import hdrs, web
+from aiohttp.web_exceptions import HTTPUnauthorized
 import pytest
 
 from custom_components.frigate.const import (
@@ -22,9 +26,18 @@ from homeassistant.const import (
     HTTP_FORBIDDEN,
     HTTP_NOT_FOUND,
     HTTP_OK,
+    HTTP_UNAUTHORIZED,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
+from homeassistant.components.http.auth import (
+    async_sign_path,
+    setup_auth,
+    DATA_SIGN_SECRET,
+    SIGN_QUERY_PARAM,
+)
+from homeassistant.components.http.const import KEY_AUTHENTICATED
+from homeassistant.components.http.forwarded import async_setup_forwarded
 
 from . import (
     TEST_CONFIG,
@@ -66,6 +79,27 @@ class FakeAsyncContextManager:
         """Context manager exit."""
 
 
+async def mock_handler(request):
+    """Return if request was authenticated."""
+    if not request[KEY_AUTHENTICATED]:
+        raise HTTPUnauthorized
+
+    user = request.get("hass_user")
+    user_id = user.id if user else None
+
+    return web.json_response(status=200, data={"user_id": user_id})
+
+
+@pytest.fixture
+def app(hass):
+    """Fixture to set up a web.Application."""
+    app = web.Application()
+    app["hass"] = hass
+    app.router.add_get("/", mock_handler)
+    async_setup_forwarded(app, True, [])
+    return app
+
+
 @pytest.fixture
 async def hass_client_local_frigate(
     hass: HomeAssistant, hass_client: Any, aiohttp_server: Any
@@ -98,6 +132,7 @@ async def hass_client_local_frigate(
         [
             web.get("/clips/present", handler),
             web.get("/vod/present/manifest.m3u8", handler),
+            web.get("/vod/present/segment.ts", handler),
             web.get("/api/events/event_id/thumbnail.jpg", handler),
             web.get("/api/events/event_id/snapshot.jpg", handler),
             web.get("/api/events/event_id/clip.mp4", handler),
@@ -115,10 +150,90 @@ async def hass_client_local_frigate(
     return await hass_client()
 
 
-async def test_clips_proxy_view_success(
+async def test_vod_manifest_proxy(
     hass_client_local_frigate: Any,
 ) -> None:
-    """Test straightforward clips requests."""
+    """Test vod manifest."""
+
+    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
+    assert resp.status == HTTP_OK
+
+
+async def test_vod_segment_proxy(
+    hass: HomeAssistant,
+    app: Any,
+    hass_access_token: Any,
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test vod segment."""
+
+    setup_auth(hass, app)
+
+    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    signed_path = async_sign_path(
+        hass,
+        refresh_token.id,
+        "/api/frigate/vod/present/segment.ts",
+        timedelta(seconds=5),
+    )
+
+    resp = await hass_client_local_frigate.get(signed_path)
+    assert resp.status == HTTP_OK
+
+
+async def test_vod_segment_proxy_unauthorized(
+    hass: HomeAssistant,
+    app: Any,
+    hass_access_token: Any,
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test vod segment."""
+
+    # No secret set
+    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
+    assert resp.status == HTTP_UNAUTHORIZED
+
+    setup_auth(hass, app)
+
+    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    signed_path = async_sign_path(
+        hass,
+        refresh_token.id,
+        "/api/frigate/vod/present/segment.ts",
+        timedelta(seconds=5),
+    )
+
+    # No signature
+    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
+    assert resp.status == HTTP_UNAUTHORIZED
+
+    # Wrong signature
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/vod/present/segment.ts?authSig=invalid"
+    )
+
+    # Modified path
+    resp = await hass_client_local_frigate.get(
+        signed_path.replace("/api/frigate/", "/api/frigate/mod/")
+    )
+    assert resp.status == HTTP_UNAUTHORIZED
+
+    # Missing refresh token
+    signed_path = async_sign_path(
+        hass,
+        "missing",
+        "/api/frigate/vod/present/segment.ts",
+        timedelta(seconds=5),
+    )
+
+    resp = await hass_client_local_frigate.get(signed_path)
+    assert resp.status == HTTP_UNAUTHORIZED
+
+
+async def test_snapshot_proxy_view_success(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test straightforward snapshot requests."""
 
     resp = await hass_client_local_frigate.get("/api/frigate/clips/present")
     assert resp.status == HTTP_OK
@@ -127,10 +242,10 @@ async def test_clips_proxy_view_success(
     assert resp.status == HTTP_NOT_FOUND
 
 
-async def test_clips_proxy_view_write_error(
+async def test_snapshot_proxy_view_write_error(
     caplog: Any, hass_client_local_frigate: Any
 ) -> None:
-    """Test clips request with a write error."""
+    """Test snapshot request with a write error."""
 
     with patch(
         "custom_components.frigate.views.web.StreamResponse",
@@ -140,10 +255,10 @@ async def test_clips_proxy_view_write_error(
         assert "Stream error" in caplog.text
 
 
-async def test_clips_proxy_view_connection_reset(
+async def test_snapshot_proxy_view_connection_reset(
     caplog: Any, hass_client_local_frigate: Any
 ) -> None:
-    """Test clips request with a connection reset."""
+    """Test snapshot request with a connection reset."""
 
     with patch(
         "custom_components.frigate.views.web.StreamResponse",
@@ -153,10 +268,10 @@ async def test_clips_proxy_view_connection_reset(
         assert "Stream error" not in caplog.text
 
 
-async def test_clips_proxy_view_read_error(
+async def test_snapshot_proxy_view_read_error(
     hass: HomeAssistant, caplog: Any, hass_client_local_frigate: Any
 ) -> None:
-    """Test clips request with a read error."""
+    """Test snapshot request with a read error."""
 
     mock_request = MagicMock(FakeAsyncContextManager())
     mock_request.side_effect = aiohttp.ClientError
@@ -232,11 +347,11 @@ async def test_headers(
     assert resp.status == HTTP_OK
 
 
-async def test_clips_with_frigate_instance_id(
+async def test_snapshots_with_frigate_instance_id(
     hass_client_local_frigate: Any,
     hass: Any,
 ) -> None:
-    """Test clips with config entry ids."""
+    """Test snapshot with config entry ids."""
 
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
@@ -283,6 +398,53 @@ async def test_vod_with_frigate_instance_id(
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
     resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
+    assert resp.status == HTTP_BAD_REQUEST
+
+
+async def test_vod_segment_with_frigate_instance_id(
+    hass: HomeAssistant,
+    app: Any,
+    hass_access_token: Any,
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test vod with config entry ids."""
+
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    assert frigate_entries
+
+    setup_auth(hass, app)
+
+    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    signed_path = async_sign_path(
+        hass,
+        refresh_token.id,
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/segment.ts",
+        timedelta(seconds=5),
+    )
+
+    # A Frigate instance id is specified.
+    resp = await hass_client_local_frigate.get(signed_path)
+    assert resp.status == HTTP_OK
+
+    # An invalid instance id is specified.
+    signed_path = async_sign_path(
+        hass,
+        refresh_token.id,
+        "/api/frigate/NOT_A_REAL_ID/vod/present/segment.ts",
+        timedelta(seconds=5),
+    )
+    resp = await hass_client_local_frigate.get(signed_path)
+    assert resp.status == HTTP_BAD_REQUEST
+
+    # No default allowed when there are multiple entries.
+    create_mock_frigate_config_entry(hass, entry_id="another_id")
+    signed_path = async_sign_path(
+        hass,
+        refresh_token.id,
+        "/api/frigate/vod/present/segment.ts",
+        timedelta(seconds=5),
+    )
+    resp = await hass_client_local_frigate.get(signed_path)
     assert resp.status == HTTP_BAD_REQUEST
 
 
