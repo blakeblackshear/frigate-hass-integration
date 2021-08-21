@@ -74,6 +74,7 @@ async def hass_client_local_frigate(
     await async_setup_component(hass, "http", {"http": {}})
 
     async def handler(request: web.Request) -> web.Response:
+        print(request)
         for header in (
             hdrs.CONTENT_LENGTH,
             hdrs.CONTENT_ENCODING,
@@ -96,10 +97,10 @@ async def hass_client_local_frigate(
         aiohttp_server,
         [
             web.get("/clips/present", handler),
-            web.get("/recordings/present", handler),
+            web.get("/vod/present/manifest.m3u8", handler),
             web.get("/api/events/event_id/thumbnail.jpg", handler),
             web.get("/api/events/event_id/snapshot.jpg", handler),
-            web.get("/clips/camera-event_id.mp4", handler),
+            web.get("/api/events/event_id/clip.mp4", handler),
         ],
     )
 
@@ -167,16 +168,6 @@ async def test_clips_proxy_view_read_error(
     ):
         await hass_client_local_frigate.get("/api/frigate/clips/present")
         assert "Reverse proxy error" in caplog.text
-
-
-async def test_recordings_proxy_view_success(hass_client_local_frigate: Any) -> None:
-    """Test straightforward clips requests."""
-
-    resp = await hass_client_local_frigate.get("/api/frigate/recordings/present")
-    assert resp.status == HTTP_OK
-
-    resp = await hass_client_local_frigate.get("/api/frigate/recordings/not_present")
-    assert resp.status == HTTP_NOT_FOUND
 
 
 async def test_notifications_proxy_view_thumbnail(
@@ -268,30 +259,30 @@ async def test_clips_with_frigate_instance_id(
     assert resp.status == HTTP_BAD_REQUEST
 
 
-async def test_recordings_with_frigate_instance_id(
+async def test_vod_with_frigate_instance_id(
     hass_client_local_frigate: Any,
     hass: Any,
 ) -> None:
-    """Test recordings with config entry ids."""
+    """Test vod with config entry ids."""
 
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
 
     # A Frigate instance id is specified.
     resp = await hass_client_local_frigate.get(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/present"
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/manifest.m3u8"
     )
     assert resp.status == HTTP_OK
 
     # An invalid instance id is specified.
     resp = await hass_client_local_frigate.get(
-        "/api/frigate/NOT_A_REAL_ID/recordings/present"
+        "/api/frigate/NOT_A_REAL_ID/vod/present/manifest.m3u8"
     )
     assert resp.status == HTTP_BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
-    resp = await hass_client_local_frigate.get("/api/frigate/recordings/present")
+    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
     assert resp.status == HTTP_BAD_REQUEST
 
 
