@@ -288,7 +288,7 @@ async def setup_mock_frigate_config_entry(
     config_entry: ConfigEntry | None = None,
     client: AsyncMock | None = None,
 ) -> ConfigEntry:
-    """Add a mock MotionEye config entry to hass."""
+    """Add a mock Frigate config entry to hass."""
     config_entry = config_entry or create_mock_frigate_config_entry(hass)
     client = client or create_mock_frigate_client()
 
