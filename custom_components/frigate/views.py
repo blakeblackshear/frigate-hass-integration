@@ -215,8 +215,8 @@ class NotificationsProxyView(ProxyView):
 class VodProxyView(ProxyView):
     """A proxy for vod playlists."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}/{manifest:.+}.m3u8"
-    extra_urls = ["/api/frigate/vod/{path:.*}/{manifest:.+}.m3u8"]
+    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{manifest:.+}.m3u8"
+    extra_urls = ["/api/frigate/vod/{path:.+}/{manifest:.+}.m3u8"]
 
     name = "api:frigate:vod:mainfest"
 
@@ -230,8 +230,8 @@ class VodProxyView(ProxyView):
 class VodSegmentProxyView(ProxyView):
     """A proxy for vod segments."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.*}/{segment:.+}.ts"
-    extra_urls = ["/api/frigate/vod/{path:.*}/{segment:.+}.ts"]
+    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{segment:.+}.ts"
+    extra_urls = ["/api/frigate/vod/{path:.+}/{segment:.+}.ts"]
 
     name = "api:frigate:vod:segment"
     requires_auth = False
