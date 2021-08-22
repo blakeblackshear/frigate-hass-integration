@@ -1102,7 +1102,7 @@ async def test_recordings_identifier() -> None:
     identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04//front_door"
     identifier = RecordingIdentifier.from_str(identifier_in)
     assert identifier
-    assert identifier.get_frigate_server_path() == "vod/2021-06/04/index.m3u8"
+    assert identifier.get_frigate_server_path() == "vod/2021-06/04"
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126

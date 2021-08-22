@@ -448,6 +448,7 @@ class RecordingIdentifier(Identifier):
             f"{self.day:02}" if self.day is not None else None,
             f"{self.hour:02}" if self.hour is not None else None,
             self.camera,
+            "index.m3u8" if self.camera else None,
         ]
 
         out_parts = []
@@ -455,9 +456,6 @@ class RecordingIdentifier(Identifier):
             if val is None:
                 break
             out_parts.append(str(val))
-
-        if self.camera:
-            out_parts.append("index.m3u8")
 
         return "/".join(out_parts)
 
