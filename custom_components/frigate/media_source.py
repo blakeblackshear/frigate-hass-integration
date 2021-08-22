@@ -123,13 +123,13 @@ class Identifier:
 class FrigateMediaType(enum.Enum):
     """Type of media this identifier represents."""
 
-    EVENTS = "events"
+    CLIPS = "clips"
     SNAPSHOTS = "snapshots"
 
     @property
     def mime_type(self) -> str:
         """Get mime type for this frigate media type."""
-        if self == FrigateMediaType.EVENTS:
+        if self == FrigateMediaType.CLIPS:
             return "application/x-mpegURL"
         else:
             return "image/jpg"
@@ -137,7 +137,7 @@ class FrigateMediaType(enum.Enum):
     @property
     def media_type(self) -> str:
         """Get media type for this frigate media type."""
-        if self == FrigateMediaType.EVENTS:
+        if self == FrigateMediaType.CLIPS:
             return str(MEDIA_TYPE_VIDEO)
         else:
             return str(MEDIA_TYPE_IMAGE)
@@ -145,7 +145,7 @@ class FrigateMediaType(enum.Enum):
     @property
     def media_class(self) -> str:
         """Get media class for this frigate media type."""
-        if self == FrigateMediaType.EVENTS:
+        if self == FrigateMediaType.CLIPS:
             return str(MEDIA_CLASS_VIDEO)
         else:
             return str(MEDIA_CLASS_IMAGE)
@@ -153,7 +153,7 @@ class FrigateMediaType(enum.Enum):
     @property
     def extension(self) -> str:
         """Get filename extension."""
-        if self == FrigateMediaType.EVENTS:
+        if self == FrigateMediaType.CLIPS:
             return "m3u8"
         else:
             return "jpg"
@@ -216,7 +216,7 @@ class EventIdentifier(Identifier):
 
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
-        if self.frigate_media_type == FrigateMediaType.EVENTS:
+        if self.frigate_media_type == FrigateMediaType.CLIPS:
             return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
         else:
             return f"clips/{self.camera}-{self.id}.{self.frigate_media_type.extension}"
@@ -576,7 +576,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 )
                 if frigate_instance_id:
                     events_identifier = EventSearchIdentifier(
-                        frigate_instance_id, FrigateMediaType.EVENTS
+                        frigate_instance_id, FrigateMediaType.CLIPS
                     )
                     recording_identifier = RecordingIdentifier(frigate_instance_id)
                     snapshots_identifier = EventSearchIdentifier(
@@ -592,7 +592,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                                 media_class=MEDIA_CLASS_DIRECTORY,
                                 children_media_class=events_identifier.media_class,
                                 media_content_type=events_identifier.media_type,
-                                title=f"Events [{config_entry.title}]",
+                                title=f"Clips [{config_entry.title}]",
                                 can_play=False,
                                 can_expand=True,
                                 thumbnail=None,
@@ -632,7 +632,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         )
 
         if isinstance(identifier, EventSearchIdentifier):
-            if identifier.frigate_media_type == FrigateMediaType.EVENTS:
+            if identifier.frigate_media_type == FrigateMediaType.CLIPS:
                 media_kwargs = {"has_clip": True}
             else:
                 media_kwargs = {"has_snapshot": True}
@@ -674,7 +674,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         """Get event summary data."""
 
         try:
-            if identifier.frigate_media_type == FrigateMediaType.EVENTS:
+            if identifier.frigate_media_type == FrigateMediaType.CLIPS:
                 kwargs = {"has_clip": True}
             else:
                 kwargs = {"has_snapshot": True}
