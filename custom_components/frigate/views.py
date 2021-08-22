@@ -249,7 +249,7 @@ class VodSegmentProxyView(ProxyView):
         signature = request.query.get(SIGN_QUERY_PARAM)
 
         if signature is None:
-            _LOGGER.error("Missing authSig query parameter on VOD segment request.")
+            _LOGGER.warning("Missing authSig query parameter on VOD segment request.")
             return False
 
         try:
@@ -257,13 +257,13 @@ class VodSegmentProxyView(ProxyView):
                 signature, secret, algorithms=["HS256"], options={"verify_iss": False}
             )
         except jwt.InvalidTokenError:
-            _LOGGER.error("Invalid JWT token for VOD segment request.")
+            _LOGGER.warning("Invalid JWT token for VOD segment request.")
             return False
 
         # Check that the base path is the same as what was signed
         check_path = request.path.rsplit("/", maxsplit=1)[0]
         if not claims["path"].startswith(check_path):
-            _LOGGER.error("%s does not start with %s", claims["path"], check_path)
+            _LOGGER.warning("%s does not start with %s", claims["path"], check_path)
             return False
 
         return True
