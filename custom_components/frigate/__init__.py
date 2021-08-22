@@ -16,6 +16,7 @@ from homeassistant.components.mqtt.subscription import (
     async_subscribe_topics,
     async_unsubscribe_topics,
 )
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
@@ -152,6 +153,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
+
+    # cleanup old clips switch if exists
+    for camera in config["cameras"].keys():
+        unique_id = get_frigate_entity_unique_id(
+            entry.entry_id, SWITCH_DOMAIN, f"{camera}_clips"
+        )
+        entity_registry = er.async_get(hass)
+        entity_id = entity_registry.async_get_entity_id(
+            SWITCH_DOMAIN, DOMAIN, unique_id
+        )
+        if entity_id:
+            entity_registry.async_remove(entity_id)
+
     return True
 
 
