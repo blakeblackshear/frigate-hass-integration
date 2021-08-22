@@ -213,12 +213,16 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
         hass, config_entry=config_entry
     )
 
-    assert (
-        entity_registry.async_get_entity_id(
-            "switch", DOMAIN, f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_clips"
-        )
-        is None
-    )
+    for platform, unique_id in old_unique_ids:
+        if platform == "switch" and unique_id.endswith("_clips"):
+            assert (
+                entity_registry.async_get_entity_id("switch", DOMAIN, unique_id) is None
+            )
+        else:
+            assert (
+                entity_registry.async_get_entity_id(platform, DOMAIN, unique_id)
+                is not None
+            )
 
     assert (
         entity_registry.async_get_entity_id(
