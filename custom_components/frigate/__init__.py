@@ -6,11 +6,12 @@ https://github.com/blakeblackshear/frigate-hass-integration
 """
 from __future__ import annotations
 
-from awesomeversion import AwesomeVersion
 from datetime import timedelta
 import logging
 import re
 from typing import Any, Callable, Final
+
+from awesomeversion import AwesomeVersion
 
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.subscription import (
