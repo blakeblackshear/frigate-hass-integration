@@ -15,8 +15,8 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
-    TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
     setup_mock_frigate_config_entry,
 )

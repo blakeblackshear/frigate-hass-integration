@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import copy
-import logging
-import secrets
-import jwt
 from datetime import timedelta
+import logging
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -20,6 +18,9 @@ from custom_components.frigate.const import (
     CONF_NOTIFICATION_PROXY_ENABLE,
     DOMAIN,
 )
+from homeassistant.components.http.auth import async_sign_path, setup_auth
+from homeassistant.components.http.const import KEY_AUTHENTICATED
+from homeassistant.components.http.forwarded import async_setup_forwarded
 from homeassistant.const import (
     CONF_URL,
     HTTP_BAD_REQUEST,
@@ -30,14 +31,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
-from homeassistant.components.http.auth import (
-    async_sign_path,
-    setup_auth,
-    DATA_SIGN_SECRET,
-    SIGN_QUERY_PARAM,
-)
-from homeassistant.components.http.const import KEY_AUTHENTICATED
-from homeassistant.components.http.forwarded import async_setup_forwarded
 
 from . import (
     TEST_CONFIG,
@@ -79,7 +72,7 @@ class FakeAsyncContextManager:
         """Context manager exit."""
 
 
-async def mock_handler(request):
+async def mock_handler(request: Any) -> Any:
     """Return if request was authenticated."""
     if not request[KEY_AUTHENTICATED]:
         raise HTTPUnauthorized
@@ -91,7 +84,7 @@ async def mock_handler(request):
 
 
 @pytest.fixture
-def app(hass):
+def app(hass: HomeAssistant) -> Any:
     """Fixture to set up a web.Application."""
     app = web.Application()
     app["hass"] = hass

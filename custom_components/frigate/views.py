@@ -224,8 +224,10 @@ class VodProxyView(ProxyView):
 
     name = "api:frigate:vod:mainfest"
 
-    def _create_path(self, path: str, manifest: str, **kwargs: Any) -> str:
+    def _create_path(self, path: str, **kwargs: Any) -> str | None:
         """Create path."""
+        manifest = kwargs["manifest"]
+
         return f"vod/{path}/{manifest}.m3u8"
 
 
@@ -238,8 +240,10 @@ class VodSegmentProxyView(ProxyView):
     name = "api:frigate:vod:segment"
     requires_auth = False
 
-    def _create_path(self, path: str, segment: str, **kwargs: Any) -> str:
+    def _create_path(self, path: str, **kwargs: Any) -> str | None:
         """Create path."""
+        segment = kwargs["segment"]
+
         return f"vod/{path}/{segment}.ts"
 
     async def _async_validate_signed_manifest(self, request: web.Request) -> bool:
