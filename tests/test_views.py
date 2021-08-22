@@ -101,7 +101,6 @@ async def hass_client_local_frigate(
     await async_setup_component(hass, "http", {"http": {}})
 
     async def handler(request: web.Request) -> web.Response:
-        print(request)
         for header in (
             hdrs.CONTENT_LENGTH,
             hdrs.CONTENT_ENCODING,
