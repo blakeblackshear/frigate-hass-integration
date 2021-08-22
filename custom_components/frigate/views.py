@@ -21,11 +21,7 @@ from custom_components.frigate.const import (
 )
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.components.http.auth import DATA_SIGN_SECRET, SIGN_QUERY_PARAM
-from homeassistant.components.http.const import (
-    KEY_HASS,
-    KEY_HASS_REFRESH_TOKEN_ID,
-    KEY_HASS_USER,
-)
+from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_URL,
@@ -250,15 +246,10 @@ class VodSegmentProxyView(ProxyView):
         """Validate the signature for the manifest of this segment."""
         hass = request.app[KEY_HASS]
         secret = hass.data.get(DATA_SIGN_SECRET)
-
-        if secret is None:
-            _LOGGER.debug("Missing secret.")
-            return False
-
         signature = request.query.get(SIGN_QUERY_PARAM)
 
         if signature is None:
-            _LOGGER.debug("Missing signature.")
+            _LOGGER.error("Missing authSig query parameter on VOD segment request.")
             return False
 
         try:
@@ -266,23 +257,15 @@ class VodSegmentProxyView(ProxyView):
                 signature, secret, algorithms=["HS256"], options={"verify_iss": False}
             )
         except jwt.InvalidTokenError:
-            _LOGGER.debug("Invalid JWT.")
+            _LOGGER.error("Invalid JWT token for VOD segment request.")
             return False
 
         # Check that the base path is the same as what was signed
         check_path = request.path.rsplit("/", maxsplit=1)[0]
         if not claims["path"].startswith(check_path):
-            _LOGGER.debug("%s does not start with %s", claims["path"], check_path)
+            _LOGGER.error("%s does not start with %s", claims["path"], check_path)
             return False
 
-        refresh_token = await hass.auth.async_get_refresh_token(claims["iss"])
-
-        if refresh_token is None:
-            _LOGGER.debug("Missing refresh token.")
-            return False
-
-        request[KEY_HASS_USER] = refresh_token.user
-        request[KEY_HASS_REFRESH_TOKEN_ID] = refresh_token.id
         return True
 
     async def get(

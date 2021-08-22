@@ -210,17 +210,6 @@ async def test_vod_segment_proxy_unauthorized(
     )
     assert resp.status == HTTP_UNAUTHORIZED
 
-    # Missing refresh token
-    signed_path = async_sign_path(
-        hass,
-        "missing",
-        "/api/frigate/vod/present/segment.ts",
-        timedelta(seconds=5),
-    )
-
-    resp = await hass_client_local_frigate.get(signed_path)
-    assert resp.status == HTTP_UNAUTHORIZED
-
 
 async def test_snapshot_proxy_view_success(
     hass_client_local_frigate: Any,
