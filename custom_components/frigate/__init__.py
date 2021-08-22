@@ -6,6 +6,7 @@ https://github.com/blakeblackshear/frigate-hass-integration
 """
 from __future__ import annotations
 
+from awesomeversion import AwesomeVersion
 from datetime import timedelta
 import logging
 import re
@@ -144,9 +145,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
 
-    if server_version < FRIGATE_VERSION_ERROR_CUTOFF:
+    if AwesomeVersion(server_version) <= AwesomeVersion(FRIGATE_VERSION_ERROR_CUTOFF):
         _LOGGER.error(
-            "Using a Frigate server version < %s is not compatible."
+            "Using a Frigate server version < %s is not compatible. -- "
             "Please consider upgrading: %s",
             FRIGATE_VERSION_ERROR_CUTOFF,
             FRIGATE_RELEASES_URL,
@@ -172,7 +173,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         unique_id = get_frigate_entity_unique_id(
             entry.entry_id, SWITCH_DOMAIN, f"{camera}_clips"
         )
-        entity_registry = er.async_get(hass)
         entity_id = entity_registry.async_get_entity_id(
             SWITCH_DOMAIN, DOMAIN, unique_id
         )
