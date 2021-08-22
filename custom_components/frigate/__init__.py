@@ -44,6 +44,8 @@ from .const import (
     ATTR_CONFIG,
     ATTR_COORDINATOR,
     DOMAIN,
+    FRIGATE_RELEASES_URL,
+    FRIGATE_VERSION_ERROR_CUTOFF,
     NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
@@ -141,6 +143,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         config = await client.async_get_config()
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
+
+    if server_version < FRIGATE_VERSION_ERROR_CUTOFF:
+        _LOGGER.error(
+            "Using a Frigate server version < %s is not compatible."
+            "Please consider upgrading: %s",
+            FRIGATE_VERSION_ERROR_CUTOFF,
+            FRIGATE_RELEASES_URL,
+        )
+
+        return False
 
     model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
 

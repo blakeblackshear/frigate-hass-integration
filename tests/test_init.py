@@ -71,6 +71,17 @@ async def test_entry_async_get_config_fail(hass: HomeAssistant) -> None:
     assert config_entry.state == ConfigEntryState.SETUP_RETRY
 
 
+async def test_entry_async_get_version_incompatible(hass: HomeAssistant) -> None:
+    """Test running an incompatible server version."""
+
+    client = create_mock_frigate_client()
+    client.async_get_version = AsyncMock(return_value="0.8.4-1234567")
+
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    print(config_entry.state)
+    assert config_entry.state == ConfigEntryState.SETUP_ERROR
+
+
 async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
     """Test migrating a config entry."""
     entity_registry = er.async_get(hass)
