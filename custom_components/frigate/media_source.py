@@ -575,7 +575,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     self.hass, config_entry
                 )
                 if frigate_instance_id:
-                    events_identifier = EventSearchIdentifier(
+                    clips_identifier = EventSearchIdentifier(
                         frigate_instance_id, FrigateMediaType.CLIPS
                     )
                     recording_identifier = RecordingIdentifier(frigate_instance_id)
@@ -588,10 +588,10 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                         [
                             BrowseMediaSource(
                                 domain=DOMAIN,
-                                identifier=events_identifier,
+                                identifier=clips_identifier,
                                 media_class=MEDIA_CLASS_DIRECTORY,
-                                children_media_class=events_identifier.media_class,
-                                media_content_type=events_identifier.media_type,
+                                children_media_class=clips_identifier.media_class,
+                                media_content_type=clips_identifier.media_type,
                                 title=f"Clips [{config_entry.title}]",
                                 can_play=False,
                                 can_expand=True,
