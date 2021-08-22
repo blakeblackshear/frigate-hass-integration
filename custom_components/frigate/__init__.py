@@ -167,6 +167,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
     # cleanup old clips switch if exists
+    entity_registry = er.async_get(hass)
     for camera in config["cameras"].keys():
         unique_id = get_frigate_entity_unique_id(
             entry.entry_id, SWITCH_DOMAIN, f"{camera}_clips"
