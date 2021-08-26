@@ -148,12 +148,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if AwesomeVersion(server_version) <= AwesomeVersion(FRIGATE_VERSION_ERROR_CUTOFF):
         _LOGGER.error(
-            "Using a Frigate server version < %s is not compatible. -- "
-            "Please consider upgrading: %s",
+            "Using a Frigate server version <= %s is not compatible. -- "
+            "You must upgrade: %s",
             FRIGATE_VERSION_ERROR_CUTOFF,
             FRIGATE_RELEASES_URL,
         )
-
         return False
 
     model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
@@ -168,7 +167,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
-    # cleanup old clips switch if exists
+    # Cleanup old clips switch (<v0.9.0) if it exists.
     entity_registry = er.async_get(hass)
     for camera in config["cameras"].keys():
         unique_id = get_frigate_entity_unique_id(
