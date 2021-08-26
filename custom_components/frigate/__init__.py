@@ -148,8 +148,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if AwesomeVersion(server_version) <= AwesomeVersion(FRIGATE_VERSION_ERROR_CUTOFF):
         _LOGGER.error(
-            "Using a Frigate server version <= %s is not compatible. -- "
-            "You must upgrade: %s",
+            "Using a Frigate server (%s) with version %s <= %s which is not "
+            "compatible -- you must upgrade: %s",
+            entry.data[CONF_URL],
+            server_version,
             FRIGATE_VERSION_ERROR_CUTOFF,
             FRIGATE_RELEASES_URL,
         )
