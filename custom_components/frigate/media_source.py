@@ -39,6 +39,7 @@ from .views import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
 ITEM_LIMIT = 50
 SECONDS_IN_DAY = 60 * 60 * 24
 SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
@@ -129,7 +130,7 @@ class FrigateMediaType(enum.Enum):
     def mime_type(self) -> str:
         """Get mime type for this frigate media type."""
         if self == FrigateMediaType.CLIPS:
-            return "video/mp4"
+            return "application/x-mpegURL"
         else:
             return "image/jpg"
 
@@ -153,7 +154,7 @@ class FrigateMediaType(enum.Enum):
     def extension(self) -> str:
         """Get filename extension."""
         if self == FrigateMediaType.CLIPS:
-            return "mp4"
+            return "m3u8"
         else:
             return "jpg"
 
@@ -166,7 +167,11 @@ class EventIdentifier(Identifier):
         validator=[attr.validators.in_(FrigateMediaType)]
     )
 
-    name: str = attr.ib(
+    id: str = attr.ib(
+        validator=[attr.validators.instance_of(str)],
+    )
+
+    camera: str = attr.ib(
         validator=[attr.validators.instance_of(str)],
     )
 
@@ -177,7 +182,8 @@ class EventIdentifier(Identifier):
                 self.frigate_instance_id,
                 self.get_identifier_type(),
                 self.frigate_media_type.value,
-                self.name,
+                self.camera,
+                self.id,
             )
         )
 
@@ -190,14 +196,15 @@ class EventIdentifier(Identifier):
             data.split("/"), default_frigate_instance_id
         )
 
-        if len(parts) != 4 or parts[1] != cls.get_identifier_type():
+        if len(parts) != 5 or parts[1] != cls.get_identifier_type():
             return None
 
         try:
             return cls(
                 frigate_instance_id=parts[0],
                 frigate_media_type=FrigateMediaType(parts[2]),
-                name=parts[3],
+                camera=parts[3],
+                id=parts[4],
             )
         except ValueError:
             return None
@@ -209,7 +216,10 @@ class EventIdentifier(Identifier):
 
     def get_frigate_server_path(self) -> str:
         """Get the equivalent Frigate server path."""
-        return f"clips/{self.name}"
+        if self.frigate_media_type == FrigateMediaType.CLIPS:
+            return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
+        else:
+            return f"clips/{self.camera}-{self.id}.{self.frigate_media_type.extension}"
 
     @property
     def mime_type(self) -> str:
@@ -380,10 +390,6 @@ class RecordingIdentifier(Identifier):
         default=None, validator=[attr.validators.instance_of((str, type(None)))]
     )
 
-    recording_name: str | None = attr.ib(
-        default=None, validator=[attr.validators.instance_of((str, type(None)))]
-    )
-
     @classmethod
     def from_str(
         cls, data: str, default_frigate_instance_id: str | None = None
@@ -403,7 +409,6 @@ class RecordingIdentifier(Identifier):
                 day=cls._get_index(parts, 3),
                 hour=cls._get_index(parts, 4),
                 camera=cls._get_index(parts, 5),
-                recording_name=cls._get_index(parts, 6),
             )
         except ValueError:
             return None
@@ -419,7 +424,6 @@ class RecordingIdentifier(Identifier):
                     f"{self.day:02}" if self.day is not None else None,
                     f"{self.hour:02}" if self.hour is not None else None,
                     self.camera,
-                    self.recording_name,
                 )
             ]
         )
@@ -439,12 +443,12 @@ class RecordingIdentifier(Identifier):
         # missing attribute.
 
         in_parts = [
-            self.get_identifier_type(),
+            self.get_identifier_type() if not self.camera else "vod",
             self.year_month,
             f"{self.day:02}" if self.day is not None else None,
             f"{self.hour:02}" if self.hour is not None else None,
             self.camera,
-            self.recording_name,
+            "index.m3u8" if self.camera else None,
         ]
 
         out_parts = []
@@ -452,6 +456,7 @@ class RecordingIdentifier(Identifier):
             if val is None:
                 break
             out_parts.append(str(val))
+
         return "/".join(out_parts)
 
     def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
@@ -464,7 +469,7 @@ class RecordingIdentifier(Identifier):
     @property
     def mime_type(self) -> str:
         """Get mime type for this identifier."""
-        return "video/mp4"
+        return "application/x-mpegURL"
 
     @property
     def media_class(self) -> str:
@@ -473,7 +478,7 @@ class RecordingIdentifier(Identifier):
 
     @property
     def media_type(self) -> str:
-        """Get mime type for this identifier."""
+        """Get media type for this identifier."""
         return str(MEDIA_TYPE_VIDEO)
 
 
@@ -657,9 +662,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
-            if identifier.camera:
-                return self._browse_recordings(identifier, recordings_folder)
-            return self._browse_recording_folders(identifier, recordings_folder)
+            if identifier.hour is None:
+                return self._browse_recording_folders(identifier, recordings_folder)
+            return self._browse_recordings(identifier, recordings_folder)
 
         raise MediaSourceError("Invalid media source identifier: %s" % item.identifier)
 
@@ -782,10 +787,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     identifier=EventIdentifier(
                         identifier.frigate_instance_id,
                         frigate_media_type=identifier.frigate_media_type,
-                        name=(
-                            f"{event['camera']}-{event['id']}."
-                            + identifier.frigate_media_type.extension
-                        ),
+                        camera=event["camera"],
+                        id=event["id"],
                     ),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
@@ -1176,14 +1179,6 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> str | None:
         """Generate recording title."""
         try:
-            if identifier.camera is not None:
-                if folder is None:
-                    return get_friendly_name(identifier.camera)
-                minute_seconds = folder["name"].replace(".mp4", "")
-                return dt.datetime.strptime(
-                    f"{identifier.hour}.{minute_seconds}", "%H.%M.%S"
-                ).strftime("%T")
-
             if identifier.hour is not None:
                 if folder is None:
                     return dt.datetime.strptime(
@@ -1277,17 +1272,10 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
         for recording in recordings:
             title = self._generate_recording_title(identifier, recording)
-            if not title:
-                _LOGGER.warning(
-                    "Skipping non-standard recording name: %s", recording["name"]
-                )
-                continue
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=attr.evolve(
-                        identifier, recording_name=recording["name"]
-                    ),
+                    identifier=attr.evolve(identifier, camera=recording["name"]),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
                     title=title,

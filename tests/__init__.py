@@ -20,7 +20,7 @@ TEST_CAMERA_FRONT_DOOR_ENTITY_ID = "camera.front_door"
 TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
 TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID = "switch.front_door_detect"
 TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID = "switch.front_door_snapshots"
-TEST_SWITCH_FRONT_DOOR_CLIPS_ENTITY_ID = "switch.front_door_clips"
+TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID = "switch.front_door_recordings"
 TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person"
 TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID = "sensor.front_door_person"
 TEST_SENSOR_DETECTION_FPS_ENTITY_ID = "sensor.detection_fps"
@@ -31,7 +31,7 @@ TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID = "sensor.front_door_detection_fp
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 
-TEST_SERVER_VERSION = "0.8.4-09a4d6d"
+TEST_SERVER_VERSION = "0.9.0-09a4d6d"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
@@ -288,7 +288,7 @@ async def setup_mock_frigate_config_entry(
     config_entry: ConfigEntry | None = None,
     client: AsyncMock | None = None,
 ) -> ConfigEntry:
-    """Add a mock MotionEye config entry to hass."""
+    """Add a mock Frigate config entry to hass."""
     config_entry = config_entry or create_mock_frigate_config_entry(hass)
     client = client or create_mock_frigate_client()
 

@@ -11,11 +11,14 @@ import logging
 import re
 from typing import Any, Callable, Final
 
+from awesomeversion import AwesomeVersion
+
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.subscription import (
     async_subscribe_topics,
     async_unsubscribe_topics,
 )
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
@@ -36,17 +39,25 @@ except ImportError:
     from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
         Message as ReceiveMessage,
     )
+
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_COORDINATOR,
     DOMAIN,
+    FRIGATE_RELEASES_URL,
+    FRIGATE_VERSION_ERROR_CUTOFF,
     NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
 )
-from .views import ClipsProxyView, NotificationsProxyView, RecordingsProxyView
+from .views import (
+    NotificationsProxyView,
+    SnapshotsProxyView,
+    VodProxyView,
+    VodSegmentProxyView,
+)
 
 SCAN_INTERVAL = timedelta(seconds=5)
 
@@ -115,9 +126,10 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     session = async_get_clientsession(hass)
-    hass.http.register_view(ClipsProxyView(session))
-    hass.http.register_view(RecordingsProxyView(session))
+    hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(NotificationsProxyView(session))
+    hass.http.register_view(VodProxyView(session))
+    hass.http.register_view(VodSegmentProxyView(session))
     return True
 
 
@@ -134,6 +146,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
 
+    if AwesomeVersion(server_version) <= AwesomeVersion(FRIGATE_VERSION_ERROR_CUTOFF):
+        _LOGGER.error(
+            "Using a Frigate server version < %s is not compatible. -- "
+            "Please consider upgrading: %s",
+            FRIGATE_VERSION_ERROR_CUTOFF,
+            FRIGATE_RELEASES_URL,
+        )
+
+        return False
+
     model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
 
     hass.data[DOMAIN][entry.entry_id] = {
@@ -145,6 +167,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
+
+    # cleanup old clips switch if exists
+    entity_registry = er.async_get(hass)
+    for camera in config["cameras"].keys():
+        unique_id = get_frigate_entity_unique_id(
+            entry.entry_id, SWITCH_DOMAIN, f"{camera}_clips"
+        )
+        entity_id = entity_registry.async_get_entity_id(
+            SWITCH_DOMAIN, DOMAIN, unique_id
+        )
+        if entity_id:
+            entity_registry.async_remove(entity_id)
+
     return True
 
 

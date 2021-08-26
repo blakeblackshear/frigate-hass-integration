@@ -71,6 +71,17 @@ async def test_entry_async_get_config_fail(hass: HomeAssistant) -> None:
     assert config_entry.state == ConfigEntryState.SETUP_RETRY
 
 
+async def test_entry_async_get_version_incompatible(hass: HomeAssistant) -> None:
+    """Test running an incompatible server version."""
+
+    client = create_mock_frigate_client()
+    client.async_get_version = AsyncMock(return_value="0.8.4-1234567")
+
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    print(config_entry.state)
+    assert config_entry.state == ConfigEntryState.SETUP_ERROR
+
+
 async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
     """Test migrating a config entry."""
     entity_registry = er.async_get(hass)
@@ -143,7 +154,7 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_process"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped"),
-        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_clips"),
+        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_recordings"),
         ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_detect"),
         ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_snapshots"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_detector_speed:cpu1"),
@@ -156,6 +167,69 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
         assert (
             entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is not None
         )
+
+
+async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
+    """Test cleanup of old clips switch."""
+    entity_registry = er.async_get(hass)
+
+    config_entry: MockConfigEntry = MockConfigEntry(
+        entry_id=TEST_CONFIG_ENTRY_ID,
+        domain=DOMAIN,
+        data={CONF_HOST: "http://host:456"},
+        title="Frigate",
+        version=2,
+    )
+
+    config_entry.add_to_hass(hass)
+
+    old_unique_ids = [
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"),
+        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
+        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_process"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped"),
+        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_clips"),
+        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_detect"),
+        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_snapshots"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_detector_speed:cpu1"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_detector_speed:cpu2"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_detection"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:steps_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:steps_person"),
+    ]
+
+    # Create fake entries with the old unique_ids.
+    for platform, unique_id in old_unique_ids:
+        assert entity_registry.async_get_or_create(
+            platform, DOMAIN, unique_id, config_entry=config_entry
+        )
+
+    # Setup the integration.
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry
+    )
+
+    for platform, unique_id in old_unique_ids:
+        if platform == "switch" and unique_id.endswith("_clips"):
+            assert (
+                entity_registry.async_get_entity_id("switch", DOMAIN, unique_id) is None
+            )
+        else:
+            assert (
+                entity_registry.async_get_entity_id(platform, DOMAIN, unique_id)
+                is not None
+            )
+
+    assert (
+        entity_registry.async_get_entity_id(
+            "switch", DOMAIN, f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_recordings"
+        )
+        is not None
+    )
 
 
 async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:

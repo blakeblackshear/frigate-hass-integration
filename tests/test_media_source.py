@@ -134,7 +134,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
                 "media_content_type": "video",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/////"
+                    "/recordings////"
                 ),
                 "can_play": False,
                 "can_expand": True,
@@ -171,7 +171,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
                 "media_class": "directory",
                 "media_content_type": "video",
                 "media_content_id": (
-                    "media-source://frigate/another_client_id/recordings/////"
+                    "media-source://frigate/another_client_id/recordings////"
                 ),
                 "can_play": False,
                 "can_expand": True,
@@ -304,12 +304,13 @@ async def test_async_browse_media_clip_search_drilldown(
     )
 
     assert len(media.as_dict()["children"]) == 58
+
     assert {
         "media_class": "video",
         "media_content_type": "video",
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event/clips/front_door-1623454583.525913-y14xk9.mp4"
+            "/event/clips/front_door/1623454583.525913-y14xk9"
         ),
         "can_play": True,
         "can_expand": False,
@@ -577,11 +578,11 @@ async def test_async_resolve_media(
     # Test resolving a clip.
     media = await media_source.async_resolve_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/CLIP-FOO",
+        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/CLIP-FOO",
     )
     assert media == PlayMedia(
-        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/CLIP-FOO",
-        mime_type="video/mp4",
+        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/event/CLIP-FOO/index.m3u8",
+        mime_type="application/x-mpegURL",
     )
 
     # Test resolving a recording.
@@ -594,10 +595,9 @@ async def test_async_resolve_media(
     )
     assert media == PlayMedia(
         url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-05/30/15"
-            "/front_door/46.08.mp4"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/15/front_door/index.m3u8"
         ),
-        mime_type="video/mp4",
+        mime_type="application/x-mpegURL",
     )
 
     # Test resolving a snapshot.
@@ -605,11 +605,11 @@ async def test_async_resolve_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event/snapshots/snapshot.jpg"
+            "/event/snapshots/camera/snapshot"
         ),
     )
     assert media == PlayMedia(
-        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/snapshot.jpg",
+        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/camera-snapshot.jpg",
         mime_type="image/jpg",
     )
 
@@ -653,7 +653,7 @@ async def test_async_browse_media_recordings_root(
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/////"
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings////"
         ),
         "can_play": False,
         "can_expand": True,
@@ -667,7 +667,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06////"
+                    "/recordings/2021-06///"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -701,7 +701,7 @@ async def test_async_browse_media_recordings_root(
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06////"
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06///"
         ),
         "can_play": False,
         "can_expand": True,
@@ -715,7 +715,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04///"
+                    "/recordings/2021-06/04//"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -747,7 +747,7 @@ async def test_async_browse_media_recordings_root(
         "media_content_type": "video",
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04///"
+            "/recordings/2021-06/04//"
         ),
         "can_play": False,
         "can_expand": True,
@@ -761,7 +761,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15//"
+                    "/recordings/2021-06/04/15/"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -799,7 +799,7 @@ async def test_async_browse_media_recordings_root(
         "media_content_type": "video",
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/15//"
+            "/recordings/2021-06/04/15/"
         ),
         "can_play": False,
         "can_expand": True,
@@ -807,26 +807,26 @@ async def test_async_browse_media_recordings_root(
         "thumbnail": None,
         "children": [
             {
-                "can_expand": True,
-                "can_play": False,
-                "children_media_class": "directory",
-                "media_class": "directory",
+                "can_expand": False,
+                "can_play": True,
+                "children_media_class": None,
+                "media_class": "movie",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/front_door/"
+                    "/recordings/2021-06/04/15/front_door"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
                 "title": "Front Door",
             },
             {
-                "can_expand": True,
-                "can_play": False,
-                "children_media_class": "directory",
-                "media_class": "directory",
+                "can_expand": False,
+                "can_play": True,
+                "children_media_class": None,
+                "media_class": "movie",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/sitting_room/"
+                    "/recordings/2021-06/04/15/sitting_room"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -876,123 +876,27 @@ async def test_async_browse_media_recordings_root(
         "title": "00:00:00",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06/04/00//",
+        "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06/04/00/",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "directory",
         "thumbnail": None,
         "children": [
             {
+                "can_expand": False,
+                "can_play": True,
+                "children_media_class": None,
+                "media_class": "movie",
+                "media_content_id": (
+                    f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
+                    "/recordings/2021-06/04/00/front_door"
+                ),
+                "media_content_type": "video",
+                "thumbnail": None,
                 "title": "Front Door",
-                "media_class": "directory",
-                "media_content_type": "video",
-                "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06/04/00/front_door/",
-                "can_play": False,
-                "can_expand": True,
-                "children_media_class": "directory",
-                "thumbnail": None,
-            }
-        ],
-    }
-
-
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
-async def test_async_browse_media_recordings_for_camera(
-    caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
-) -> None:
-    """Test recordings for a camera."""
-
-    await setup_mock_frigate_config_entry(hass, client=frigate_client)
-
-    frigate_client.async_get_path = AsyncMock(
-        return_value=[
-            {
-                "name": "46.08.mp4",
-                "type": "file",
-                "mtime": "Sun, 04 June 2021 22:47:08 GMT",
-                "size": 5480823,
-            },
-            {
-                "name": "47.08.mp4",
-                "type": "file",
-                "mtime": "Sun, 04 June 2021 22:48:08 GMT",
-                "size": 5372942,
-            },
-        ]
-    )
-
-    media = await media_source.async_browse_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/15/front_door"
-        ),
-    )
-
-    assert media.as_dict() == {
-        "title": "Front Door",
-        "media_class": "directory",
-        "media_content_type": "video",
-        "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/15/front_door/"
-        ),
-        "can_play": False,
-        "can_expand": True,
-        "children_media_class": "directory",
-        "thumbnail": None,
-        "children": [
-            {
-                "can_expand": False,
-                "can_play": True,
-                "children_media_class": None,
-                "media_class": "movie",
-                "media_content_id": (
-                    f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/front_door/46.08.mp4"
-                ),
-                "media_content_type": "video",
-                "thumbnail": None,
-                "title": "15:46:08",
-            },
-            {
-                "can_expand": False,
-                "can_play": True,
-                "children_media_class": None,
-                "media_class": "movie",
-                "media_content_id": (
-                    f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/front_door/47.08.mp4"
-                ),
-                "media_content_type": "video",
-                "thumbnail": None,
-                "title": "15:47:08",
             },
         ],
     }
-
-    # Verify an unexpected folder name will result in a suitable log message.
-    frigate_client.async_get_path = AsyncMock(
-        return_value=[
-            {
-                "name": "NOT_A_MINUTE.NOT_AN_HOUR.mp4",
-                "type": "file",
-                "mtime": "Sun, 04 June 2021 22:47:08 GMT",
-                "size": 5480823,
-            }
-        ]
-    )
-
-    await media_source.async_browse_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/15/front_door"
-        ),
-    )
-
-    # There's a bogus value for an hour, that should be skipped.
-    assert "Skipping non-standard recording name" in caplog.text
 
 
 @patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
@@ -1128,9 +1032,7 @@ async def test_event_search_identifier() -> None:
 
 async def test_recordings_identifier() -> None:
     """Test recordings identifier."""
-    identifier_in = (
-        f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/15/front_door/media.mp4"
-    )
+    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/15/front_door"
     identifier = Identifier.from_str(identifier_in)
 
     assert identifier
@@ -1139,7 +1041,7 @@ async def test_recordings_identifier() -> None:
     assert identifier.year_month == "2021-06"
     assert identifier.day == 4
     assert identifier.hour == 15
-    assert identifier.recording_name == "media.mp4"
+    assert identifier.camera == "front_door"
     assert str(identifier) == identifier_in
 
     with pytest.raises(ValueError):
@@ -1200,7 +1102,7 @@ async def test_recordings_identifier() -> None:
     identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04//front_door"
     identifier = RecordingIdentifier.from_str(identifier_in)
     assert identifier
-    assert identifier.get_frigate_server_path() == "recordings/2021-06/04"
+    assert identifier.get_frigate_server_path() == "vod/2021-06/04"
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
@@ -1213,24 +1115,27 @@ async def test_recordings_identifier() -> None:
     )
     assert (
         str(identifier_out)
-        == f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/00/front_door/"
+        == f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/00/front_door"
     )
 
 
 async def test_event_identifier() -> None:
     """Test event identifier."""
-    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/event/clips/something"
+    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/something"
     identifier = Identifier.from_str(identifier_in)
 
     assert identifier
     assert isinstance(identifier, EventIdentifier)
     assert identifier.frigate_instance_id == TEST_FRIGATE_INSTANCE_ID
     assert identifier.frigate_media_type == FrigateMediaType.CLIPS
-    assert identifier.name == "something"
-    assert identifier.mime_type == "video/mp4"
+    assert identifier.camera == "camera"
+    assert identifier.id == "something"
+    assert identifier.mime_type == "application/x-mpegURL"
+
+    assert not Identifier.from_str(f"{TEST_FRIGATE_INSTANCE_ID}/event/clips/something")
 
     assert not Identifier.from_str(
-        f"{TEST_FRIGATE_INSTANCE_ID}/event/NOT_A_THING/something"
+        f"{TEST_FRIGATE_INSTANCE_ID}/event/NOT_VALID/camera/something"
     )
 
 
@@ -1341,7 +1246,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                 "title": "2021-06-04 00:00:01 [100s, Person 72%]",
                 "media_class": "image",
                 "media_content_type": "image",
-                "media_content_id": "media-source://frigate/frigate_client_id/event/snapshots/front_door-1622764801.555377-55xy6j.jpg",
+                "media_content_id": "media-source://frigate/frigate_client_id/event/snapshots/front_door/1622764801.555377-55xy6j",
                 "can_play": False,
                 "can_expand": False,
                 "children_media_class": None,
