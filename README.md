@@ -30,10 +30,13 @@ Easiest install is via HACS:
 
 `HACS -> Explore & Add Repositories -> Frigate`
 
-Note that HACS does not "configure" the integration for you. You must go to `Configuration > Integrations` and add Frigate after installing via HACS.
+Notes:
+ * HACS does not "configure" the integration for you. You must go to `Configuration > Integrations` and add Frigate after installing via HACS.
+ * The `mqtt` integration must be installed and configured in order for the Frigate integration to work. As manual configuration is required for the `mqtt` setup, this cannot happen automatically.
 
 For manual install, copy `custom_components/frigate` to your `custom_components`
 folder in Home Assistant.
+
 
 ### Media Browsing
 
