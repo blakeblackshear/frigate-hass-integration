@@ -1,6 +1,7 @@
 """Test the frigate binary sensor."""
 from __future__ import annotations
 
+import asyncio
 import copy
 from datetime import timedelta
 import logging
@@ -12,6 +13,7 @@ from aiohttp import hdrs, web
 from aiohttp.web_exceptions import HTTPUnauthorized
 import pytest
 
+from custom_components.frigate import views
 from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_MQTT,
@@ -98,16 +100,21 @@ async def hass_client_local_frigate(
 ) -> Any:
     """Point the integration at a local fake Frigate server."""
 
-    async def handler(request: web.Request) -> web.Response:
+    def _assert_expected_headers(request: web.Request, allow_ws: bool = False) -> None:
         for header in (
             hdrs.CONTENT_LENGTH,
             hdrs.CONTENT_ENCODING,
-            hdrs.SEC_WEBSOCKET_EXTENSIONS,
-            hdrs.SEC_WEBSOCKET_PROTOCOL,
-            hdrs.SEC_WEBSOCKET_VERSION,
-            hdrs.SEC_WEBSOCKET_KEY,
         ):
             assert header not in request.headers
+
+        if not allow_ws:
+            for header in (
+                hdrs.SEC_WEBSOCKET_EXTENSIONS,
+                hdrs.SEC_WEBSOCKET_PROTOCOL,
+                hdrs.SEC_WEBSOCKET_VERSION,
+                hdrs.SEC_WEBSOCKET_KEY,
+            ):
+                assert header not in request.headers
 
         for header in (
             hdrs.X_FORWARDED_HOST,
@@ -115,6 +122,28 @@ async def hass_client_local_frigate(
             hdrs.X_FORWARDED_FOR,
         ):
             assert header in request.headers
+
+    async def ws_qs_echo_handler(request: web.Request) -> web.WebSocketResponse:
+        """Verify the query string and act as echo handler."""
+        assert request.query["key"] == "value"
+        return await ws_echo_handler(request)
+
+    async def ws_echo_handler(request: web.Request) -> web.WebSocketResponse:
+        """Act as echo handler."""
+        _assert_expected_headers(request, allow_ws=True)
+
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+
+        async for msg in ws:
+            if msg.type == aiohttp.WSMsgType.TEXT:
+                await ws.send_str(msg.data)
+            elif msg.type == aiohttp.WSMsgType.BINARY:
+                await ws.send_bytes(msg.data)
+        return ws
+
+    async def handler(request: web.Request) -> web.Response:
+        _assert_expected_headers(request)
         return web.json_response({})
 
     server = await start_frigate_server(
@@ -126,6 +155,8 @@ async def hass_client_local_frigate(
             web.get("/api/events/event_id/thumbnail.jpg", handler),
             web.get("/api/events/event_id/snapshot.jpg", handler),
             web.get("/api/events/event_id/clip.mp4", handler),
+            web.get("/live/front_door", ws_echo_handler),
+            web.get("/live/querystring", ws_qs_echo_handler),
         ],
     )
 
@@ -493,3 +524,158 @@ async def test_notifications_with_disabled_option(
         "/api/frigate/private_id/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTP_FORBIDDEN
+
+
+async def test_jsmpeg_text_binary(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test JSMPEG proxying text/binary data."""
+    async with hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+    ) as ws:
+        # Test sending text data.
+        result = await asyncio.gather(
+            ws.send_str("hello!"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.TEXT
+        assert result[1].data == "hello!"
+
+        # Test sending binary data.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
+
+
+async def test_jsmpeg_frame_type_ping_pong(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test JSMPEG proxying handles ping-pong."""
+
+    async with hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+    ) as ws:
+        await ws.ping()
+
+        # Push some data through after the ping.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
+
+
+async def test_ws_proxy_specify_protocol(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test websocket proxy handles the SEC_WEBSOCKET_PROTOCOL header."""
+
+    ws = await hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door",
+        headers={hdrs.SEC_WEBSOCKET_PROTOCOL: "foo,bar"},
+    )
+    assert ws
+    await ws.close()
+
+
+async def test_ws_proxy_query_string(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test websocket proxy passes on the querystring."""
+
+    async with hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/querystring?key=value",
+    ) as ws:
+        result = await asyncio.gather(
+            ws.send_str("hello!"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.TEXT
+        assert result[1].data == "hello!"
+
+
+async def test_jsmpeg_connection_reset(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test JSMPEG proxying handles connection resets."""
+
+    # Tricky: This test is intended to test a ConnectionResetError to the
+    # Frigate server, which is the _second_ call to send*. The first call (from
+    # this test) needs to succeed.
+    real_send_str = views.aiohttp.web.WebSocketResponse.send_str
+
+    called_once = False
+
+    async def send_str(*args: Any, **kwargs: Any) -> None:
+        nonlocal called_once
+        if called_once:
+            raise ConnectionResetError
+        else:
+            called_once = True
+            return await real_send_str(*args, **kwargs)
+
+    with patch(
+        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.send_str",
+        new=send_str,
+    ):
+        async with hass_client_local_frigate.ws_connect(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+        ) as ws:
+            await ws.send_str("data")
+
+
+async def test_ws_proxy_bad_instance_id(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test websocket proxy handles bad instance id."""
+
+    resp = await hass_client_local_frigate.get(
+        "/api/frigate/NOT_A_REAL_ID/jsmpeg/front_door"
+    )
+    assert resp.status == HTTP_BAD_REQUEST
+
+
+async def test_ws_proxy_forbidden(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test websocket proxy handles forbidden paths."""
+
+    # Note: The ability to forbid websocket proxy calls is currently not used,
+    # but included for completeness and feature combatability with the other
+    # proxies. As such, there's no 'genuine' way to test this other than mocking
+    # out the call to _permit_request.
+
+    with patch(
+        "custom_components.frigate.views.WebsocketProxyView._permit_request",
+        return_value=False,
+    ):
+        resp = await hass_client_local_frigate.get(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+        )
+        assert resp.status == HTTP_FORBIDDEN
+
+
+async def test_ws_proxy_missing_path(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test websocket proxy handles missing/invalid paths."""
+
+    # Note: With current uses of the WebsocketProxy it's not possible to have a
+    # bad/missing path. Since that may not be the case in future for other views
+    # that inherit from WebsocketProxyView, this is tested here.
+    with patch(
+        "custom_components.frigate.views.JSMPEGProxyView._create_path",
+        return_value=None,
+    ):
+        resp = await hass_client_local_frigate.get(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+        )
+        assert resp.status == HTTP_NOT_FOUND

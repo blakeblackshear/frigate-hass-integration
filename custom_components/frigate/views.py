@@ -1,6 +1,7 @@
 """Frigate HTTP views."""
 from __future__ import annotations
 
+import asyncio
 from ipaddress import ip_address
 import logging
 from typing import Any, Optional, cast
@@ -78,6 +79,10 @@ def get_frigate_instance_id_for_config_entry(
 
     config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
     return get_frigate_instance_id(config) if config else None
+
+
+# These proxies are inspired by:
+#  - https://github.com/home-assistant/supervisor/blob/main/supervisor/api/ingress.py
 
 
 class ProxyView(HomeAssistantView):  # type: ignore[misc]
@@ -279,6 +284,98 @@ class VodSegmentProxyView(ProxyView):
             raise HTTPUnauthorized()
 
         return await super().get(request, **kwargs)
+
+
+class WebsocketProxyView(ProxyView):
+    """A simple proxy for websockets."""
+
+    async def _proxy_msgs(
+        self,
+        ws_in: aiohttp.ClientWebSocketResponse | web.WebSocketResponse,
+        ws_out: aiohttp.ClientWebSocketResponse | web.WebSocketResponse,
+    ) -> None:
+
+        async for msg in ws_in:
+            try:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    await ws_out.send_str(msg.data)
+                elif msg.type == aiohttp.WSMsgType.BINARY:
+                    await ws_out.send_bytes(msg.data)
+                elif msg.type == aiohttp.WSMsgType.PING:
+                    await ws_out.ping()
+                elif msg.type == aiohttp.WSMsgType.PONG:
+                    await ws_out.pong()
+            except ConnectionResetError:
+                return
+
+    async def _handle_request(
+        self,
+        request: web.Request,
+        path: str,
+        frigate_instance_id: str | None = None,
+        **kwargs: Any,
+    ) -> web.Response | web.StreamResponse:
+        """Handle route for request."""
+
+        config_entry = self._get_config_entry_for_request(request, frigate_instance_id)
+        if not config_entry:
+            return web.Response(status=HTTP_BAD_REQUEST)
+
+        if not self._permit_request(request, config_entry):
+            return web.Response(status=HTTP_FORBIDDEN)
+
+        full_path = self._create_path(path=path, **kwargs)
+        if not full_path:
+            return web.Response(status=HTTP_NOT_FOUND)
+
+        req_protocols = []
+        if hdrs.SEC_WEBSOCKET_PROTOCOL in request.headers:
+            req_protocols = [
+                str(proto.strip())
+                for proto in request.headers[hdrs.SEC_WEBSOCKET_PROTOCOL].split(",")
+            ]
+
+        ws_to_user = web.WebSocketResponse(
+            protocols=req_protocols, autoclose=False, autoping=False
+        )
+        await ws_to_user.prepare(request)
+
+        # Preparing
+        url = str(URL(config_entry.data[CONF_URL]) / full_path)
+        source_header = _init_header(request)
+
+        # Support GET query
+        if request.query_string:
+            url = f"{url}?{request.query_string}"
+
+        async with self._websession.ws_connect(
+            url,
+            headers=source_header,
+            protocols=req_protocols,
+            autoclose=False,
+            autoping=False,
+        ) as ws_to_frigate:
+            await asyncio.wait(
+                [
+                    self._proxy_msgs(ws_to_frigate, ws_to_user),
+                    self._proxy_msgs(ws_to_user, ws_to_frigate),
+                ],
+                return_when=asyncio.tasks.FIRST_COMPLETED,
+            )
+        return ws_to_user
+
+
+class JSMPEGProxyView(WebsocketProxyView):
+    """A proxy for JSMPEG websocket."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/jsmpeg/{path:.+}"
+    extra_urls = ["/api/frigate/jsmpeg/{path:.+}"]
+
+    name = "api:frigate:jsmpeg"
+
+    def _create_path(self, path: str, **kwargs: Any) -> str | None:
+        """Create path."""
+        return f"live/{path}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
