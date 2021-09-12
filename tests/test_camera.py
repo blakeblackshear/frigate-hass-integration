@@ -4,17 +4,12 @@ from __future__ import annotations
 import copy
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import (
-    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
-    CONF_RTMP_URL_TEMPLATE,
-    DOMAIN,
-    NAME,
-)
+from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -55,45 +50,30 @@ async def test_frigate_camera_setup(
         content=b"data-277",
     )
 
-    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
     assert image
     assert image.content == b"data-277"
 
 
-async def test_frigate_camera_image_height_option(
+async def test_frigate_camera_image_height(
     hass: HomeAssistant,
     aioclient_mock: Any,
 ) -> None:
-    """Set up a camera with a custom static image height."""
+    """Ensure async_camera_image respects height parameter."""
 
     client = create_mock_frigate_client()
-
-    config_entry = create_mock_frigate_config_entry(
-        hass, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 1000}
-    )
-    await setup_mock_frigate_config_entry(
-        hass, config_entry=config_entry, client=client
-    )
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     aioclient_mock.get(
         "http://example.com/api/front_door/latest.jpg?h=1000",
         content=b"data-1000",
     )
 
-    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=1000)
     assert image
     assert image.content == b"data-1000"
 
-    # Set the image height to 0 (in which case no argument is passed)
-    with patch(
-        "custom_components.frigate.FrigateApiClient",
-        return_value=client,
-    ):
-        hass.config_entries.async_update_entry(
-            config_entry, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 0}
-        )
-        await hass.async_block_till_done()
-
+    # Don't specify the height (no argument should be passed).
     aioclient_mock.get(
         "http://example.com/api/front_door/latest.jpg",
         content=b"data-no-height",

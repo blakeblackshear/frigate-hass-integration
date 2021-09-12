@@ -22,10 +22,12 @@
             "init": {
                 "data": {
                     "rtmp_url_template": "RTMP URL template (see documentation)",
-                    "notification_proxy_enable": "Enable the unauthenticated notification event proxy",
-                    "camera_image_height": "Height of live camera static images. 0 for camera default."
+                    "notification_proxy_enable": "Enable the unauthenticated notification event proxy"
                 }
             }
+        },
+        "abort": {
+            "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
         }
     }
 }

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import DOMAIN
+from custom_components.frigate.const import CONF_CAMERA_STATIC_IMAGE_HEIGHT, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant
@@ -18,6 +18,7 @@ from homeassistant.loader import async_get_integration
 from . import (
     TEST_CONFIG_ENTRY_ID,
     create_mock_frigate_client,
+    create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
 )
 
@@ -240,3 +241,18 @@ async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
     integration = await async_get_integration(hass, DOMAIN)
     assert integration.version in caplog.text
     assert "This is a custom integration" in caplog.text
+
+
+async def test_entry_remove_old_image_height_option(hass: HomeAssistant) -> None:
+    """Test cleanup of old image height option."""
+
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 42}
+    )
+
+    await setup_mock_frigate_config_entry(hass, config_entry)
+
+    assert (
+        CONF_CAMERA_STATIC_IMAGE_HEIGHT
+        not in hass.config_entries.async_get_entry(config_entry.entry_id).options
+    )

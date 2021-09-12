@@ -30,7 +30,6 @@ from homeassistant.const import (
     HTTP_UNAUTHORIZED,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.setup import async_setup_component
 
 from . import (
     TEST_CONFIG,
@@ -98,7 +97,6 @@ async def hass_client_local_frigate(
     hass: HomeAssistant, hass_client: Any, aiohttp_server: Any
 ) -> Any:
     """Point the integration at a local fake Frigate server."""
-    await async_setup_component(hass, "http", {"http": {}})
 
     async def handler(request: web.Request) -> web.Response:
         for header in (
@@ -310,11 +308,12 @@ async def test_notifications_proxy_other(
     assert resp.status == HTTP_NOT_FOUND
 
 
+@pytest.mark.allow_proxy
 async def test_headers(
+    hass: Any,
     hass_client_local_frigate: Any,
 ) -> None:
-    """Test notification clip."""
-
+    """Test proxy headers are added and respected."""
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg",
         headers={hdrs.CONTENT_ENCODING: "foo"},
@@ -323,7 +322,7 @@ async def test_headers(
 
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg",
-        headers={hdrs.X_FORWARDED_FOR: "forwarded_for"},
+        headers={hdrs.X_FORWARDED_FOR: "1.2.3.4"},
     )
     assert resp.status == HTTP_OK
 

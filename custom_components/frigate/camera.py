@@ -28,9 +28,7 @@ from . import (
 )
 from .const import (
     ATTR_CONFIG,
-    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
-    DEFAULT_CAMERA_STATIC_IMAGE_HEIGHT,
     DOMAIN,
     NAME,
     STATE_DETECTED,
@@ -122,18 +120,16 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
             return 0
         return cast(int, SUPPORT_STREAM)
 
-    async def async_camera_image(self) -> bytes:
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
         """Return bytes of camera image."""
         websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
-
-        height = self._config_entry.options.get(
-            CONF_CAMERA_STATIC_IMAGE_HEIGHT, DEFAULT_CAMERA_STATIC_IMAGE_HEIGHT
-        )
 
         image_url = str(
             URL(self._url)
             / f"api/{self._cam_name}/latest.jpg"
-            % ({"h": height} if height > 0 else {})
+            % ({"h": height} if height is not None and height > 0 else {})
         )
 
         with async_timeout.timeout(10):
