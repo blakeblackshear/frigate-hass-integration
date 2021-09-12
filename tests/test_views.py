@@ -123,7 +123,13 @@ async def hass_client_local_frigate(
         ):
             assert header in request.headers
 
+    async def ws_qs_echo_handler(request: web.Request) -> web.WebSocketResponse:
+        """Verify the query string and act as echo handler."""
+        assert request.query["key"] == "value"
+        return await ws_echo_handler(request)
+
     async def ws_echo_handler(request: web.Request) -> web.WebSocketResponse:
+        """Act as echo handler."""
         _assert_expected_headers(request, allow_ws=True)
 
         ws = web.WebSocketResponse()
@@ -150,6 +156,7 @@ async def hass_client_local_frigate(
             web.get("/api/events/event_id/snapshot.jpg", handler),
             web.get("/api/events/event_id/clip.mp4", handler),
             web.get("/live/front_door", ws_echo_handler),
+            web.get("/live/querystring", ws_qs_echo_handler),
         ],
     )
 
@@ -529,67 +536,68 @@ async def test_jsmpeg_text_binary(
     ) as ws:
         # Test sending text data.
         result = await asyncio.gather(
-            hass.async_create_task(ws.send_str("hello!")),
-            hass.async_create_task(ws.receive()),
+            ws.send_str("hello!"),
+            ws.receive(),
         )
         assert result[1].type == aiohttp.WSMsgType.TEXT
         assert result[1].data == "hello!"
 
         # Test sending binary data.
         result = await asyncio.gather(
-            hass.async_create_task(ws.send_bytes(b"\x00\x01")),
-            hass.async_create_task(ws.receive()),
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
         )
 
         assert result[1].type == aiohttp.WSMsgType.BINARY
         assert result[1].data == b"\x00\x01"
 
 
-async def test_jsmpeg_frame_type_close(
+async def test_jsmpeg_frame_type_ping_pong(
     hass_client_local_frigate: Any,
 ) -> None:
-    """Test JSMPEG proxying handles close frames."""
+    """Test JSMPEG proxying handles ping-pong."""
 
-    mock_receive_iter = AsyncMock(
-        side_effect=[
-            aiohttp.WSMessage(aiohttp.WSMsgType.CLOSE, "", ""),
-            StopAsyncIteration,
-        ]
-    )
+    async with hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+    ) as ws:
+        await ws.ping()
 
-    with patch(
-        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.__anext__",
-        new=mock_receive_iter,
-    ):
-        async with hass_client_local_frigate.ws_connect(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
-        ) as ws:
-            await ws.receive()
+        # Push some data through after the ping.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
 
 
-async def test_jsmpeg_frame_type_error(
+async def test_ws_proxy_specify_protocol(
     hass_client_local_frigate: Any,
-    caplog: Any,
 ) -> None:
-    """Test JSMPEG proxying handles error frames."""
+    """Test websocket proxy handles the SEC_WEBSOCKET_PROTOCOL header."""
 
-    mock_receive_iter = AsyncMock(
-        side_effect=[
-            aiohttp.WSMessage(aiohttp.WSMsgType.ERROR, "", ""),
-            StopAsyncIteration,
-        ]
+    ws = await hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door",
+        headers={hdrs.SEC_WEBSOCKET_PROTOCOL: "foo,bar"},
     )
+    assert ws
+    await ws.close()
 
-    with patch(
-        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.__anext__",
-        new=mock_receive_iter,
-    ):
-        async with hass_client_local_frigate.ws_connect(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
-        ) as ws:
-            await ws.receive()
 
-    assert "Websocket connection encountered unexpected error" in caplog.text
+async def test_ws_proxy_query_string(
+    hass_client_local_frigate: Any,
+) -> None:
+    """Test websocket proxy passes on the querystring."""
+
+    async with hass_client_local_frigate.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/querystring?key=value",
+    ) as ws:
+        result = await asyncio.gather(
+            ws.send_str("hello!"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.TEXT
+        assert result[1].data == "hello!"
 
 
 async def test_jsmpeg_connection_reset(

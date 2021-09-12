@@ -34,8 +34,6 @@ from homeassistant.core import HomeAssistant
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
-WEBSOCKET_HEARTBEAT_SECS = 60.0
-
 
 def get_default_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
     """Get the default Frigate config entry.
@@ -81,6 +79,10 @@ def get_frigate_instance_id_for_config_entry(
 
     config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
     return get_frigate_instance_id(config) if config else None
+
+
+# These proxies are inspired by:
+#  - https://github.com/home-assistant/supervisor/blob/main/supervisor/api/ingress.py
 
 
 class ProxyView(HomeAssistantView):  # type: ignore[misc]
@@ -299,16 +301,11 @@ class WebsocketProxyView(ProxyView):
                     await ws_out.send_str(msg.data)
                 elif msg.type == aiohttp.WSMsgType.BINARY:
                     await ws_out.send_bytes(msg.data)
-                elif msg.type == aiohttp.WSMsgType.ERROR:
-                    _LOGGER.warn(
-                        f"Websocket connection encountered unexpected error: {msg}"
-                    )
-                    return
-                elif msg.type == aiohttp.WSMsgType.CLOSE:
-                    await ws_in.close()
-                    return
+                elif msg.type == aiohttp.WSMsgType.PING:
+                    await ws_out.ping()
+                elif msg.type == aiohttp.WSMsgType.PONG:
+                    await ws_out.pong()
             except ConnectionResetError:
-                await ws_in.close()
                 return
 
     async def _handle_request(
@@ -331,32 +328,40 @@ class WebsocketProxyView(ProxyView):
         if not full_path:
             return web.Response(status=HTTP_NOT_FOUND)
 
-        url = URL(config_entry.data[CONF_URL]) / full_path
-        ws_url = str(url.with_scheme("wss" if url.scheme == "https" else "ws"))
-
-        ws_to_user = web.WebSocketResponse(heartbeat=WEBSOCKET_HEARTBEAT_SECS)
-        await ws_to_user.prepare(request)
-
-        hass = request.app[KEY_HASS]
-        async with self._websession.ws_connect(
-            ws_url,
-            method=request.method,
-            heartbeat=WEBSOCKET_HEARTBEAT_SECS,
-            headers=_init_header(request),
-        ) as ws_to_frigate:
-            tasks = [
-                hass.async_create_task(self._proxy_msgs(ws_to_frigate, ws_to_user)),
-                hass.async_create_task(self._proxy_msgs(ws_to_user, ws_to_frigate)),
+        req_protocols = []
+        if hdrs.SEC_WEBSOCKET_PROTOCOL in request.headers:
+            req_protocols = [
+                str(proto.strip())
+                for proto in request.headers[hdrs.SEC_WEBSOCKET_PROTOCOL].split(",")
             ]
 
-            await asyncio.wait(tasks, return_when=asyncio.tasks.FIRST_COMPLETED)
+        ws_to_user = web.WebSocketResponse(
+            protocols=req_protocols, autoclose=False, autoping=False
+        )
+        await ws_to_user.prepare(request)
 
-            for task in tasks:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
+        # Preparing
+        url = str(URL(config_entry.data[CONF_URL]) / full_path)
+        source_header = _init_header(request)
+
+        # Support GET query
+        if request.query_string:
+            url = f"{url}?{request.query_string}"
+
+        async with self._websession.ws_connect(
+            url,
+            headers=source_header,
+            protocols=req_protocols,
+            autoclose=False,
+            autoping=False,
+        ) as ws_to_frigate:
+            await asyncio.wait(
+                [
+                    self._proxy_msgs(ws_to_frigate, ws_to_user),
+                    self._proxy_msgs(ws_to_user, ws_to_frigate),
+                ],
+                return_when=asyncio.tasks.FIRST_COMPLETED,
+            )
         return ws_to_user
 
 
