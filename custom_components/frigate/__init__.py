@@ -35,7 +35,7 @@ try:
     from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
         ReceiveMessage,
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     from homeassistant.components.mqtt.models import (  # pylint: disable=no-name-in-module  # pragma: no cover
         Message as ReceiveMessage,
     )
@@ -45,6 +45,7 @@ from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_COORDINATOR,
+    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,
@@ -166,9 +167,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ATTR_MODEL: model,
     }
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
-
     # Cleanup old clips switch (<v0.9.0) if it exists.
     entity_registry = er.async_get(hass)
     for camera in config["cameras"].keys():
@@ -180,6 +178,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         if entity_id:
             entity_registry.async_remove(entity_id)
+
+    # Remove old `camera_image_height` option.
+    if CONF_CAMERA_STATIC_IMAGE_HEIGHT in entry.options:
+        new_options = entry.options.copy()
+        new_options.pop(CONF_CAMERA_STATIC_IMAGE_HEIGHT)
+        hass.config_entries.async_update_entry(entry, options=new_options)
+
+    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
     return True
 
