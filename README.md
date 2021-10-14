@@ -39,7 +39,7 @@ For manual installation for advanced users, copy `custom_components/frigate` to
 your `custom_components` folder in Home Assistant.
 
 Please visit the [main Frigate
-documentation](https://blakeblackshear.github.io/frigate/usage/home-assistant/)
+documentation](https://docs.frigate.video/integrations/home-assistant/)
 for full installation instructions of this integration.
 
 ### Media Browsing
@@ -54,4 +54,4 @@ There is also a [companion Lovelace card](https://github.com/dermotduffy/frigate
 
 ## Documentation
 
-For full usage instructions, please see the [central Frigate documentation](https://blakeblackshear.github.io/frigate/usage/home-assistant/).
+For full usage instructions, please see the [central Frigate documentation](https://docs.frigate.video/integrations/home-assistant/).
