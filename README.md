@@ -26,7 +26,7 @@ Provides the following:
 
 ## Installation
 
-Easiest install is via HACS:
+Easiest install is via [HACS](https://hacs.xyz/):
 
 `HACS -> Explore & Add Repositories -> Frigate`
 
