@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import copy
 from datetime import timedelta
+from http import HTTPStatus
 import logging
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -23,14 +24,7 @@ from custom_components.frigate.const import (
 from homeassistant.components.http.auth import async_sign_path, setup_auth
 from homeassistant.components.http.const import KEY_AUTHENTICATED
 from homeassistant.components.http.forwarded import async_setup_forwarded
-from homeassistant.const import (
-    CONF_URL,
-    HTTP_BAD_REQUEST,
-    HTTP_FORBIDDEN,
-    HTTP_NOT_FOUND,
-    HTTP_OK,
-    HTTP_UNAUTHORIZED,
-)
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
 from . import (
@@ -177,7 +171,7 @@ async def test_vod_manifest_proxy(
     """Test vod manifest."""
 
     resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_vod_segment_proxy(
@@ -199,7 +193,7 @@ async def test_vod_segment_proxy(
     )
 
     resp = await hass_client_local_frigate.get(signed_path)
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_vod_segment_proxy_unauthorized(
@@ -212,7 +206,7 @@ async def test_vod_segment_proxy_unauthorized(
 
     # No secret set
     resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
-    assert resp.status == HTTP_UNAUTHORIZED
+    assert resp.status == HTTPStatus.UNAUTHORIZED
 
     setup_auth(hass, app)
 
@@ -226,7 +220,7 @@ async def test_vod_segment_proxy_unauthorized(
 
     # No signature
     resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
-    assert resp.status == HTTP_UNAUTHORIZED
+    assert resp.status == HTTPStatus.UNAUTHORIZED
 
     # Wrong signature
     resp = await hass_client_local_frigate.get(
@@ -237,7 +231,7 @@ async def test_vod_segment_proxy_unauthorized(
     resp = await hass_client_local_frigate.get(
         signed_path.replace("/api/frigate/", "/api/frigate/mod/")
     )
-    assert resp.status == HTTP_UNAUTHORIZED
+    assert resp.status == HTTPStatus.UNAUTHORIZED
 
 
 async def test_snapshot_proxy_view_success(
@@ -246,10 +240,10 @@ async def test_snapshot_proxy_view_success(
     """Test straightforward snapshot requests."""
 
     resp = await hass_client_local_frigate.get("/api/frigate/clips/present")
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     resp = await hass_client_local_frigate.get("/api/frigate/clips/not_present")
-    assert resp.status == HTTP_NOT_FOUND
+    assert resp.status == HTTPStatus.NOT_FOUND
 
 
 async def test_snapshot_proxy_view_write_error(
@@ -303,7 +297,7 @@ async def test_notifications_proxy_view_thumbnail(
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_view_snapshot(
@@ -314,7 +308,7 @@ async def test_notifications_proxy_view_snapshot(
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/snapshot.jpg"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_view_clip(
@@ -325,7 +319,7 @@ async def test_notifications_proxy_view_clip(
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/camera/clip.mp4"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_other(
@@ -336,7 +330,7 @@ async def test_notifications_proxy_other(
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/camera/not_present"
     )
-    assert resp.status == HTTP_NOT_FOUND
+    assert resp.status == HTTPStatus.NOT_FOUND
 
 
 @pytest.mark.allow_proxy
@@ -349,13 +343,13 @@ async def test_headers(
         "/api/frigate/notifications/event_id/thumbnail.jpg",
         headers={hdrs.CONTENT_ENCODING: "foo"},
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg",
         headers={hdrs.X_FORWARDED_FOR: "1.2.3.4"},
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_snapshots_with_frigate_instance_id(
@@ -371,18 +365,18 @@ async def test_snapshots_with_frigate_instance_id(
     resp = await hass_client_local_frigate.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/present"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
     resp = await hass_client_local_frigate.get(
         "/api/frigate/NOT_A_REAL_ID/clips/present"
     )
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
     resp = await hass_client_local_frigate.get("/api/frigate/clips/present")
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_vod_with_frigate_instance_id(
@@ -398,18 +392,18 @@ async def test_vod_with_frigate_instance_id(
     resp = await hass_client_local_frigate.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/manifest.m3u8"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
     resp = await hass_client_local_frigate.get(
         "/api/frigate/NOT_A_REAL_ID/vod/present/manifest.m3u8"
     )
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
     resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_vod_segment_with_frigate_instance_id(
@@ -435,7 +429,7 @@ async def test_vod_segment_with_frigate_instance_id(
 
     # A Frigate instance id is specified.
     resp = await hass_client_local_frigate.get(signed_path)
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
     signed_path = async_sign_path(
@@ -445,7 +439,7 @@ async def test_vod_segment_with_frigate_instance_id(
         timedelta(seconds=5),
     )
     resp = await hass_client_local_frigate.get(signed_path)
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
@@ -456,7 +450,7 @@ async def test_vod_segment_with_frigate_instance_id(
         timedelta(seconds=5),
     )
     resp = await hass_client_local_frigate.get(signed_path)
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_notifications_with_frigate_instance_id(
@@ -473,20 +467,20 @@ async def test_notifications_with_frigate_instance_id(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}"
         "/notifications/event_id/snapshot.jpg"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
     resp = await hass_client_local_frigate.get(
         "/api/frigate/NOT_A_REAL_ID/notifications/event_id/snapshot.jpg"
     )
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
     resp = await hass_client_local_frigate.get(
         "/api/frigate/notifications/event_id/snapshot.jpg"
     )
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_notifications_with_disabled_option(
@@ -517,13 +511,13 @@ async def test_notifications_with_disabled_option(
     resp = await hass_client_local_frigate.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/notifications/event_id/snapshot.jpg"
     )
-    assert resp.status == HTTP_OK
+    assert resp.status == HTTPStatus.OK
 
     # Private instance will not proxy notification data.
     resp = await hass_client_local_frigate.get(
         "/api/frigate/private_id/notifications/event_id/snapshot.jpg"
     )
-    assert resp.status == HTTP_FORBIDDEN
+    assert resp.status == HTTPStatus.FORBIDDEN
 
 
 async def test_jsmpeg_text_binary(
@@ -638,7 +632,7 @@ async def test_ws_proxy_bad_instance_id(
     resp = await hass_client_local_frigate.get(
         "/api/frigate/NOT_A_REAL_ID/jsmpeg/front_door"
     )
-    assert resp.status == HTTP_BAD_REQUEST
+    assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_ws_proxy_forbidden(
@@ -659,7 +653,7 @@ async def test_ws_proxy_forbidden(
         resp = await hass_client_local_frigate.get(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
-        assert resp.status == HTTP_FORBIDDEN
+        assert resp.status == HTTPStatus.FORBIDDEN
 
 
 async def test_ws_proxy_missing_path(
@@ -678,4 +672,4 @@ async def test_ws_proxy_missing_path(
         resp = await hass_client_local_frigate.get(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
-        assert resp.status == HTTP_NOT_FOUND
+        assert resp.status == HTTPStatus.NOT_FOUND

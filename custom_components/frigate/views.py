@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from http import HTTPStatus
 from ipaddress import ip_address
 import logging
 from typing import Any, Optional, cast
@@ -24,12 +25,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.components.http.auth import DATA_SIGN_SECRET, SIGN_QUERY_PARAM
 from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_URL,
-    HTTP_BAD_REQUEST,
-    HTTP_FORBIDDEN,
-    HTTP_NOT_FOUND,
-)
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -136,14 +132,14 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         """Handle route for request."""
         config_entry = self._get_config_entry_for_request(request, frigate_instance_id)
         if not config_entry:
-            return web.Response(status=HTTP_BAD_REQUEST)
+            return web.Response(status=HTTPStatus.BAD_REQUEST)
 
         if not self._permit_request(request, config_entry):
-            return web.Response(status=HTTP_FORBIDDEN)
+            return web.Response(status=HTTPStatus.FORBIDDEN)
 
         full_path = self._create_path(path=path, **kwargs)
         if not full_path:
-            return web.Response(status=HTTP_NOT_FOUND)
+            return web.Response(status=HTTPStatus.NOT_FOUND)
 
         url = str(URL(config_entry.data[CONF_URL]) / full_path)
         data = await request.read()
@@ -319,14 +315,14 @@ class WebsocketProxyView(ProxyView):
 
         config_entry = self._get_config_entry_for_request(request, frigate_instance_id)
         if not config_entry:
-            return web.Response(status=HTTP_BAD_REQUEST)
+            return web.Response(status=HTTPStatus.BAD_REQUEST)
 
         if not self._permit_request(request, config_entry):
-            return web.Response(status=HTTP_FORBIDDEN)
+            return web.Response(status=HTTPStatus.FORBIDDEN)
 
         full_path = self._create_path(path=path, **kwargs)
         if not full_path:
-            return web.Response(status=HTTP_NOT_FOUND)
+            return web.Response(status=HTTPStatus.NOT_FOUND)
 
         req_protocols = []
         if hdrs.SEC_WEBSOCKET_PROTOCOL in request.headers:
