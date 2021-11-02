@@ -38,6 +38,7 @@ ATTR_CLIENT_ID = "client_id"
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"
 CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
 CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
+CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS = "expire_notifications_after_mins"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
