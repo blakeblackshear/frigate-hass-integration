@@ -9,6 +9,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     CONF_MEDIA_BROWSER_ENABLE,
+    CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
@@ -175,12 +176,14 @@ async def test_options_advanced(hass: HomeAssistant) -> None:
             user_input={
                 CONF_RTMP_URL_TEMPLATE: "http://moo",
                 CONF_NOTIFICATION_PROXY_ENABLE: False,
+                CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS: 50
                 CONF_MEDIA_BROWSER_ENABLE: False,
             },
         )
         await hass.async_block_till_done()
         assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
         assert result["data"][CONF_RTMP_URL_TEMPLATE] == "http://moo"
+        assert result["data"][CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS] == 50
         assert not result["data"][CONF_NOTIFICATION_PROXY_ENABLE]
         assert not result["data"][CONF_MEDIA_BROWSER_ENABLE]
 
