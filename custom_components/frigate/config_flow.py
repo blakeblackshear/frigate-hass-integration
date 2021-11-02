@@ -5,6 +5,7 @@ import logging
 from typing import Any, Dict, cast
 
 import voluptuous as vol
+from voluptuous.validators import All, Range
 from yarl import URL
 
 from homeassistant import config_entries
@@ -16,6 +17,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
     CONF_NOTIFICATION_PROXY_ENABLE,
+    CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
     CONF_RTMP_URL_TEMPLATE,
     DEFAULT_HOST,
     DOMAIN,
@@ -147,6 +149,13 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
                     True,
                 ),
             ): bool,
+            vol.Optional(
+                CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
+                default=self._config_entry.options.get(
+                    CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
+                    0,
+                ),
+            ): All(int, Range(min=0)),
         }
 
         return cast(
