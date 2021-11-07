@@ -23,7 +23,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
 from homeassistant.core import Config, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -115,6 +115,16 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
     return camera_objects.union(zone_objects)
 
 
+def get_cameras_and_zones(config: dict[str, Any]) -> set[str]:
+    """Get cameras and zones."""
+    cameras_zones = set()
+    for camera in config.get("cameras", {}).keys():
+        cameras_zones.add(camera)
+        for zone in config["cameras"][camera].get("zones", {}).keys():
+            cameras_zones.add(zone)
+    return cameras_zones
+
+
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
     integration = await async_get_integration(hass, DOMAIN)
@@ -168,6 +178,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ATTR_CONFIG: config,
         ATTR_MODEL: model,
     }
+
+    # Remove old devices associated with cameras that have since been removed
+    # from the Frigate server, keeping the 'master' device for this config
+    # entry.
+    current_devices: set[tuple[str, str]] = set({get_frigate_device_identifier(entry)})
+    for item in get_cameras_and_zones(config):
+        current_devices.add(get_frigate_device_identifier(entry, item))
+
+    device_registry = dr.async_get(hass)
+    for device_entry in dr.async_entries_for_config_entry(
+        device_registry, entry.entry_id
+    ):
+        for identifier in device_entry.identifiers:
+            if identifier in current_devices:
+                break
+        else:
+            device_registry.async_remove_device(device_entry.id)
 
     # Cleanup old clips switch (<v0.9.0) if it exists.
     entity_registry = er.async_get(hass)
