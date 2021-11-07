@@ -310,16 +310,18 @@ async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:
         DOMAIN, "camera", bad_entity_unique_id
     )
 
-    # Entity: Ensure a valid camera remains
+    # Entity: Ensure an entity for a valid camera remains.
     assert entity_registry.async_get_entity_id(
         "camera",
         DOMAIN,
         get_frigate_entity_unique_id(config_entry.entry_id, "camera", "front_door"),
     )
 
-    # Entity: Ensure a valid zone remains
+    # Entity: Ensure an entity for a valid zone remains.
     assert entity_registry.async_get_entity_id(
-        "camera",
+        "sensor",
         DOMAIN,
-        get_frigate_entity_unique_id(config_entry.entry_id, "camera", "front_door"),
+        get_frigate_entity_unique_id(
+            config_entry.entry_id, "sensor_object_count", "steps_person"
+        ),
     )
