@@ -205,7 +205,9 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         """Return the name of the sensor."""
         return f"{get_friendly_name(self._cam_name)} {self._obj_name}".title()
 
-    async def async_camera_image(self) -> bytes | None:
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
         """Return image response."""
         return self._last_image
 
