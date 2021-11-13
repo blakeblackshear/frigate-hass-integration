@@ -55,7 +55,7 @@ CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
 CONF_PASSWORD = "password"
 CONF_PATH = "path"
 CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
-CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS = "expire_notifications_after_mins"
+CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS = "notification_proxy_expire_after_mins"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

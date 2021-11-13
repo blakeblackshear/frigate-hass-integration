@@ -18,7 +18,7 @@ from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
-    CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
     CONF_RTMP_URL_TEMPLATE,
     DEFAULT_HOST,
     DOMAIN,
@@ -158,9 +158,9 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
                 ),
             ): bool,
             vol.Optional(
-                CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
+                CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
                 default=self._config_entry.options.get(
-                    CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
+                    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
                     0,
                 ),
             ): All(int, Range(min=0)),

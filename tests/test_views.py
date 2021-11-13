@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import copy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, tzinfo
 from http import HTTPStatus
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import aiohttp
 from aiohttp import hdrs, web
@@ -18,7 +18,7 @@ from custom_components.frigate import views
 from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_MQTT,
-    CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
     CONF_NOTIFICATION_PROXY_ENABLE,
     DOMAIN,
 )
@@ -39,6 +39,18 @@ from . import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _get_fixed_datetime() -> datetime:
+    """Get a fixed-in-time datetime."""
+    datetime_today = Mock(wraps=datetime)
+    datetime_today.now = Mock(
+        return_value=datetime.fromtimestamp(1635807720, tz=timezone.utc)
+    )
+    return datetime_today
+
+
+TODAY = _get_fixed_datetime()
 
 
 class ClientErrorStreamResponse(web.StreamResponse):
@@ -544,6 +556,7 @@ async def test_notifications_with_disabled_option(
     )
     assert resp.status == HTTPStatus.FORBIDDEN
 
+
 async def test_notifications_with_no_expiration(
     hass_client_local_frigate: Any,
     hass: Any,
@@ -555,7 +568,7 @@ async def test_notifications_with_no_expiration(
     private_config_entry = create_mock_frigate_config_entry(
         hass,
         entry_id="private_id",
-        options={CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS: 0},
+        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 0},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
@@ -569,23 +582,14 @@ async def test_notifications_with_no_expiration(
     )
 
     # Fake time is 2021-11-01T19:02:00
-    with patch("custom_components.frigate.views.NotificationsProxyView._get_current_datetime",
-    return_value=datetime(2021, 11, 1, 19, 2, 00, 000000)):
-
-        # Old event id should be vended
+    with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
+        # Old event id should be served
         # Test event timestamp is 2020-01-01 00:00:00
         resp = await hass_client_local_frigate.get(
             f"/api/frigate/private_id/notifications/1577854800.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.OK
 
-async def test_get_current_datetime() -> None:
-    """Test datetime helper."""
-    datetime_1 = views.NotificationsProxyView._get_current_datetime()
-    datetime_2 = views.NotificationsProxyView._get_current_datetime()
-    assert isinstance(datetime_1, datetime)
-    assert isinstance(datetime_2, datetime)
-    assert datetime_1 <= datetime_2
 
 async def test_expired_notifications_are_not_served(
     hass_client_local_frigate: Any,
@@ -596,7 +600,7 @@ async def test_expired_notifications_are_not_served(
         hass,
         entry_id="private_id",
         # for this test, notifications expire after 5 minutes from the event
-        options={CONF_EXPIRE_NOTIFICATIONS_AFTER_MINS: 5},
+        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 5},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
@@ -610,24 +614,22 @@ async def test_expired_notifications_are_not_served(
     )
 
     # Fake time is 2021-11-01T19:02:00
-    with patch("custom_components.frigate.views.NotificationsProxyView._get_current_datetime",
-    return_value=datetime(2021, 11, 1, 19, 2, 00, 000000)):
-
-        # Well-formed, not expired events should be vended
+    with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
+        # Well-formed, not expired events should be served
         # Test event timestamp is 2021-11-01T19:00:00 - 2 minutes prior test (fake) time
         resp = await hass_client_local_frigate.get(
             f"/api/frigate/private_id/notifications/1635807600.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.OK
 
-        # Expired event ids should not be vended
+        # Expired event ids should not be served
         # Test event timestamp is 2021-11-01T18:55:59 - 6:01 minutes prior test (fake) time
         resp = await hass_client_local_frigate.get(
             f"/api/frigate/private_id/notifications/1635807359.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.FORBIDDEN
 
-        # Invalid event ids should not be vended
+        # Invalid event ids should not be served
         resp = await hass_client_local_frigate.get(
             f"/api/frigate/private_id/notifications/invalid.123456-random/snapshot.jpg"
         )
