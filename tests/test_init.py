@@ -7,12 +7,16 @@ from unittest.mock import AsyncMock, patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.frigate import (
+    get_frigate_device_identifier,
+    get_frigate_entity_unique_id,
+)
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import CONF_CAMERA_STATIC_IMAGE_HEIGHT, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.loader import async_get_integration
 
 from . import (
@@ -255,4 +259,69 @@ async def test_entry_remove_old_image_height_option(hass: HomeAssistant) -> None
     assert (
         CONF_CAMERA_STATIC_IMAGE_HEIGHT
         not in hass.config_entries.async_get_entry(config_entry.entry_id).options
+    )
+
+
+async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:
+    """Test that old devices (not on the Frigate server) are removed."""
+
+    config_entry = create_mock_frigate_config_entry(hass)
+
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+
+    # Create some random old devices/entity_ids and ensure they get cleaned up.
+    bad_device_id = "bad-device-id"
+    bad_entity_unique_id = "bad-entity-unique_id"
+    bad_device = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id, identifiers={(DOMAIN, bad_device_id)}
+    )
+    entity_registry.async_get_or_create(
+        domain=DOMAIN,
+        platform="camera",
+        unique_id=bad_entity_unique_id,
+        config_entry=config_entry,
+        device_id=bad_device.id,
+    )
+
+    config_entry = await setup_mock_frigate_config_entry(hass)
+    await hass.async_block_till_done()
+
+    # Device: Ensure the master device is still present.
+    assert device_registry.async_get_device(
+        {get_frigate_device_identifier(config_entry)}
+    )
+
+    # # Device: Ensure the old device is removed.
+    assert not device_registry.async_get_device({(DOMAIN, bad_device_id)})
+
+    # Device: Ensure a valid camera device is still present.
+    assert device_registry.async_get_device(
+        {get_frigate_device_identifier(config_entry, "front_door")}
+    )
+
+    # Device: Ensure a valid zone is still present.
+    assert device_registry.async_get_device(
+        {get_frigate_device_identifier(config_entry, "steps")}
+    )
+
+    # Entity: Ensure the old registered entity is removed.
+    assert not entity_registry.async_get_entity_id(
+        DOMAIN, "camera", bad_entity_unique_id
+    )
+
+    # Entity: Ensure an entity for a valid camera remains.
+    assert entity_registry.async_get_entity_id(
+        "camera",
+        DOMAIN,
+        get_frigate_entity_unique_id(config_entry.entry_id, "camera", "front_door"),
+    )
+
+    # Entity: Ensure an entity for a valid zone remains.
+    assert entity_registry.async_get_entity_id(
+        "sensor",
+        DOMAIN,
+        get_frigate_entity_unique_id(
+            config_entry.entry_id, "sensor_object_count", "steps_person"
+        ),
     )
