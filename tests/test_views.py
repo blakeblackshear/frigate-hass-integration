@@ -143,7 +143,6 @@ async def hass_client_local_frigate(
     server = await start_frigate_server(
         aiohttp_server,
         [
-            web.get("/clips/present", handler),
             web.get("/vod/present/manifest.m3u8", handler),
             web.get("/vod/present/segment.ts", handler),
             web.get("/api/events/event_id/thumbnail.jpg", handler),
@@ -238,11 +237,10 @@ async def test_snapshot_proxy_view_success(
     hass_client_local_frigate: Any,
 ) -> None:
     """Test straightforward snapshot requests."""
-
-    resp = await hass_client_local_frigate.get("/api/frigate/clips/present")
+    resp = await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
     assert resp.status == HTTPStatus.OK
 
-    resp = await hass_client_local_frigate.get("/api/frigate/clips/not_present")
+    resp = await hass_client_local_frigate.get("/api/frigate/snapshot/not_present")
     assert resp.status == HTTPStatus.NOT_FOUND
 
 
@@ -255,7 +253,7 @@ async def test_snapshot_proxy_view_write_error(
         "custom_components.frigate.views.web.StreamResponse",
         new=ClientErrorStreamResponse,
     ):
-        await hass_client_local_frigate.get("/api/frigate/clips/present")
+        await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
         assert "Stream error" in caplog.text
 
 
@@ -268,7 +266,7 @@ async def test_snapshot_proxy_view_connection_reset(
         "custom_components.frigate.views.web.StreamResponse",
         new=ConnectionResetStreamResponse,
     ):
-        await hass_client_local_frigate.get("/api/frigate/clips/present")
+        await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
         assert "Stream error" not in caplog.text
 
 
@@ -285,7 +283,7 @@ async def test_snapshot_proxy_view_read_error(
         "request",
         new=mock_request,
     ):
-        await hass_client_local_frigate.get("/api/frigate/clips/present")
+        await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
         assert "Reverse proxy error" in caplog.text
 
 
@@ -363,19 +361,19 @@ async def test_snapshots_with_frigate_instance_id(
 
     # A Frigate instance id is specified.
     resp = await hass_client_local_frigate.get(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/present"
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/snapshot/event_id"
     )
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
     resp = await hass_client_local_frigate.get(
-        "/api/frigate/NOT_A_REAL_ID/clips/present"
+        "/api/frigate/NOT_A_REAL_ID/snapshot/event_id"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
-    resp = await hass_client_local_frigate.get("/api/frigate/clips/present")
+    resp = await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
