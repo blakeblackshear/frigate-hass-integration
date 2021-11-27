@@ -45,7 +45,9 @@ def _get_fixed_datetime() -> datetime.datetime:
     """Get a fixed-in-time datetime."""
     datetime_today = Mock(wraps=datetime.datetime)
     datetime_today.now = Mock(
-        return_value=datetime.datetime(2021, 6, 4, 0, 0, tzinfo=datetime.timezone.utc)
+        return_value=datetime.datetime(
+            2021, 6, 4, 0, 0, 30, tzinfo=datetime.timezone.utc
+        )
     )
     return datetime_today
 
@@ -605,11 +607,11 @@ async def test_async_resolve_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event/snapshots/camera/snapshot"
+            "/event/snapshots/camera/event_id"
         ),
     )
     assert media == PlayMedia(
-        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/camera-snapshot.jpg",
+        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/snapshot/event_id",
         mime_type="image/jpg",
     )
 
@@ -1005,7 +1007,7 @@ async def test_event_search_identifier() -> None:
     # Event searches have no equivalent Frigate server path (searches result in
     # EventIdentifiers, that do have a Frigate server path).
     with pytest.raises(NotImplementedError):
-        identifier.get_frigate_server_path()
+        identifier.get_integration_proxy_path()
 
     # Invalid "after" time.
     assert (
@@ -1102,7 +1104,7 @@ async def test_recordings_identifier() -> None:
     identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04//front_door"
     identifier = RecordingIdentifier.from_str(identifier_in)
     assert identifier
-    assert identifier.get_frigate_server_path() == "vod/2021-06/04"
+    assert identifier.get_integration_proxy_path() == "vod/2021-06/04"
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
@@ -1265,3 +1267,130 @@ async def test_snapshots(hass: HomeAssistant) -> None:
         limit=50,
         has_snapshot=True,
     )
+
+
+async def test_media_types() -> None:
+    """Test FrigateMediaTypes."""
+    snapshots = FrigateMediaType("snapshots")
+    assert snapshots.mime_type == "image/jpg"
+    assert snapshots.media_class == "image"
+    assert snapshots.media_type == "image"
+    assert snapshots.extension == "jpg"
+
+    clips = FrigateMediaType("clips")
+    assert clips.mime_type == "application/x-mpegURL"
+    assert clips.media_class == "video"
+    assert clips.media_type == "video"
+    assert clips.extension == "m3u8"
+
+
+@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
+async def test_in_progress_event(hass: HomeAssistant) -> None:
+    """Verify in progress events are handled correctly."""
+    client = create_mock_frigate_client()
+    client.async_get_event_summary = AsyncMock(
+        return_value=[
+            {
+                "camera": "front_door",
+                "count": 1,
+                "day": "2021-06-04",
+                "label": "person",
+                "zones": [],
+            }
+        ]
+    )
+    client.async_get_events = AsyncMock(
+        return_value=[
+            {
+                "camera": "front_door",
+                # Event has not yet ended:
+                "end_time": None,
+                "false_positive": False,
+                "has_clip": True,
+                "has_snapshot": True,
+                "id": "1622764820.555377-55xy6j",
+                "label": "person",
+                # This is 10s before the value of TODAY:
+                "start_time": 1622764820.0,
+                "top_score": 0.7265625,
+                "zones": [],
+                "thumbnail": "thumbnail",
+            }
+        ]
+    )
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    media = await media_source.async_browse_media(
+        hass,
+        (
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+            "/event-search/snapshots/.this_month.2021-06-04.front_door.person"
+            "/1622764800/1622851200/front_door/person/"
+        ),
+    )
+
+    assert len(media.as_dict()["children"]) == 1
+
+    assert media.as_dict() == {
+        "media_content_id": (
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/event-search"
+            "/snapshots/.this_month.2021-06-04.front_door.person/1622764800"
+            "/1622851200/front_door/person/"
+        ),
+        "title": "This Month > 2021-06-04 > Front Door > Person (1)",
+        "media_class": "directory",
+        "media_content_type": "image",
+        "can_play": False,
+        "can_expand": True,
+        "children_media_class": "image",
+        "thumbnail": None,
+        "children": [
+            {
+                # Duration will be shown as 10s, since 10s has elapsed since
+                # this event started.
+                "title": "2021-06-04 00:00:20 [10s, Person 72%]",
+                "media_class": "image",
+                "media_content_type": "image",
+                "media_content_id": "media-source://frigate/frigate_client_id/event/snapshots/front_door/1622764820.555377-55xy6j",
+                "can_play": False,
+                "can_expand": False,
+                "children_media_class": None,
+                "thumbnail": "data:image/jpeg;base64,thumbnail",
+            }
+        ],
+    }
+
+
+async def test_bad_event(hass: HomeAssistant) -> None:
+    """Verify malformed events are handled correctly."""
+    client = create_mock_frigate_client()
+    client.async_get_events = AsyncMock(
+        return_value=[
+            {
+                "camera": "front_door",
+                "end_time": None,
+                # Events without a start_time are skipped.
+                "start_time": None,
+                "false_positive": False,
+                "has_clip": True,
+                "has_snapshot": True,
+                "id": "1622764820.555377-55xy6j",
+                "label": "person",
+                "top_score": 0.7265625,
+                "zones": [],
+                "thumbnail": "thumbnail",
+            }
+        ]
+    )
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    media = await media_source.async_browse_media(
+        hass,
+        (
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+            "/event-search/snapshots/.this_month.2021-06-04.front_door.person"
+            "/1622764800/1622851200/front_door/person/"
+        ),
+    )
+
+    assert len(media.as_dict()["children"]) == 0

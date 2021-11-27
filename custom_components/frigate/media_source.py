@@ -88,8 +88,8 @@ class Identifier:
         """Get the identifier type."""
         raise NotImplementedError
 
-    def get_frigate_server_path(self) -> str:
-        """Get the equivalent Frigate server path."""
+    def get_integration_proxy_path(self) -> str:
+        """Get the proxy (Home Assistant view) path for this identifier."""
         raise NotImplementedError
 
     @classmethod
@@ -214,12 +214,12 @@ class EventIdentifier(Identifier):
         """Get the identifier type."""
         return "event"
 
-    def get_frigate_server_path(self) -> str:
+    def get_integration_proxy_path(self) -> str:
         """Get the equivalent Frigate server path."""
         if self.frigate_media_type == FrigateMediaType.CLIPS:
             return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
         else:
-            return f"clips/{self.camera}-{self.id}.{self.frigate_media_type.extension}"
+            return f"snapshot/{self.id}"
 
     @property
     def mime_type(self) -> str:
@@ -433,8 +433,8 @@ class RecordingIdentifier(Identifier):
         """Get the identifier type."""
         return "recordings"
 
-    def get_frigate_server_path(self) -> str:
-        """Get the equivalent Frigate server path."""
+    def get_integration_proxy_path(self) -> str:
+        """Get the integration path that will proxy this identifier."""
 
         # The attributes of this class represent a path that the recording can
         # be retrieved from the Frigate server. If there are holes in the path
@@ -545,7 +545,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
         if identifier:
-            server_path = identifier.get_frigate_server_path()
+            server_path = identifier.get_integration_proxy_path()
             return PlayMedia(
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,
@@ -654,7 +654,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             )
 
         if isinstance(identifier, RecordingIdentifier):
-            path = identifier.get_frigate_server_path()
+            path = identifier.get_integration_proxy_path()
             try:
                 recordings_folder = await self._get_client(identifier).async_get_path(
                     path
@@ -781,6 +781,21 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> BrowseMediaSource:
         children = []
         for event in events:
+            start_time = event.get("start_time")
+            end_time = event.get("end_time")
+            if start_time is None:
+                continue
+
+            if end_time is None:
+                # Events that are in progress will not yet have an end_time, so
+                # the duration is shown as the current time minus the start
+                # time.
+                duration = int(
+                    dt.datetime.now(DEFAULT_TIME_ZONE).timestamp() - start_time
+                )
+            else:
+                duration = int(end_time - start_time)
+
             children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -792,7 +807,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     ),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
-                    title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{int(event['end_time']-event['start_time'])}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
+                    title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
                     thumbnail=f"data:image/jpeg;base64,{event['thumbnail']}",
