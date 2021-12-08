@@ -95,8 +95,7 @@ async def hass_client_local_frigate(
     """Point the integration at a local fake Frigate server."""
 
     def _assert_expected_headers(request: web.Request, allow_ws: bool = False) -> None:
-        for header in (hdrs.CONTENT_ENCODING,):
-            assert header not in request.headers
+        assert hdrs.CONTENT_ENCODING not in request.headers
 
         if not allow_ws:
             for header in (
