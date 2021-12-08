@@ -51,6 +51,7 @@ async def allow_proxy(request: Any, hass: Any) -> None:
 
 @pytest.fixture(autouse=True)
 def frigate_fixture(
+    socket_enabled: Any,
     allow_proxy: Any,
     skip_notifications: Any,
     enable_custom_integrations: Any,  # noqa: F811
