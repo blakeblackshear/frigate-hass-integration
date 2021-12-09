@@ -126,7 +126,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the device on."""
-        async_publish(
+        await async_publish(
             self.hass,
             self._command_topic,
             "ON",
@@ -136,7 +136,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the device off."""
-        async_publish(
+        await async_publish(
             self.hass,
             self._command_topic,
             "OFF",

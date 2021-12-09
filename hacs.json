@@ -9,5 +9,5 @@
         "switch"
     ],
     "iot_class": "Local Push",
-    "homeassistant": "0.115.0"
+    "homeassistant": "2021.12.0b0"
 }
