@@ -65,6 +65,7 @@ SCAN_INTERVAL = timedelta(seconds=5)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
+
 # Typing notes:
 # - The HomeAssistant library does not provide usable type hints for custom
 #   components. Certain type checks (e.g. decorators and class inheritance) need
@@ -74,7 +75,7 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 def get_frigate_device_identifier(
-    entry: ConfigEntry, camera_name: str | None = None
+        entry: ConfigEntry, camera_name: str | None = None
 ) -> tuple[str, str]:
     """Get a device identifier."""
     if camera_name:
@@ -84,7 +85,7 @@ def get_frigate_device_identifier(
 
 
 def get_frigate_entity_unique_id(
-    config_entry_id: str, type_name: str, name: str
+        config_entry_id: str, type_name: str, name: str
 ) -> str:
     """Get the unique_id for a Frigate entity."""
     return f"{config_entry_id}:{type_name}:{name}"
@@ -111,8 +112,8 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
     zone_objects = set()
     for cam_name, obj in camera_objects:
         for zone_name in config["cameras"][cam_name]["zones"]:
-          if obj in config["cameras"[cam_name]["zones"][zone_name]["objects"]:
-            zone_objects.add((zone_name, obj))
+            if obj in config["cameras"][cam_name]["zones"][zone_name]["objects"]:
+                zone_objects.add((zone_name, obj))
     return camera_objects.union(zone_objects)
 
 
@@ -189,7 +190,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     device_registry = dr.async_get(hass)
     for device_entry in dr.async_entries_for_config_entry(
-        device_registry, entry.entry_id
+            device_registry, entry.entry_id
     ):
         for identifier in device_entry.identifiers:
             if identifier in current_devices:
@@ -344,10 +345,10 @@ class FrigateMQTTEntity(FrigateEntity):
     """Base class for MQTT-based Frigate entities."""
 
     def __init__(
-        self,
-        config_entry: ConfigEntry,
-        frigate_config: dict[str, Any],
-        state_topic_config: dict[str, Any],
+            self,
+            config_entry: ConfigEntry,
+            frigate_config: dict[str, Any],
+            state_topic_config: dict[str, Any],
     ) -> None:
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
