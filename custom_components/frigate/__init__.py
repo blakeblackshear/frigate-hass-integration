@@ -65,6 +65,7 @@ SCAN_INTERVAL = timedelta(seconds=5)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
+
 # Typing notes:
 # - The HomeAssistant library does not provide usable type hints for custom
 #   components. Certain type checks (e.g. decorators and class inheritance) need
@@ -111,7 +112,11 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
     zone_objects = set()
     for cam_name, obj in camera_objects:
         for zone_name in config["cameras"][cam_name]["zones"]:
-            zone_objects.add((zone_name, obj))
+            zone_name_objects = config["cameras"][cam_name]["zones"][zone_name].get(
+                "objects"
+            )
+            if not zone_name_objects or obj in zone_name_objects:
+                zone_objects.add((zone_name, obj))
     return camera_objects.union(zone_objects)
 
 
