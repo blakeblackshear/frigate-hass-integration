@@ -112,7 +112,8 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
     zone_objects = set()
     for cam_name, obj in camera_objects:
         for zone_name in config["cameras"][cam_name]["zones"]:
-            if obj in config["cameras"][cam_name]["zones"][zone_name]["objects"]:
+            zone_name_objects = config["cameras"][cam_name]["zones"][zone_name]["objects"]
+            if not zone_name_objects or obj in zone_name_objects:
                 zone_objects.add((zone_name, obj))
     return camera_objects.union(zone_objects)
 
