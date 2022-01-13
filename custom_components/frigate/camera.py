@@ -125,7 +125,7 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
     @property
     def state(self) -> str:
         """Return the camera state."""
-        if self._camera_config["record"]["enabled"]:
+        if self._camera_config.get("record", {}).get("enabled"):
             return STATE_RECORDING
         return STATE_IDLE
 
