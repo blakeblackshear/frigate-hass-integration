@@ -33,7 +33,6 @@ from .const import (
     NAME,
     STATE_DETECTED,
     STATE_IDLE,
-    STATE_RECORDING,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -71,6 +70,7 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
         self._camera_config = camera_config
         self._url = config_entry.data[CONF_URL]
         self._stream_enabled = self._camera_config["rtmp"]["enabled"]
+        self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
 
         streaming_template = config_entry.options.get(
             CONF_RTMP_URL_TEMPLATE, ""
@@ -120,13 +120,6 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
         if not self._stream_enabled:
             return 0
         return cast(int, SUPPORT_STREAM)
-
-    @property
-    def state(self) -> str:
-        """Return the camera state."""
-        if self._camera_config.get("record", {}).get("enabled"):
-            return STATE_RECORDING
-        return STATE_IDLE
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
