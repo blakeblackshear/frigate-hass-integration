@@ -9,7 +9,12 @@ import async_timeout
 from jinja2 import Template
 from yarl import URL
 
-from homeassistant.components.camera import SUPPORT_STREAM, STATE_IDLE, STATE_RECORDING, Camera
+from homeassistant.components.camera import (
+    STATE_IDLE,
+    STATE_RECORDING,
+    SUPPORT_STREAM,
+    Camera,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -124,7 +129,7 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
     @property
     def state(self) -> str:
         """Return the camera state"""
-        if self._camera_config["recordings"]["enabled"]:
+        if self._camera_config["record"]["enabled"]:
             return STATE_RECORDING
         return STATE_IDLE
 
