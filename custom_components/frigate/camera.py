@@ -33,7 +33,6 @@ from .const import (
     NAME,
     STATE_DETECTED,
     STATE_IDLE,
-    STATE_RECORDING,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -121,13 +120,6 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
         if not self._attr_is_streaming:
             return 0
         return cast(int, SUPPORT_STREAM)
-
-    @property
-    def state(self) -> str:
-        """Return the camera state."""
-        if self._camera_config.get("record", {}).get("enabled"):
-            return STATE_RECORDING
-        return STATE_IDLE
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None

@@ -56,5 +56,4 @@ https://github.com/blakeblackshear/frigate-hass-integration/issues
 
 # States
 STATE_DETECTED = "active"
-STATE_RECORDING = "recording"
 STATE_IDLE = "idle"
