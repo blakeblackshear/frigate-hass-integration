@@ -69,7 +69,7 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
         self._cam_name = cam_name
         self._camera_config = camera_config
         self._url = config_entry.data[CONF_URL]
-        self._stream_enabled = self._camera_config.get("rtmp", {}).get("enabled")
+        self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
 
         streaming_template = config_entry.options.get(
@@ -117,7 +117,7 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
     @property
     def supported_features(self) -> int:
         """Return supported features of this camera."""
-        if not self._stream_enabled:
+        if not self._attr_is_streaming:
             return 0
         return cast(int, SUPPORT_STREAM)
 
