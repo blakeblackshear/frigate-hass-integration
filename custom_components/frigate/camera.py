@@ -139,7 +139,7 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
 
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
-        if not self._stream_enabled:
+        if not self._attr_is_streaming:
             return None
         return self._stream_source
 
