@@ -38,7 +38,7 @@ async def test_frigate_camera_setup(
 
     entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert entity_state
-    assert entity_state.state == "Streaming"
+    assert entity_state.state == "streaming"
     assert entity_state.attributes["supported_features"] == 2
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
