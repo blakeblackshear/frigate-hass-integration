@@ -85,7 +85,7 @@ async def test_switch_turn_on(hass: HomeAssistant, mqtt_mock: Any) -> None:
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/detect/set", "ON", 0, True
+        "frigate/front_door/detect/set", "ON", 0, False
     )
 
 
@@ -103,7 +103,7 @@ async def test_switch_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/detect/set", "OFF", 0, True
+        "frigate/front_door/detect/set", "OFF", 0, False
     )
 
 
