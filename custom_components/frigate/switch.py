@@ -131,7 +131,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             self._command_topic,
             "ON",
             0,
-            True,
+            False,
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -141,7 +141,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             self._command_topic,
             "OFF",
             0,
-            True,
+            False,
         )
 
     @property
