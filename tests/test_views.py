@@ -182,9 +182,9 @@ async def test_vod_segment_proxy(
     refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
     signed_path = async_sign_path(
         hass,
-        refresh_token.id,
         "/api/frigate/vod/present/segment.ts",
         timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
     )
 
     resp = await hass_client_local_frigate.get(signed_path)
