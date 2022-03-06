@@ -108,7 +108,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     @property
     def entity_registry_enabled_default(self) -> bool:
         """Whether or not the entity is enabled by default."""
-        return self._obj_name is not "all"
+        return self._obj_name != "all"
 
     @property
     def device_class(self) -> str:
