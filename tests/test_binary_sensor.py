@@ -16,6 +16,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID,
+    TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID,
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
     create_mock_frigate_client,
@@ -136,3 +137,23 @@ async def test_binary_sensor_unload_will_unsubscribe(hass: HomeAssistant) -> Non
         await hass.config_entries.async_unload(config_entry.entry_id)
         await hass.async_block_till_done()
         mock_unsubscribe.assert_called()
+
+
+async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
+    """Verify `all` can be enabled"""
+    await setup_mock_frigate_config_entry(hass)
+    entity_registry = er.async_get(hass)
+
+    # Test original entity is disabled as expected
+    entry = entity_registry.async_get(TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID)
+    assert entry
+    assert entry.disabled
+    assert entry.disabled_by == er.DISABLED_INTEGRATION
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID)
+    assert not entity_state
+
+    # Update and test that entity is now enabled
+    updated_entry = entity_registry.async_update_entity(
+        TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID, disabled_by=None
+    )
+    assert not updated_entry.disabled
