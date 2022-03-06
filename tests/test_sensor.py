@@ -41,6 +41,7 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
+    TEST_SENSOR_STEPS_ALL_ENTITY_ID,
     TEST_SERVER_VERSION,
     TEST_STATS,
     create_mock_frigate_client,
@@ -344,3 +345,23 @@ async def test_camera_unique_id(
     registry_entry = er.async_get(hass).async_get(entity_id)
     assert registry_entry
     assert registry_entry.unique_id == unique_id
+
+
+async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
+    """Verify `all` can be enabled"""
+    await setup_mock_frigate_config_entry(hass)
+    entity_registry = er.async_get(hass)
+
+    # Test original entity is disabled as expected
+    entry = entity_registry.async_get(TEST_SENSOR_STEPS_ALL_ENTITY_ID)
+    assert entry
+    assert entry.disabled
+    assert entry.disabled_by == er.DISABLED_INTEGRATION
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_ALL_ENTITY_ID)
+    assert not entity_state
+
+    # Update and test that entity is now enabled
+    updated_entry = entity_registry.async_update_entity(
+        TEST_SENSOR_STEPS_ALL_ENTITY_ID, disabled_by=None
+    )
+    assert not updated_entry.disabled
