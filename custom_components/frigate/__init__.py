@@ -124,6 +124,10 @@ def get_cameras_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:
     for cam_name, cam_config in config["cameras"].items():
         for obj in cam_config["objects"]["track"]:
             camera_objects.add((cam_name, obj))
+        
+        # add an artifical all label to track
+        # all objects for this camera
+        camera_objects.add((cam_name, "all"))
     return camera_objects
 
 
@@ -139,6 +143,10 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
             )
             if not zone_name_objects or obj in zone_name_objects:
                 zone_objects.add((zone_name, obj))
+
+            # add an artifical all label to track
+            # all objects for this zone
+            zone_objects.add((zone_name, "all"))
     return camera_objects.union(zone_objects)
 
 
