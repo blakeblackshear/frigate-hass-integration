@@ -351,4 +351,4 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     @property
     def entity_registry_enabled_default(self) -> bool:
         """Whether or not the entity is enabled by default."""
-        return self._obj_name is not "any"
+        return self._obj_name is not "all"
