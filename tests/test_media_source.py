@@ -319,6 +319,20 @@ async def test_async_browse_media_clip_search_drilldown(
         "children_media_class": None,
         "thumbnail": "data:image/jpeg;base64,thumbnail",
         "title": "2021-06-11 23:36:23 [8s, Person 72%]",
+        "frigate": {
+            "event": {
+                "camera": "front_door",
+                "end_time": 1623454592.311938,
+                "false_positive": False,
+                "has_clip": True,
+                "has_snapshot": False,
+                "id": "1623454583.525913-y14xk9",
+                "label": "person",
+                "start_time": 1623454583.525913,
+                "top_score": 0.720703125,
+                "zones": [],
+            }
+        },
     } in media.as_dict()["children"]
 
     assert {
@@ -1253,6 +1267,20 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                 "can_expand": False,
                 "children_media_class": None,
                 "thumbnail": "data:image/jpeg;base64,thumbnail",
+                "frigate": {
+                    "event": {
+                        "camera": "front_door",
+                        "end_time": 1622764901.546445,
+                        "false_positive": False,
+                        "has_clip": True,
+                        "has_snapshot": True,
+                        "id": "1622764801.555377-55xy6j",
+                        "label": "person",
+                        "start_time": 1622764801,
+                        "top_score": 0.7265625,
+                        "zones": [],
+                    }
+                },
             }
         ],
     }
@@ -1356,6 +1384,20 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                 "can_expand": False,
                 "children_media_class": None,
                 "thumbnail": "data:image/jpeg;base64,thumbnail",
+                "frigate": {
+                    "event": {
+                        "camera": "front_door",
+                        "end_time": None,
+                        "false_positive": False,
+                        "has_clip": True,
+                        "has_snapshot": True,
+                        "id": "1622764820.555377-55xy6j",
+                        "label": "person",
+                        "start_time": 1622764820.0,
+                        "top_score": 0.7265625,
+                        "zones": [],
+                    }
+                },
             }
         ],
     }
