@@ -347,7 +347,7 @@ async def test_camera_unique_id(
     assert registry_entry.unique_id == unique_id
 
 
-async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
+async def test_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
     """Verify `all` object_count sensor can be enabled."""
     await setup_mock_frigate_config_entry(hass)
     entity_registry = er.async_get(hass)
