@@ -140,7 +140,7 @@ async def test_binary_sensor_unload_will_unsubscribe(hass: HomeAssistant) -> Non
 
 
 async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
-    """Verify `all` can be enabled"""
+    """Verify `all` binary_sensor can be enabled."""
     await setup_mock_frigate_config_entry(hass)
     entity_registry = er.async_get(hass)
 
