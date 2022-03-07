@@ -15,8 +15,8 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID,
-    TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID,
+    TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID,
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
     create_mock_frigate_client,
