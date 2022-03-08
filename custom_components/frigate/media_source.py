@@ -50,6 +50,46 @@ async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
     return FrigateMediaSource(hass)
 
 
+class FrigateBrowseMediaMetadata:
+    """Metadata for browsable Frigate media files."""
+
+    event: dict[str, Any] | None
+
+    def __init__(self, event: dict[str, Any]):
+        """Initialize a FrigateBrowseMediaMetadata object."""
+        self.event = {
+            # Strip out the thumbnail from the Frigate event, as it is already
+            # included in the BrowseMediaSource.
+            k: event[k]
+            for k in event
+            if k != "thumbnail"
+        }
+
+    def as_dict(self) -> dict:
+        """Convert the object to a dictionary."""
+        return {"event": self.event}
+
+
+class FrigateBrowseMediaSource(BrowseMediaSource):  # type: ignore[misc]
+    """Represent a browsable Frigate media file."""
+
+    children: list[FrigateBrowseMediaSource] | None
+    frigate: FrigateBrowseMediaMetadata
+
+    def as_dict(self, *args: Any, **kwargs: Any) -> dict:
+        """Convert the object to a dictionary."""
+        res: dict = super().as_dict(*args, **kwargs)
+        res["frigate"] = self.frigate.as_dict()
+        return res
+
+    def __init__(
+        self, frigate: FrigateBrowseMediaMetadata, *args: Any, **kwargs: Any
+    ) -> None:
+        """Initialize media source browse media."""
+        super().__init__(*args, **kwargs)
+        self.frigate = frigate
+
+
 @attr.s(frozen=True)
 class Identifier:
     """Base class for Identifiers."""
@@ -797,7 +837,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 duration = int(end_time - start_time)
 
             children.append(
-                BrowseMediaSource(
+                FrigateBrowseMediaSource(
                     domain=DOMAIN,
                     identifier=EventIdentifier(
                         identifier.frigate_instance_id,
@@ -811,6 +851,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
                     thumbnail=f"data:image/jpeg;base64,{event['thumbnail']}",
+                    frigate=FrigateBrowseMediaMetadata(event=event),
                 )
             )
         return children
