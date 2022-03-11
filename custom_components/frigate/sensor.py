@@ -347,3 +347,8 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        """Whether or not the entity is enabled by default."""
+        return self._obj_name != "all"
