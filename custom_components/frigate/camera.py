@@ -52,7 +52,7 @@ async def async_setup_entry(
         ]
         + [
             FrigateMqttSnapshots(entry, config, cam_name, obj_name)
-            for cam_name, obj_name in get_cameras_and_objects(config)
+            for cam_name, obj_name in get_cameras_and_objects(config, False)
         ]
     )
 
