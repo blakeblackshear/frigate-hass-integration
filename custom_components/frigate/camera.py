@@ -46,20 +46,14 @@ async def async_setup_entry(
     config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
 
     async_add_entities(
-        filter(
-            lambda camera: not camera.is_all_cam,
-            [
-                FrigateCamera(entry, cam_name, camera_config)
-                for cam_name, camera_config in config["cameras"].items()
-            ],
-        )
-        + filter(
-            lambda snapshot: not snapshot.is_all_cam,
-            [
-                FrigateMqttSnapshots(entry, config, cam_name, obj_name)
-                for cam_name, obj_name in get_cameras_and_objects(config)
-            ],
-        )
+        [
+            FrigateCamera(entry, cam_name, camera_config)
+            for cam_name, camera_config in config["cameras"].items()
+        ]
+        + [
+            FrigateMqttSnapshots(entry, config, cam_name, obj_name)
+            for cam_name, obj_name in get_cameras_and_objects(config, False)
+        ]
     )
 
 
@@ -149,10 +143,6 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
             return None
         return self._stream_source
 
-    def is_all_cam(self) -> bool:
-        """Return if this snapshot represents the artificial `all`"""
-        return self._cam_name == "all"
-
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     """Frigate best camera class."""
@@ -228,7 +218,3 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         if self._last_image is None:
             return STATE_IDLE
         return STATE_DETECTED
-
-    def is_all_cam(self) -> bool:
-        """Return if this snapshot represents the artificial `all`"""
-        return self._cam_name == "all"

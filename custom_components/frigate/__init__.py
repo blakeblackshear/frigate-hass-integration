@@ -118,7 +118,9 @@ def get_friendly_name(name: str) -> str:
     return name.replace("_", " ").title()
 
 
-def get_cameras_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:
+def get_cameras_and_objects(
+    config: dict[str, Any], include_all: bool = True
+) -> set[tuple[str, str]]:
     """Get cameras and tracking object tuples."""
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
@@ -127,7 +129,9 @@ def get_cameras_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:
 
         # add an artificial all label to track
         # all objects for this camera
-        camera_objects.add((cam_name, "all"))
+        if include_all:
+            camera_objects.add((cam_name, "all"))
+
     return camera_objects
 
 
