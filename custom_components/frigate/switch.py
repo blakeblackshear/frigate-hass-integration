@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.switch import SwitchEntity
@@ -67,6 +67,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/{self._switch_name}/set"
         )
+        self._attr_entity_category = EntityCategory.CONFIG
 
         if self._switch_name == "snapshots":
             self._icon = ICON_IMAGE_MULTIPLE
@@ -148,8 +149,3 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
-
-    @property
-    def entity_category(self) -> str:
-        """Return the entity category."""
-        return cast(str, EntityCategory.CONFIG)

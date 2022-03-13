@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -81,6 +81,7 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Construct a FrigateFpsSensor."""
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -126,11 +127,6 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
 
-    @property
-    def entity_category(self) -> str:
-        """Return the entity category."""
-        return cast(str, EntityCategory.DIAGNOSTIC)
-
 
 class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate Detector Speed class."""
@@ -145,6 +141,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._detector_name = detector_name
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -194,11 +191,6 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
 
-    @property
-    def entity_category(self) -> str:
-        """Return the entity category."""
-        return cast(str, EntityCategory.DIAGNOSTIC)
-
 
 class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate Camera Fps class."""
@@ -215,6 +207,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         CoordinatorEntity.__init__(self, coordinator)
         self._cam_name = cam_name
         self._fps_type = fps_type
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -267,11 +260,6 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
-
-    @property
-    def entity_category(self) -> str:
-        """Return the entity category."""
-        return cast(str, EntityCategory.DIAGNOSTIC)
 
 
 class FrigateObjectCountSensor(FrigateMQTTEntity):
