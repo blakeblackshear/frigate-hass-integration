@@ -6,7 +6,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -126,6 +126,11 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
 
+    @property
+    def entity_category(self) -> str:
+        """Return the entity category."""
+        return EntityCategory.DIAGNOSTIC
+
 
 class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate Detector Speed class."""
@@ -188,6 +193,11 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
+
+    @property
+    def entity_category(self) -> str:
+        """Return the entity category."""
+        return EntityCategory.DIAGNOSTIC
 
 
 class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
@@ -257,6 +267,11 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
+
+    @property
+    def entity_category(self) -> str:
+        """Return the entity category."""
+        return EntityCategory.DIAGNOSTIC
 
 
 class FrigateObjectCountSensor(FrigateMQTTEntity):
@@ -347,8 +362,3 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        """Whether or not the entity is enabled by default."""
-        return self._obj_name != "all"

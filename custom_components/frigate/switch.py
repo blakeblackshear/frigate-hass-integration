@@ -8,7 +8,7 @@ from homeassistant.components.mqtt import async_publish
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
@@ -148,3 +148,8 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
+
+    @property
+    def entity_category(self) -> str:
+        """Return the entity category."""
+        return EntityCategory.CONFIG
