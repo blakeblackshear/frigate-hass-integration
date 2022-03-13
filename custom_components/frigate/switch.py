@@ -112,11 +112,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
-            "configuration_url": self._config_entry.data.get(
-                CONF_URL, self._config_entry.data.get(CONF_HOST, "")
-            )
-            + "/cameras/"
-            + self._cam_name,
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
             "manufacturer": NAME,
         }
 
