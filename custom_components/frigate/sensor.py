@@ -129,7 +129,7 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def entity_category(self) -> str:
         """Return the entity category."""
-        return EntityCategory.DIAGNOSTIC
+        return cast(str, EntityCategory.DIAGNOSTIC)
 
 
 class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
@@ -197,7 +197,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
     @property
     def entity_category(self) -> str:
         """Return the entity category."""
-        return EntityCategory.DIAGNOSTIC
+        return cast(str, EntityCategory.DIAGNOSTIC)
 
 
 class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
@@ -271,7 +271,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def entity_category(self) -> str:
         """Return the entity category."""
-        return EntityCategory.DIAGNOSTIC
+        return cast(str, EntityCategory.DIAGNOSTIC)
 
 
 class FrigateObjectCountSensor(FrigateMQTTEntity):

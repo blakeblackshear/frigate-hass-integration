@@ -152,4 +152,4 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def entity_category(self) -> str:
         """Return the entity category."""
-        return EntityCategory.CONFIG
+        return cast(str, EntityCategory.CONFIG)
