@@ -67,7 +67,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/{self._switch_name}/set"
         )
-        self._attr_entity_category = EntityCategory.CONFIG
+        _attr_entity_category = EntityCategory.CONFIG
 
         if self._switch_name == "snapshots":
             self._icon = ICON_IMAGE_MULTIPLE

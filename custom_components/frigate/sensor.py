@@ -81,7 +81,7 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Construct a FrigateFpsSensor."""
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -141,7 +141,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._detector_name = detector_name
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -207,7 +207,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         CoordinatorEntity.__init__(self, coordinator)
         self._cam_name = cam_name
         self._fps_type = fps_type
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
