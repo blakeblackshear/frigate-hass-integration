@@ -164,6 +164,15 @@ def get_cameras_and_zones(config: dict[str, Any]) -> set[str]:
     return cameras_zones
 
 
+def get_zones(config: dict[str, Any]) -> set[str]:
+    """Get zones."""
+    cameras_zones = set()
+    for camera in config.get("cameras", {}).keys():
+        for zone in config["cameras"][camera].get("zones", {}).keys():
+            cameras_zones.add(zone)
+    return cameras_zones
+
+
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
     integration = await async_get_integration(hass, DOMAIN)
