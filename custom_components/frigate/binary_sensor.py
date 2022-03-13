@@ -9,7 +9,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -95,7 +95,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
-            "configuration_url": self._config_entry.data[CONF_URL]
+            "configuration_url": self._config_entry.data.get(CONF_URL, self._config_entry.data.get(CONF_HOST, ""))
             + (
                 "/cameras/" + self._cam_name
                 if self._cam_name not in get_zones(self._frigate_config)

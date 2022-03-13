@@ -7,7 +7,7 @@ from typing import Any
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -18,7 +18,6 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
-    get_zones,
 )
 from .const import (
     ATTR_CONFIG,
@@ -113,7 +112,9 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
-            "configuration_url": self._config_entry.data[CONF_URL]
+            "configuration_url": self._config_entry.get(
+                CONF_URL, self._config_entry.data.get(CONF_HOST, "")
+            )
             + "/cameras/"
             + self._cam_name,
             "manufacturer": NAME,

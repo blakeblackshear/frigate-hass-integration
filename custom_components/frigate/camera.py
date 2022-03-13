@@ -11,7 +11,7 @@ from yarl import URL
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -199,7 +199,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
-            "configuration_url": self._config_entry.data[CONF_URL]
+            "configuration_url": self._config_entry.data.get(CONF_URL, self._config_entry.data.get(CONF_HOST, ""))
             + "/cameras/"
             + self._cam_name,
             "manufacturer": NAME,
