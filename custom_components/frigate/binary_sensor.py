@@ -16,11 +16,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
-    get_zones,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_zones,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
 
