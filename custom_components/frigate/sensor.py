@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -19,6 +20,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_zones,
 )
 from .const import (
     ATTR_CONFIG,
@@ -96,6 +98,7 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
             "identifiers": {get_frigate_device_identifier(self._config_entry)},
             "name": NAME,
             "model": self._get_model(),
+            "configuration_url": self._config_entry.data.get(CONF_URL),
             "manufacturer": NAME,
         }
 
@@ -155,6 +158,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
             "identifiers": {get_frigate_device_identifier(self._config_entry)},
             "name": NAME,
             "model": self._get_model(),
+            "configuration_url": self._config_entry.data.get(CONF_URL),
             "manufacturer": NAME,
         }
 
@@ -225,6 +229,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
             "manufacturer": NAME,
         }
 
@@ -273,6 +278,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._state = 0
+        self._frigate_config = frigate_config
 
         if self._obj_name == "person":
             self._icon = ICON_PERSON
@@ -325,6 +331,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             "via_device": get_frigate_device_identifier(self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,
         }
 
