@@ -9,7 +9,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
@@ -51,6 +51,8 @@ async def async_setup_entry(
 
 class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     """Frigate Switch class."""
+
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
