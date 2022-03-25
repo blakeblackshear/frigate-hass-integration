@@ -15,6 +15,7 @@ ICON_MOTION_SENSOR = "hass:motion-sensor"
 ICON_OTHER = "mdi:shield-alert"
 ICON_PERSON = "mdi:shield-account"
 ICON_SPEEDOMETER = "mdi:speedometer"
+ICON_CONTRAST = "mdi:contrast-circle"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"

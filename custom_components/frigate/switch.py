@@ -25,6 +25,7 @@ from .const import (
     ICON_FILM_MULTIPLE,
     ICON_IMAGE_MULTIPLE,
     ICON_MOTION_SENSOR,
+    ICON_CONTRAST,
     NAME,
 )
 
@@ -44,6 +45,7 @@ async def async_setup_entry(
                 FrigateSwitch(entry, frigate_config, camera, "detect"),
                 FrigateSwitch(entry, frigate_config, camera, "recordings"),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots"),
+                FrigateSwitch(entry, frigate_config, camera, "improve_contrast"),
             ]
         )
     async_add_entities(entities)
@@ -75,6 +77,8 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             self._icon = ICON_IMAGE_MULTIPLE
         elif self._switch_name == "recordings":
             self._icon = ICON_FILM_MULTIPLE
+        elif self._switch_name == "improve_contrast":
+            self._icon = ICON_CONTRAST    
         else:
             self._icon = ICON_MOTION_SENSOR
 
@@ -121,7 +125,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._switch_name}".title()
+        return f"{get_friendly_name(self._cam_name)} {get_friendly_name(self._switch_name)}".title()
 
     @property
     def is_on(self) -> bool:
