@@ -21,7 +21,7 @@ Provides the following:
 - Sensor entities (Camera FPS, Detection FPS, Process FPS, Skipped FPS, Objects detected)
 - Binary Sensor entities (Object motion)
 - Camera entities (Live view, Object detected snapshot)
-- Switch entities (Clips, Detection, Snapshots)
+- Switch entities (Clips, Detection, Snapshots, Improve Contrast)
 - Support for multiple Frigate instances.
 
 ## Installation
