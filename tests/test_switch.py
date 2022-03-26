@@ -176,3 +176,4 @@ async def test_switch_improve_contrast_can_be_enabled(hass: HomeAssistant) -> No
         TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID, disabled_by=None
     )
     assert not updated_entry.disabled
+    
