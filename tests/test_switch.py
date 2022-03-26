@@ -18,6 +18,7 @@ from . import (
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     setup_mock_frigate_config_entry,
 )
 
@@ -27,6 +28,7 @@ SWITCH_ENTITY_IDS = [
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
 ]
 
 
@@ -136,6 +138,7 @@ async def test_switch_icon(hass: HomeAssistant) -> None:
         TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID: "hass:motion-sensor",
         TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID: "mdi:filmstrip-box-multiple",
         TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID: "mdi:image-multiple",
+        TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID: "mdi:contrast-circle",
     }
 
     for entity_id, icon in expected_results.items():
@@ -154,3 +157,22 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
     assert (
         registry_entry.unique_id == f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_detect"
     )
+
+async def test_switch_improve_contrast_can_be_enabled(hass: HomeAssistant) -> None:
+    """Verify `improve_contrast` switch can be enabled."""
+    await setup_mock_frigate_config_entry(hass)
+    entity_registry = er.async_get(hass)
+
+    # Test original entity is disabled as expected
+    entry = entity_registry.async_get(TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID)
+    assert entry
+    assert entry.disabled
+    assert entry.disabled_by == er.DISABLED_INTEGRATION
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID)
+    assert not entity_state
+
+    # Update and test that entity is now enabled
+    updated_entry = entity_registry.async_update_entity(
+        TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID, disabled_by=None
+    )
+    assert not updated_entry.disabled
