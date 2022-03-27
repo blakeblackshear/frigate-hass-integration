@@ -16,18 +16,21 @@ from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
-    TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     setup_mock_frigate_config_entry,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-SWITCH_ENTITY_IDS = [
+ENABLED_SWITCH_ENTITY_IDS = [
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
+]
+
+DISABLED_SWITCH_ENTITY_IDS = [
     TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
 ]
 
@@ -36,15 +39,19 @@ async def test_switch_state(hass: HomeAssistant) -> None:
     """Verify a successful binary sensor setup."""
     await setup_mock_frigate_config_entry(hass)
 
-    for entity_id in SWITCH_ENTITY_IDS:
+    for entity_id in ENABLED_SWITCH_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert entity_state
         assert entity_state.state == "unavailable"
 
+    for entity_id in DISABLED_SWITCH_ENTITY_IDS:
+        entity_state = hass.states.get(entity_id)
+        assert not entity_state
+
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
 
-    for entity_id in SWITCH_ENTITY_IDS:
+    for entity_id in ENABLED_SWITCH_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert entity_state
         assert entity_state.state == "off"
@@ -126,7 +133,7 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
         entry.entity_id
         for entry in er.async_entries_for_device(entity_registry, device.id)
     ]
-    for entity_id in SWITCH_ENTITY_IDS:
+    for entity_id in ENABLED_SWITCH_ENTITY_IDS:
         assert entity_id in entities_from_device
 
 
@@ -158,6 +165,7 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
         registry_entry.unique_id == f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_detect"
     )
 
+
 async def test_switch_improve_contrast_can_be_enabled(hass: HomeAssistant) -> None:
     """Verify `improve_contrast` switch can be enabled."""
     await setup_mock_frigate_config_entry(hass)
@@ -176,4 +184,3 @@ async def test_switch_improve_contrast_can_be_enabled(hass: HomeAssistant) -> No
         TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID, disabled_by=None
     )
     assert not updated_entry.disabled
-    
