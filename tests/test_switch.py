@@ -176,7 +176,7 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
 async def test_disabled_switch_can_be_enabled(
     disabled_entity_id: str, hass: HomeAssistant
 ) -> None:
-    """Verify disabled switches can be enabled and test icon."""
+    """Verify disabled switches can be enabled."""
     await setup_mock_frigate_config_entry(hass)
     entity_registry = er.async_get(hass)
 
