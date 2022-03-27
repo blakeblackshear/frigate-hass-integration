@@ -1,17 +1,23 @@
 """Test the frigate switch."""
 from __future__ import annotations
+from datetime import timedelta
 
 import logging
 from typing import Any
 
 import pytest
-from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
+from pytest_homeassistant_custom_component.common import (
+    async_fire_mqtt_message, 
+    async_fire_time_changed,
+)
 
+from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+import homeassistant.util.dt as dt_util
 
 from . import (
     TEST_CONFIG_ENTRY_ID,
@@ -139,14 +145,13 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
 
 
 async def test_switch_icon(hass: HomeAssistant) -> None:
-    """Verify switch device information."""
+    """Verify icons for enabled by default switches."""
     await setup_mock_frigate_config_entry(hass)
 
     expected_results = {
         TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID: "hass:motion-sensor",
         TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID: "mdi:filmstrip-box-multiple",
         TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID: "mdi:image-multiple",
-        TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID: "mdi:contrast-circle",
     }
 
     for entity_id, icon in expected_results.items():
@@ -171,7 +176,7 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
 async def test_disabled_switch_can_be_enabled(
     disabled_entity_id: str, hass: HomeAssistant
 ) -> None:
-    """Verify disabled switches can be enabled."""
+    """Verify disabled switches can be enabled and test icon."""
     await setup_mock_frigate_config_entry(hass)
     entity_registry = er.async_get(hass)
 
@@ -188,3 +193,28 @@ async def test_disabled_switch_can_be_enabled(
         disabled_entity_id, disabled_by=None
     )
     assert not updated_entry.disabled
+
+async def test_disabled_switch_icon(hass: HomeAssistant) -> None:
+    """Verify icons for disabled switches by enabling them."""
+    await setup_mock_frigate_config_entry(hass)
+    entity_registry = er.async_get(hass)
+
+    expected_results = {
+        TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID: "mdi:contrast-circle",
+    }
+
+    for disabled_entity_id, icon in expected_results.items():
+        updated_entry = entity_registry.async_update_entity(
+            disabled_entity_id, disabled_by=None
+        )
+        assert not updated_entry.disabled
+        await hass.async_block_till_done()
+
+        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=10))
+        # async_fire_time_changed(hass, dt_util.utcnow() + SCAN INTERVAL)
+
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(disabled_entity_id)
+        assert entity_state
+        assert entity_state.attributes["icon"] == icon
