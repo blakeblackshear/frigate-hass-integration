@@ -8,6 +8,7 @@ FRIGATE_RELEASES_URL = "https://github.com/blakeblackshear/frigate/releases"
 # Icons
 ICON_CAR = "mdi:shield-car"
 ICON_CAT = "mdi:cat"
+ICON_CONTRAST = "mdi:contrast-circle"
 ICON_DOG = "mdi:dog-side"
 ICON_FILM_MULTIPLE = "mdi:filmstrip-box-multiple"
 ICON_IMAGE_MULTIPLE = "mdi:image-multiple"
@@ -15,7 +16,6 @@ ICON_MOTION_SENSOR = "hass:motion-sensor"
 ICON_OTHER = "mdi:shield-alert"
 ICON_PERSON = "mdi:shield-account"
 ICON_SPEEDOMETER = "mdi:speedometer"
-ICON_CONTRAST = "mdi:contrast-circle"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
