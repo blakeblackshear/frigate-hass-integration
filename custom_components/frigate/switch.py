@@ -55,7 +55,6 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     """Frigate Switch class."""
 
     _attr_entity_category = EntityCategory.CONFIG
-    
 
     def __init__(
         self,
@@ -76,13 +75,13 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
-        
+
         if self._switch_name == "snapshots":
             self._icon = ICON_IMAGE_MULTIPLE
         elif self._switch_name == "recordings":
             self._icon = ICON_FILM_MULTIPLE
         elif self._switch_name == "improve_contrast":
-            self._icon = ICON_CONTRAST    
+            self._icon = ICON_CONTRAST
         else:
             self._icon = ICON_MOTION_SENSOR
 

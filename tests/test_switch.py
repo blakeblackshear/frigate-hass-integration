@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.const import DOMAIN, NAME
@@ -166,21 +167,24 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
     )
 
 
-async def test_switch_improve_contrast_can_be_enabled(hass: HomeAssistant) -> None:
-    """Verify `improve_contrast` switch can be enabled."""
+@pytest.mark.parametrize("disabled_entity_id", DISABLED_SWITCH_ENTITY_IDS)
+async def test_disabled_switch_can_be_enabled(
+    disabled_entity_id: str, hass: HomeAssistant
+) -> None:
+    """Verify disabled switches can be enabled."""
     await setup_mock_frigate_config_entry(hass)
     entity_registry = er.async_get(hass)
 
     # Test original entity is disabled as expected
-    entry = entity_registry.async_get(TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID)
+    entry = entity_registry.async_get(disabled_entity_id)
     assert entry
     assert entry.disabled
     assert entry.disabled_by == er.DISABLED_INTEGRATION
-    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID)
+    entity_state = hass.states.get(disabled_entity_id)
     assert not entity_state
 
     # Update and test that entity is now enabled
     updated_entry = entity_registry.async_update_entity(
-        TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID, disabled_by=None
+        disabled_entity_id, disabled_by=None
     )
     assert not updated_entry.disabled
