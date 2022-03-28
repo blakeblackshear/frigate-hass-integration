@@ -18,6 +18,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
+    FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
     get_cameras_and_objects,
@@ -67,8 +68,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
-        FrigateMQTTEntity.__init__(
-            self,
+        super().__init__(
             config_entry,
             frigate_config,
             {
@@ -79,6 +79,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
                 "encoding": None,
             },
         )
+        FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
         self._cam_name = cam_name
         self._camera_config = camera_config
