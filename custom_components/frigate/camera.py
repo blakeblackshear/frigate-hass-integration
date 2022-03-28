@@ -42,16 +42,16 @@ async def async_setup_entry(
 ) -> None:
     """Camera entry setup."""
 
-    config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
 
     async_add_entities(
         [
-            FrigateCamera(entry, cam_name, camera_config)
-            for cam_name, camera_config in config["cameras"].items()
+            FrigateCamera(entry, cam_name, frigate_config, camera_config)
+            for cam_name, camera_config in frigate_config["cameras"].items()
         ]
         + [
-            FrigateMqttSnapshots(entry, config, cam_name, obj_name)
-            for cam_name, obj_name in get_cameras_and_objects(config, False)
+            FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
+            for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
         ]
     )
 
