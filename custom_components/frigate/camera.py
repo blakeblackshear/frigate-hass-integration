@@ -104,7 +104,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        self._attr_is_recording = msg.payload == "ON"
+        self._attr_is_recording = msg.payload.decode("utf-8") == "ON"
         super()._state_message_received(msg)
 
     @property
