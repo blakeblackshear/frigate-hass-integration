@@ -1,17 +1,16 @@
 """Test the frigate switch."""
 from __future__ import annotations
-from datetime import timedelta
 
+from datetime import timedelta
 import logging
-from unittest.mock import patch
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import (
-    async_fire_mqtt_message, 
+    async_fire_mqtt_message,
     async_fire_time_changed,
 )
-
 
 from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import DOMAIN, NAME
@@ -29,8 +28,8 @@ from . import (
     TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
-    setup_mock_frigate_config_entry,
     create_mock_frigate_client,
+    setup_mock_frigate_config_entry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -198,6 +197,7 @@ async def test_disabled_switch_can_be_enabled(
     )
     assert not updated_entry.disabled
 
+
 async def test_disabled_switch_icon(hass: HomeAssistant) -> None:
     """Verify icons for disabled switches by enabling them."""
     client = create_mock_frigate_client()
@@ -221,7 +221,10 @@ async def test_disabled_switch_icon(hass: HomeAssistant) -> None:
             assert not updated_entry.disabled
             await hass.async_block_till_done()
 
-            async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1))
+            async_fire_time_changed(
+                hass,
+                dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1),
+            )
 
             await hass.async_block_till_done()
 
