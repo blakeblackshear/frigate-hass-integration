@@ -12,7 +12,6 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import RELOAD_AFTER_UPDATE_DELAY
