@@ -18,7 +18,6 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
-    FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
     get_cameras_and_objects,
@@ -57,14 +56,29 @@ async def async_setup_entry(
     )
 
 
-class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
+class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     """Representation a Frigate camera."""
 
     def __init__(
-        self, config_entry: ConfigEntry, cam_name: str, camera_config: dict[str, Any]
+        self,
+        config_entry: ConfigEntry,
+        cam_name: str,
+        frigate_config: dict[str, Any],
+        camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
-        FrigateEntity.__init__(self, config_entry)
+        FrigateMQTTEntity.__init__(
+            self,
+            config_entry,
+            frigate_config,
+            {
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{cam_name}/recordings/state"
+                ),
+                "encoding": None,
+            },
+        )
         Camera.__init__(self)
         self._cam_name = cam_name
         self._camera_config = camera_config
@@ -86,6 +100,12 @@ class FrigateCamera(FrigateEntity, Camera):  # type: ignore[misc]
             )
         else:
             self._stream_source = f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
+
+    @callback  # type: ignore[misc]
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        self._attr_is_recording = msg.payload == "ON"
+        super()._state_message_received(msg)
 
     @property
     def unique_id(self) -> str:
