@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import logging
+from unittest.mock import patch
 from typing import Any
 
 import pytest
@@ -11,9 +12,11 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
+
 from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from homeassistant.config_entries import RELOAD_AFTER_UPDATE_DELAY
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -27,6 +30,7 @@ from . import (
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
     setup_mock_frigate_config_entry,
+    create_mock_frigate_client,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -196,25 +200,31 @@ async def test_disabled_switch_can_be_enabled(
 
 async def test_disabled_switch_icon(hass: HomeAssistant) -> None:
     """Verify icons for disabled switches by enabling them."""
-    await setup_mock_frigate_config_entry(hass)
-    entity_registry = er.async_get(hass)
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
 
+    entity_registry = er.async_get(hass)
     expected_results = {
         TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID: "mdi:contrast-circle",
     }
 
-    for disabled_entity_id, icon in expected_results.items():
-        updated_entry = entity_registry.async_update_entity(
-            disabled_entity_id, disabled_by=None
-        )
-        assert not updated_entry.disabled
-        await hass.async_block_till_done()
+    # Keep the patch in place to ensure that coordinator updates that are
+    # scheduled during the reload period will use the mocked API.
+    with patch(
+        "custom_components.frigate.FrigateApiClient",
+        return_value=client,
+    ):
+        for disabled_entity_id, icon in expected_results.items():
+            updated_entry = entity_registry.async_update_entity(
+                disabled_entity_id, disabled_by=None
+            )
+            assert not updated_entry.disabled
+            await hass.async_block_till_done()
 
-        async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=10))
-        # async_fire_time_changed(hass, dt_util.utcnow() + SCAN INTERVAL)
+            async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1))
 
-        await hass.async_block_till_done()
+            await hass.async_block_till_done()
 
-        entity_state = hass.states.get(disabled_entity_id)
-        assert entity_state
-        assert entity_state.attributes["icon"] == icon
+            entity_state = hass.states.get(disabled_entity_id)
+            assert entity_state
+            assert entity_state.attributes["icon"] == icon
