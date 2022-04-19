@@ -50,7 +50,6 @@ try:
         # pylint: disable=no-value-for-parameter
         return await async_subscribe_topics(hass, state)
 
-
 except ImportError:
 
     async def subscribe_topics(
@@ -59,7 +58,7 @@ except ImportError:
         topics: dict[str, Any],
     ) -> Any:  # pragma: no cover
         """Subscribe to MQTT topic."""
-        return await async_subscribe_topics(hass, state, topics)
+        return await async_subscribe_topics(hass, state)
 
 
 from .api import FrigateApiClient, FrigateApiClientError
