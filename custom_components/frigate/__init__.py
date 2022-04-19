@@ -58,7 +58,7 @@ except ImportError:
         topics: dict[str, Any],
     ) -> Any:  # pragma: no cover
         """Subscribe to MQTT topic."""
-        return await async_subscribe_topics(hass, state)
+        return await async_subscribe_topics(hass, state, topics)
 
 
 from .api import FrigateApiClient, FrigateApiClientError
