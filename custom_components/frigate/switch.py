@@ -42,6 +42,7 @@ async def async_setup_entry(
         entities.extend(
             [
                 FrigateSwitch(entry, frigate_config, camera, "detect"),
+                FrigateSwitch(entry, frigate_config, camera, "motion"),
                 FrigateSwitch(entry, frigate_config, camera, "recordings"),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots"),
             ]
