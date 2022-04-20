@@ -1,7 +1,7 @@
 aiohttp
 aiohttp_cors==0.7.0
 attr
-homeassistant==2021.12.0b2
-paho-mqtt==1.5.1
+homeassistant>=2022.4.5
+paho-mqtt==1.6.1
 python-dateutil
 yarl

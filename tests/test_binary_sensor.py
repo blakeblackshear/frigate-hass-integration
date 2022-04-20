@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
@@ -129,7 +129,7 @@ async def test_binary_sensor_unique_id(hass: HomeAssistant) -> None:
 
 async def test_binary_sensor_unload_will_unsubscribe(hass: HomeAssistant) -> None:
     """Verify entity unique_id(s)."""
-    mock_unsubscribe = AsyncMock()
+    mock_unsubscribe = Mock()
     with patch(
         "custom_components.frigate.async_unsubscribe_topics", new=mock_unsubscribe
     ):
@@ -148,7 +148,7 @@ async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
     entry = entity_registry.async_get(TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID)
     assert entry
     assert entry.disabled
-    assert entry.disabled_by == er.DISABLED_INTEGRATION
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
     entity_state = hass.states.get(TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID)
     assert not entity_state
 
