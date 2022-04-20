@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.frigate import SCAN_INTERVAL
-from homeassistant.core import HomeAssistant
-from homeassistant.const import (
+from homeassistant.components.update.const import (
     ATTR_INSTALLED_VERSION,
     ATTR_LATEST_VERSION,
-    ATTR_RELEASE_URL
+    ATTR_RELEASE_URL,
 )
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from . import (
@@ -54,7 +54,10 @@ async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.attributes[ATTR_INSTALLED_VERSION] < entity_state.attributes[ATTR_LATEST_VERSION]
+    assert (
+        entity_state.attributes[ATTR_INSTALLED_VERSION]
+        < entity_state.attributes[ATTR_LATEST_VERSION]
+    )
     assert entity_state.attributes[ATTR_RELEASE_URL]
 
 
