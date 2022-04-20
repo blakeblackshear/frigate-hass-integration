@@ -62,7 +62,7 @@ async def test_update_sensor_bad_current(hass: HomeAssistant) -> None:
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
-    stats["services"]["version"] = ""
+    stats["service"]["version"] = ""
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
@@ -80,7 +80,7 @@ async def test_update_sensor_bad_latest(hass: HomeAssistant) -> None:
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
-    stats["services"]["latest_version"] = "unknown"
+    stats["service"]["latest_version"] = "unknown"
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
