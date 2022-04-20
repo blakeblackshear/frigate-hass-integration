@@ -54,10 +54,7 @@ async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert (
-        entity_state.attributes[ATTR_INSTALLED_VERSION]
-        < entity_state.attributes[ATTR_LATEST_VERSION]
-    )
+    assert entity_state.state == entity_state.attributes[ATTR_LATEST_VERSION]
     assert entity_state.attributes[ATTR_RELEASE_URL]
 
 
