@@ -21,7 +21,8 @@ BINARY_SENSOR = "binary_sensor"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
-PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR]
+UPDATE = "update"
+PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR, UPDATE]
 
 # Unit of measurement
 FPS = "fps"
