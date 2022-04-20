@@ -37,8 +37,8 @@ async def test_update_sensor_same_version(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.current_version == entity_state.latest_version
-    assert entity_state.release_url
+    assert entity_state.installed_version() == entity_state.latest_version()
+    assert entity_state.release_url()
 
 
 async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
@@ -49,8 +49,8 @@ async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.installed_version < entity_state.latest_version
-    assert entity_state.release_url
+    assert entity_state.installed_version() < entity_state.latest_version()
+    assert entity_state.release_url()
 
 
 async def test_update_sensor_bad_current(hass: HomeAssistant) -> None:
@@ -68,7 +68,7 @@ async def test_update_sensor_bad_current(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.installed_version is None
+    assert entity_state.installed_version() is None
 
 
 async def test_update_sensor_bad_latest(hass: HomeAssistant) -> None:
@@ -86,5 +86,5 @@ async def test_update_sensor_bad_latest(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.latest_version is None
-    assert entity_state.release_url is None
+    assert entity_state.latest_version() is None
+    assert entity_state.release_url() is None
