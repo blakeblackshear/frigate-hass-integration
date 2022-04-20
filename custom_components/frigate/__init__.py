@@ -50,7 +50,6 @@ try:
         # pylint: disable=no-value-for-parameter
         return await async_subscribe_topics(hass, state)
 
-
 except ImportError:
 
     async def subscribe_topics(
