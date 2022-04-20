@@ -7,7 +7,7 @@ from homeassistant.components.update import UpdateEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_URL
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -32,6 +32,7 @@ class FrigateContainerUpdate(UpdateEntity, CoordinatorEntity):  # type: ignore[m
     """Frigate container update."""
 
     _attr_title = "Frigate Container"
+    _attr_entity_category = EntityCategory.SYSTEM
 
     def __init__(
         self,
