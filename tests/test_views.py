@@ -21,7 +21,7 @@ from custom_components.frigate.const import (
     CONF_NOTIFICATION_PROXY_ENABLE,
     DOMAIN,
 )
-from homeassistant.components.http.auth import async_sign_path, setup_auth
+from homeassistant.components.http.auth import async_setup_auth, async_sign_path
 from homeassistant.components.http.const import KEY_AUTHENTICATED
 from homeassistant.components.http.forwarded import async_setup_forwarded
 from homeassistant.const import CONF_URL
@@ -177,13 +177,13 @@ async def test_vod_segment_proxy(
 ) -> None:
     """Test vod segment."""
 
-    setup_auth(hass, app)
+    await async_setup_auth(hass, app)
 
     refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
     signed_path = async_sign_path(
-        hass=hass,
-        path="/api/frigate/vod/present/segment.ts",
-        expiration=timedelta(seconds=5),
+        hass,
+        "/api/frigate/vod/present/segment.ts",
+        timedelta(seconds=5),
         refresh_token_id=refresh_token.id,
     )
 
@@ -203,14 +203,14 @@ async def test_vod_segment_proxy_unauthorized(
     resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
-    setup_auth(hass, app)
+    await async_setup_auth(hass, app)
 
     refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
     signed_path = async_sign_path(
         hass,
-        refresh_token.id,
         "/api/frigate/vod/present/segment.ts",
         timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
     )
 
     # No signature
@@ -411,14 +411,14 @@ async def test_vod_segment_with_frigate_instance_id(
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
 
-    setup_auth(hass, app)
+    await async_setup_auth(hass, app)
 
     refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
     signed_path = async_sign_path(
         hass,
-        refresh_token.id,
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/segment.ts",
         timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
     )
 
     # A Frigate instance id is specified.
@@ -428,9 +428,9 @@ async def test_vod_segment_with_frigate_instance_id(
     # An invalid instance id is specified.
     signed_path = async_sign_path(
         hass,
-        refresh_token.id,
         "/api/frigate/NOT_A_REAL_ID/vod/present/segment.ts",
         timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
     )
     resp = await hass_client_local_frigate.get(signed_path)
     assert resp.status == HTTPStatus.BAD_REQUEST
@@ -439,9 +439,9 @@ async def test_vod_segment_with_frigate_instance_id(
     create_mock_frigate_config_entry(hass, entry_id="another_id")
     signed_path = async_sign_path(
         hass,
-        refresh_token.id,
         "/api/frigate/vod/present/segment.ts",
         timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
     )
     resp = await hass_client_local_frigate.get(signed_path)
     assert resp.status == HTTPStatus.BAD_REQUEST
