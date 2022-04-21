@@ -5,7 +5,7 @@ import logging
 
 from homeassistant.components.update import UpdateEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_MODEL, CONF_URL
+from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import (
     FrigateDataUpdateCoordinator,
+    FrigateEntity,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
@@ -32,7 +33,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateContainerUpdate(UpdateEntity, CoordinatorEntity):  # type: ignore[misc]
+class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate container update."""
 
     _attr_title = "Frigate Server"
@@ -103,7 +104,3 @@ class FrigateContainerUpdate(UpdateEntity, CoordinatorEntity):  # type: ignore[m
             return None
 
         return f"{FRIGATE_RELEASE_TAG_URL}/v{version}"
-
-    def _get_model(self) -> str:
-        """Get the Frigate device model string."""
-        return str(self.hass.data[DOMAIN][self._config_entry.entry_id][ATTR_MODEL])
