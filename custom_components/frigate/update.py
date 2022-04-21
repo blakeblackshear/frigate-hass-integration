@@ -51,7 +51,7 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
-            self._config_entry.entry_id, "update", "server"
+            self._config_entry.entry_id, "update", "frigate_server"
         )
 
     @property
