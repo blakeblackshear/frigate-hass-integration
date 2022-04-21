@@ -16,7 +16,7 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import ATTR_COORDINATOR, DOMAIN, NAME
+from .const import ATTR_COORDINATOR, DOMAIN, FRIGATE_RELEASE_TAG_URL, NAME
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class FrigateContainerUpdate(UpdateEntity, CoordinatorEntity):  # type: ignore[m
         if (version := self.latest_version) is None:
             return None
 
-        return f"https://github.com/blakeblackshear/frigate/releases/tag/v{version}"
+        return f"{FRIGATE_RELEASE_TAG_URL}/v{version}"
 
     def _get_model(self) -> str:
         """Get the Frigate device model string."""

@@ -4,6 +4,7 @@ NAME = "Frigate"
 DOMAIN = "frigate"
 FRIGATE_VERSION_ERROR_CUTOFF = "0.8.4"
 FRIGATE_RELEASES_URL = "https://github.com/blakeblackshear/frigate/releases"
+FRIGATE_RELEASE_TAG_URL = "https://github.com/blakeblackshear/frigate/releases/tag"
 
 # Icons
 ICON_CAR = "mdi:shield-car"
