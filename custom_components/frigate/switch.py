@@ -22,6 +22,7 @@ from . import (
 from .const import (
     ATTR_CONFIG,
     DOMAIN,
+    ICON_CONTRAST,
     ICON_FILM_MULTIPLE,
     ICON_IMAGE_MULTIPLE,
     ICON_MOTION_SENSOR,
@@ -41,9 +42,10 @@ async def async_setup_entry(
     for camera in frigate_config["cameras"].keys():
         entities.extend(
             [
-                FrigateSwitch(entry, frigate_config, camera, "detect"),
-                FrigateSwitch(entry, frigate_config, camera, "recordings"),
-                FrigateSwitch(entry, frigate_config, camera, "snapshots"),
+                FrigateSwitch(entry, frigate_config, camera, "detect", True),
+                FrigateSwitch(entry, frigate_config, camera, "recordings", True),
+                FrigateSwitch(entry, frigate_config, camera, "snapshots", True),
+                FrigateSwitch(entry, frigate_config, camera, "improve_contrast", False),
             ]
         )
     async_add_entities(entities)
@@ -60,6 +62,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         frigate_config: dict[str, Any],
         cam_name: str,
         switch_name: str,
+        default_enabled: bool,
     ) -> None:
         """Construct a FrigateSwitch."""
 
@@ -71,10 +74,14 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             f"/{self._cam_name}/{self._switch_name}/set"
         )
 
+        self._attr_entity_registry_enabled_default = default_enabled
+
         if self._switch_name == "snapshots":
             self._icon = ICON_IMAGE_MULTIPLE
         elif self._switch_name == "recordings":
             self._icon = ICON_FILM_MULTIPLE
+        elif self._switch_name == "improve_contrast":
+            self._icon = ICON_CONTRAST
         else:
             self._icon = ICON_MOTION_SENSOR
 
@@ -121,7 +128,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._switch_name}".title()
+        return f"{get_friendly_name(self._cam_name)} {get_friendly_name(self._switch_name)}".title()
 
     @property
     def is_on(self) -> bool:
