@@ -1,32 +1,46 @@
 """Test the frigate switch."""
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
 from typing import Any
+from unittest.mock import patch
 
-from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
+import pytest
+from pytest_homeassistant_custom_component.common import (
+    async_fire_mqtt_message,
+    async_fire_time_changed,
+)
 
 from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from homeassistant.config_entries import RELOAD_AFTER_UPDATE_DELAY
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+import homeassistant.util.dt as dt_util
 
 from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
+    create_mock_frigate_client,
     setup_mock_frigate_config_entry,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-SWITCH_ENTITY_IDS = [
+ENABLED_SWITCH_ENTITY_IDS = [
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
+]
+
+DISABLED_SWITCH_ENTITY_IDS = [
+    TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
 ]
 
 
@@ -34,15 +48,19 @@ async def test_switch_state(hass: HomeAssistant) -> None:
     """Verify a successful binary sensor setup."""
     await setup_mock_frigate_config_entry(hass)
 
-    for entity_id in SWITCH_ENTITY_IDS:
+    for entity_id in ENABLED_SWITCH_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert entity_state
         assert entity_state.state == "unavailable"
 
+    for entity_id in DISABLED_SWITCH_ENTITY_IDS:
+        entity_state = hass.states.get(entity_id)
+        assert not entity_state
+
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
 
-    for entity_id in SWITCH_ENTITY_IDS:
+    for entity_id in ENABLED_SWITCH_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert entity_state
         assert entity_state.state == "off"
@@ -124,12 +142,12 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
         entry.entity_id
         for entry in er.async_entries_for_device(entity_registry, device.id)
     ]
-    for entity_id in SWITCH_ENTITY_IDS:
+    for entity_id in ENABLED_SWITCH_ENTITY_IDS:
         assert entity_id in entities_from_device
 
 
 async def test_switch_icon(hass: HomeAssistant) -> None:
-    """Verify switch device information."""
+    """Verify icons for enabled by default switches."""
     await setup_mock_frigate_config_entry(hass)
 
     expected_results = {
@@ -154,3 +172,61 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
     assert (
         registry_entry.unique_id == f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_detect"
     )
+
+
+@pytest.mark.parametrize("disabled_entity_id", DISABLED_SWITCH_ENTITY_IDS)
+async def test_disabled_switch_can_be_enabled(
+    disabled_entity_id: str, hass: HomeAssistant
+) -> None:
+    """Verify disabled switches can be enabled."""
+    await setup_mock_frigate_config_entry(hass)
+    entity_registry = er.async_get(hass)
+
+    # Test original entity is disabled as expected
+    entry = entity_registry.async_get(disabled_entity_id)
+    assert entry
+    assert entry.disabled
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+    entity_state = hass.states.get(disabled_entity_id)
+    assert not entity_state
+
+    # Update and test that entity is now enabled
+    updated_entry = entity_registry.async_update_entity(
+        disabled_entity_id, disabled_by=None
+    )
+    assert not updated_entry.disabled
+
+
+async def test_disabled_switch_icon(hass: HomeAssistant) -> None:
+    """Verify icons for disabled switches by enabling them."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_registry = er.async_get(hass)
+    expected_results = {
+        TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID: "mdi:contrast-circle",
+    }
+
+    # Keep the patch in place to ensure that coordinator updates that are
+    # scheduled during the reload period will use the mocked API.
+    with patch(
+        "custom_components.frigate.FrigateApiClient",
+        return_value=client,
+    ):
+        for disabled_entity_id, icon in expected_results.items():
+            updated_entry = entity_registry.async_update_entity(
+                disabled_entity_id, disabled_by=None
+            )
+            assert not updated_entry.disabled
+            await hass.async_block_till_done()
+
+            async_fire_time_changed(
+                hass,
+                dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1),
+            )
+
+            await hass.async_block_till_done()
+
+            entity_state = hass.states.get(disabled_entity_id)
+            assert entity_state
+            assert entity_state.attributes["icon"] == icon

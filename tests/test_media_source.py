@@ -116,6 +116,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
         "can_expand": True,
         "children_media_class": "video",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "title": f"Clips [{TEST_URL}]",
@@ -675,6 +676,7 @@ async def test_async_browse_media_recordings_root(
         "can_expand": True,
         "children_media_class": "directory",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "can_expand": True,
@@ -723,6 +725,7 @@ async def test_async_browse_media_recordings_root(
         "can_expand": True,
         "children_media_class": "directory",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "can_expand": True,
@@ -769,6 +772,7 @@ async def test_async_browse_media_recordings_root(
         "can_expand": True,
         "children_media_class": "directory",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "can_expand": True,
@@ -821,6 +825,7 @@ async def test_async_browse_media_recordings_root(
         "can_expand": True,
         "children_media_class": "directory",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "can_expand": False,
@@ -897,6 +902,7 @@ async def test_async_browse_media_recordings_root(
         "can_expand": True,
         "children_media_class": "directory",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "can_expand": False,
@@ -1257,6 +1263,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
         "can_expand": True,
         "children_media_class": "image",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 "title": "2021-06-04 00:00:01 [100s, Person 72%]",
@@ -1372,6 +1379,7 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
         "can_expand": True,
         "children_media_class": "image",
         "thumbnail": None,
+        "not_shown": 0,
         "children": [
             {
                 # Duration will be shown as 10s, since 10s has elapsed since
