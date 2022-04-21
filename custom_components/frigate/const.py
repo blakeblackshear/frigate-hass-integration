@@ -9,6 +9,7 @@ FRIGATE_RELEASE_TAG_URL = "https://github.com/blakeblackshear/frigate/releases/t
 # Icons
 ICON_CAR = "mdi:shield-car"
 ICON_CAT = "mdi:cat"
+ICON_CONTRAST = "mdi:contrast-circle"
 ICON_DOG = "mdi:dog-side"
 ICON_FILM_MULTIPLE = "mdi:filmstrip-box-multiple"
 ICON_IMAGE_MULTIPLE = "mdi:image-multiple"
