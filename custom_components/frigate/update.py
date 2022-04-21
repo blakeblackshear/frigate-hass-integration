@@ -67,11 +67,6 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return "Frigate Container"
-
-    @property
     def installed_version(self) -> str | None:
         """Version currently in use."""
 
