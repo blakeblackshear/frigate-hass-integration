@@ -186,7 +186,7 @@ async def test_disabled_switch_can_be_enabled(
     entry = entity_registry.async_get(disabled_entity_id)
     assert entry
     assert entry.disabled
-    assert entry.disabled_by == er.DISABLED_INTEGRATION
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
     entity_state = hass.states.get(disabled_entity_id)
     assert not entity_state
 
