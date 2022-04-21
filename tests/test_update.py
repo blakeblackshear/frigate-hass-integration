@@ -37,7 +37,9 @@ async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "on"
-    assert entity_state.attributes[ATTR_RELEASE_URL]
+    assert entity_state.attributes[ATTR_RELEASE_URL] == (
+        FRIGATE_RELEASE_TAG_URL + "/v0.10.1"
+    )
 
 
 async def test_update_sensor_same_version(hass: HomeAssistant) -> None:
@@ -79,6 +81,7 @@ async def test_update_sensor_bad_current(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
     assert entity_state.attributes[ATTR_INSTALLED_VERSION] is None
+    assert entity_state.attributes[ATTR_LATEST_VERSION] == "0.10.1"
 
 
 async def test_update_sensor_bad_latest(hass: HomeAssistant) -> None:
@@ -96,6 +99,6 @@ async def test_update_sensor_bad_latest(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.attributes[ATTR_INSTALLED_VERSION]
+    assert entity_state.attributes[ATTR_INSTALLED_VERSION] == "0.8.4"
     assert entity_state.attributes[ATTR_LATEST_VERSION] is None
     assert entity_state.attributes[ATTR_RELEASE_URL] is None
