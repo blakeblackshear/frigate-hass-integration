@@ -78,7 +78,6 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
         version_hash = self.coordinator.data.get("service", {}).get("version")
 
         if not version_hash:
-            _LOGGER.error("Version not contained in stats")
             return None
 
         version, _, _ = str(version_hash).partition("-")
