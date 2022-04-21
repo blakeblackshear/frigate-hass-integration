@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.frigate import SCAN_INTERVAL
+from custom_components.frigate.const import FRIGATE_RELEASE_TAG_URL
 from homeassistant.components.update.const import (
     ATTR_INSTALLED_VERSION,
     ATTR_LATEST_VERSION,
@@ -27,6 +28,18 @@ from . import (
 _LOGGER = logging.getLogger(__name__)
 
 
+async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
+    """Test FrigateUpdateSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
+    assert entity_state.attributes[ATTR_RELEASE_URL]
+
+
 async def test_update_sensor_same_version(hass: HomeAssistant) -> None:
     """Test FrigateUpdateSensor state."""
 
@@ -41,21 +54,13 @@ async def test_update_sensor_same_version(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
-    assert entity_state.attributes[ATTR_INSTALLED_VERSION]
-    assert entity_state.attributes[ATTR_LATEST_VERSION]
-    assert entity_state.attributes[ATTR_RELEASE_URL]
-
-
-async def test_update_sensor_new_update(hass: HomeAssistant) -> None:
-    """Test FrigateUpdateSensor state."""
-
-    client = create_mock_frigate_client()
-    await setup_mock_frigate_config_entry(hass, client=client)
-
-    entity_state = hass.states.get(TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID)
     assert entity_state
-    assert entity_state.state == "on"
-    assert entity_state.attributes[ATTR_RELEASE_URL]
+    assert entity_state.state == "off"
+    assert entity_state.attributes[ATTR_INSTALLED_VERSION] == "0.10.1"
+    assert entity_state.attributes[ATTR_LATEST_VERSION] == "0.10.1"
+    assert entity_state.attributes[ATTR_RELEASE_URL] == (
+        FRIGATE_RELEASE_TAG_URL + "/v0.10.1"
+    )
 
 
 async def test_update_sensor_bad_current(hass: HomeAssistant) -> None:
