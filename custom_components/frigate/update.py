@@ -11,7 +11,11 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import FrigateDataUpdateCoordinator, get_frigate_device_identifier
+from . import (
+    FrigateDataUpdateCoordinator,
+    get_frigate_device_identifier,
+    get_frigate_entity_unique_id,
+)
 from .const import ATTR_COORDINATOR, DOMAIN, NAME
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -45,7 +49,9 @@ class FrigateContainerUpdate(UpdateEntity, CoordinatorEntity):  # type: ignore[m
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
-        return "frigate_container"
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, "update", "server"
+        )
 
     @property
     def device_info(self) -> DeviceInfo:
