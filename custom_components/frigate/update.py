@@ -44,8 +44,8 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
         config_entry: ConfigEntry,
     ) -> None:
         """Construct a FrigateContainerUpdate."""
+        FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
-        self._config_entry = config_entry
 
     @property
     def unique_id(self) -> str:
