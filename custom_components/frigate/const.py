@@ -4,6 +4,7 @@ NAME = "Frigate"
 DOMAIN = "frigate"
 FRIGATE_VERSION_ERROR_CUTOFF = "0.8.4"
 FRIGATE_RELEASES_URL = "https://github.com/blakeblackshear/frigate/releases"
+FRIGATE_RELEASE_TAG_URL = f"{FRIGATE_RELEASES_URL}/tag"
 
 # Icons
 ICON_CAR = "mdi:shield-car"
@@ -22,7 +23,8 @@ BINARY_SENSOR = "binary_sensor"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
-PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR]
+UPDATE = "update"
+PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR, UPDATE]
 
 # Unit of measurement
 FPS = "fps"
