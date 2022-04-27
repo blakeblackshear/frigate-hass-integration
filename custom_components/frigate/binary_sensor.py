@@ -34,13 +34,13 @@ async def async_setup_entry(
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     async_add_entities(
         [
-            FrigateMotionSensor(entry, frigate_config, cam_name, obj)
+            FrigateObjectPresenceSensor(entry, frigate_config, cam_name, obj)
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
 
 
-class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
     """Frigate Motion Sensor class."""
 
     def __init__(
