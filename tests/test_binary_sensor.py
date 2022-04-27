@@ -76,7 +76,7 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     assert entity_state.state == "unavailable"
 
     # Verify the general motion sensor works.
-    async_fire_mqtt_message(hass, "frigate/front_door/motion/detected", True)
+    async_fire_mqtt_message(hass, "frigate/front_door/motion/detected", "True")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
     assert entity_state
