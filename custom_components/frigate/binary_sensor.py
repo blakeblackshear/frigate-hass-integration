@@ -37,7 +37,7 @@ async def async_setup_entry(
     entities = []
 
     # add object sensors for cameras and zones
-    entities.append(
+    entities.extend(
         [
             FrigateObjectPresenceSensor(entry, frigate_config, cam_name, obj)
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
@@ -45,7 +45,7 @@ async def async_setup_entry(
     )
 
     # add generic motion sensors for cameras
-    entities.append(
+    entities.extend(
         [
             FrigateMotionSensor(entry, frigate_config, cam_name)
             for cam_name in get_cameras(frigate_config)
