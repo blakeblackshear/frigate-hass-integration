@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
+    get_cameras,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -32,12 +33,26 @@ async def async_setup_entry(
 ) -> None:
     """Binary sensor entry setup."""
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
-    async_add_entities(
+
+    entities = []
+
+    # add object sensors for cameras and zones
+    entities.append(
         [
             FrigateObjectPresenceSensor(entry, frigate_config, cam_name, obj)
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
+
+    # add generic motion sensors for cameras
+    entities.append(
+        [
+            FrigateMotionSensor(entry, frigate_config, cam_name)
+            for cam_name in get_cameras(frigate_config)
+        ]
+    )
+
+    async_add_entities(entities)
 
 
 class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
@@ -113,6 +128,84 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
     def entity_registry_enabled_default(self) -> bool:
         """Whether or not the entity is enabled by default."""
         return self._obj_name != "all"
+
+    @property
+    def device_class(self) -> str:
+        """Return the device class."""
+        return cast(str, DEVICE_CLASS_MOTION)
+
+
+class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+    """Frigate Motion Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+    ) -> None:
+        """Construct a new FrigateMotionSensor."""
+        self._cam_name = cam_name
+        self._is_on = False
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/motion/detected"
+                )
+            },
+        )
+
+    @callback  # type: ignore[misc]
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            self._is_on = bool(msg.payload)
+        except ValueError:
+            self._is_on = False
+        super()._state_message_received(msg)
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "motion_sensor",
+            f"{self._cam_name}_motion",
+        )
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{get_friendly_name(self._cam_name)} General Motion".title()
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if the binary sensor is on."""
+        return self._is_on
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        """Whether or not the entity is enabled by default."""
+        return False
 
     @property
     def device_class(self) -> str:

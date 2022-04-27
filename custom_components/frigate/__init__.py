@@ -88,6 +88,16 @@ def get_friendly_name(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+def get_cameras(config: dict[str, Any]) -> set[str]:
+    """Get cameras."""
+    cameras = set()
+
+    for cam_name, _ in config["cameras"].items():
+        cameras.add(cam_name)
+
+    return cameras
+
+
 def get_cameras_and_objects(
     config: dict[str, Any], include_all: bool = True
 ) -> set[tuple[str, str]]:
