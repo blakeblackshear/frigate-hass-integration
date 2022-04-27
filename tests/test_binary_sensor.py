@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
+    TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID,
@@ -73,6 +74,13 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     )
     assert entity_state
     assert entity_state.state == "unavailable"
+
+    # Verify the general motion sensor works.
+    async_fire_mqtt_message(hass, "frigate/front_door/motion/detected", True)
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
 
 
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:

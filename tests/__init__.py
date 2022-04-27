@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
+TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID = "binary_sensor.front_door_motion"
 TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID = (
     "binary_sensor.front_door_person_motion"
 )
