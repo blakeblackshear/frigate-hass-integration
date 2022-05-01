@@ -27,10 +27,9 @@ from . import (
 _LOGGER = logging.getLogger(__name__)
 
 
-async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
-    """Verify a successful binary sensor setup."""
+async def test_presence_binary_sensor_setup(hass: HomeAssistant) -> None:
+    """Verify a successful presence binary sensor setup."""
     await setup_mock_frigate_config_entry(hass)
-    entity_registry = er.async_get(hass)
 
     entity_state = hass.states.get(
         TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
@@ -76,8 +75,13 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "unavailable"
 
+
+async def test_motion_binary_sensor_setup(hass: HomeAssistant) -> None:
+    """Verify a successful motion binary sensor setup."""
+    entity_registry = er.async_get(hass)
+
     # Verify the general motion sensor works.
-    await entity_registry.async_update_entity(
+    entity_registry.async_update_entity(
         TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID, disabled_by=None
     )
     async_fire_mqtt_message(hass, "frigate/front_door/motion/detected", "True")
