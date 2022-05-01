@@ -15,7 +15,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,
-    TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID,
+    TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_ALL_PRESENCE_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_PERSON_PRESENCE_ENTITY_ID,
     TEST_CONFIG_ENTRY_ID,
@@ -33,7 +33,7 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     entity_registry = er.async_get(hass)
 
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
     )
     assert entity_state
     assert entity_state.state == "unavailable"
@@ -41,7 +41,7 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
     )
     assert entity_state
     assert entity_state.state == "off"
@@ -49,7 +49,7 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     async_fire_mqtt_message(hass, "frigate/front_door/person", "1")
     await hass.async_block_till_done()
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
     )
     assert entity_state
     assert entity_state.state == "on"
@@ -64,14 +64,14 @@ async def test_binary_sensor_setup(hass: HomeAssistant) -> None:
     async_fire_mqtt_message(hass, "frigate/front_door/person", "not_an_int")
     await hass.async_block_till_done()
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
     )
     assert entity_state
     assert entity_state.state == "off"
 
     async_fire_mqtt_message(hass, "frigate/available", "offline")
     entity_state = hass.states.get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
     )
     assert entity_state
     assert entity_state.state == "unavailable"
@@ -92,13 +92,13 @@ async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
     client = create_mock_frigate_client()
     client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
     await setup_mock_frigate_config_entry(hass, client=client)
-    assert not hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID)
+    assert not hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID)
 
 
 @pytest.mark.parametrize(
     "camerazone_entity",
     [
-        ("front_door", TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID),
+        ("front_door", TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID),
         ("steps", TEST_BINARY_SENSOR_STEPS_PERSON_PRESENCE_ENTITY_ID),
     ],
 )
@@ -130,7 +130,7 @@ async def test_binary_sensor_unique_id(hass: HomeAssistant) -> None:
     """Verify entity unique_id(s)."""
     await setup_mock_frigate_config_entry(hass)
     registry_entry = er.async_get(hass).async_get(
-        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_PRESENCE_ENTITY_ID
     )
     assert registry_entry
     assert (
