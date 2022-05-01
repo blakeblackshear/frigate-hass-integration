@@ -6,6 +6,7 @@ from typing import Any, cast
 
 from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
+    DEVICE_CLASS_PRESENCE,
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -56,7 +57,7 @@ async def async_setup_entry(
 
 
 class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
-    """Frigate Motion Sensor class."""
+    """Frigate Presence Sensor class."""
 
     def __init__(
         self,
@@ -65,7 +66,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
         cam_name: str,
         obj_name: str,
     ) -> None:
-        """Construct a new FrigateMotionSensor."""
+        """Construct a new FrigateObjectPresenceSensor."""
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._is_on = False
@@ -117,7 +118,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Motion".title()
+        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Presence".title()
 
     @property
     def is_on(self) -> bool:
@@ -132,7 +133,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
     @property
     def device_class(self) -> str:
         """Return the device class."""
-        return cast(str, DEVICE_CLASS_MOTION)
+        return cast(str, DEVICE_CLASS_PRESENCE)
 
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
