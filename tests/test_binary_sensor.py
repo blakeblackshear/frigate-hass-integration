@@ -76,21 +76,6 @@ async def test_presence_binary_sensor_setup(hass: HomeAssistant) -> None:
     assert entity_state.state == "unavailable"
 
 
-async def test_motion_binary_sensor_setup(hass: HomeAssistant) -> None:
-    """Verify a successful motion binary sensor setup."""
-    entity_registry = er.async_get(hass)
-
-    # Verify the general motion sensor works.
-    entity_registry.async_update_entity(
-        TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID, disabled_by=None
-    )
-    async_fire_mqtt_message(hass, "frigate/front_door/motion/detected", "True")
-    await hass.async_block_till_done()
-    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
-    assert entity_state
-    assert entity_state.state == "on"
-
-
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
     """Verify a failed API call results in unsuccessful setup."""
     client = create_mock_frigate_client()
@@ -139,7 +124,7 @@ async def test_binary_sensor_unique_id(hass: HomeAssistant) -> None:
     assert registry_entry
     assert (
         registry_entry.unique_id
-        == f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"
+        == f"{TEST_CONFIG_ENTRY_ID}:presence_sensor:front_door_person"
     )
 
 
@@ -171,5 +156,25 @@ async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
     # Update and test that entity is now enabled
     updated_entry = entity_registry.async_update_entity(
         TEST_BINARY_SENSOR_STEPS_ALL_PRESENCE_ENTITY_ID, disabled_by=None
+    )
+    assert not updated_entry.disabled
+
+
+async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
+    """Verify `all` binary_sensor can be enabled."""
+    await setup_mock_frigate_config_entry(hass)
+    entity_registry = er.async_get(hass)
+
+    # Test original entity is disabled as expected
+    entry = entity_registry.async_get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
+    assert entry
+    assert entry.disabled
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
+    assert not entity_state
+
+    # Update and test that entity is now enabled
+    updated_entry = entity_registry.async_update_entity(
+        TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID, disabled_by=None
     )
     assert not updated_entry.disabled
