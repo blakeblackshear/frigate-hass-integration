@@ -1,17 +1,23 @@
 """Test the frigate binary sensor."""
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
+from pytest_homeassistant_custom_component.common import (
+    async_fire_mqtt_message,
+    async_fire_time_changed,
+)
 
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import DOMAIN, NAME
+from homeassistant.config_entries import RELOAD_AFTER_UPDATE_DELAY
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+import homeassistant.util.dt as dt_util
 
 from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,
@@ -74,6 +80,39 @@ async def test_occupancy_binary_sensor_setup(hass: HomeAssistant) -> None:
     )
     assert entity_state
     assert entity_state.state == "unavailable"
+
+
+async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
+    """Verify motion binary_sensor can be enabled and used."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_registry = er.async_get(hass)
+    expected_results = (TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,)
+
+    # Keep the patch in place to ensure that coordinator updates that are
+    # scheduled during the reload period will use the mocked API.
+    with patch(
+        "custom_components.frigate.FrigateApiClient",
+        return_value=client,
+    ):
+        for disabled_entity_id in expected_results:
+            updated_entry = entity_registry.async_update_entity(
+                disabled_entity_id, disabled_by=None
+            )
+            assert not updated_entry.disabled
+            await hass.async_block_till_done()
+
+            async_fire_time_changed(
+                hass,
+                dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1),
+            )
+
+            await hass.async_block_till_done()
+
+            entity_state = hass.states.get(disabled_entity_id)
+            assert entity_state
+            assert entity_state == "off"
 
 
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
@@ -156,25 +195,5 @@ async def test_binary_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
     # Update and test that entity is now enabled
     updated_entry = entity_registry.async_update_entity(
         TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID, disabled_by=None
-    )
-    assert not updated_entry.disabled
-
-
-async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
-    """Verify `all` binary_sensor can be enabled."""
-    await setup_mock_frigate_config_entry(hass)
-    entity_registry = er.async_get(hass)
-
-    # Test original entity is disabled as expected
-    entry = entity_registry.async_get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
-    assert entry
-    assert entry.disabled
-    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
-    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID)
-    assert not entity_state
-
-    # Update and test that entity is now enabled
-    updated_entry = entity_registry.async_update_entity(
-        TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID, disabled_by=None
     )
     assert not updated_entry.disabled
