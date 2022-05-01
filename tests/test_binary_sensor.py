@@ -112,7 +112,7 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
 
             entity_state = hass.states.get(disabled_entity_id)
             assert entity_state
-            assert entity_state == "off"
+            assert entity_state.state == "off"
 
 
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
