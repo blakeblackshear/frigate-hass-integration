@@ -196,7 +196,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} General Motion".title()
+        return f"{get_friendly_name(self._cam_name)} Motion".title()
 
     @property
     def is_on(self) -> bool:

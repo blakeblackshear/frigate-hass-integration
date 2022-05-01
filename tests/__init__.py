@@ -18,8 +18,10 @@ TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID = (
 TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_MOTION_ENTITY_ID = (
     "binary_sensor.front_door_person_motion"
 )
-TEST_BINARY_SENSOR_STEPS_PERSON_MOTION_ENTITY_ID = "binary_sensor.steps_person_motion"
-TEST_BINARY_SENSOR_STEPS_ALL_MOTION_ENTITY_ID = "binary_sensor.steps_all_motion"
+TEST_BINARY_SENSOR_STEPS_PERSON_PRESENCE_ENTITY_ID = (
+    "binary_sensor.steps_person_presence"
+)
+TEST_BINARY_SENSOR_STEPS_ALL_PRESENCE_ENTITY_ID = "binary_sensor.steps_all_presence"
 TEST_CAMERA_FRONT_DOOR_ENTITY_ID = "camera.front_door"
 TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
 TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID = "switch.front_door_detect"
