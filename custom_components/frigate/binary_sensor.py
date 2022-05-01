@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
-    DEVICE_CLASS_PRESENCE,
+    DEVICE_CLASS_OCCUPANCY,
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -40,7 +40,7 @@ async def async_setup_entry(
     # add object sensors for cameras and zones
     entities.extend(
         [
-            FrigateObjectPresenceSensor(entry, frigate_config, cam_name, obj)
+            FrigateObjectOccupancySensor(entry, frigate_config, cam_name, obj)
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
@@ -56,8 +56,8 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
-    """Frigate Presence Sensor class."""
+class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+    """Frigate Occupancy Sensor class."""
 
     def __init__(
         self,
@@ -66,7 +66,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
         cam_name: str,
         obj_name: str,
     ) -> None:
-        """Construct a new FrigateObjectPresenceSensor."""
+        """Construct a new FrigateObjectOccupancySensor."""
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._is_on = False
@@ -97,7 +97,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
         """Return a unique ID for this entity."""
         return get_frigate_entity_unique_id(
             self._config_entry.entry_id,
-            "presence_sensor",
+            "occupancy_sensor",
             f"{self._cam_name}_{self._obj_name}",
         )
 
@@ -118,7 +118,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Presence".title()
+        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Occupancy".title()
 
     @property
     def is_on(self) -> bool:
@@ -133,7 +133,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
     @property
     def device_class(self) -> str:
         """Return the device class."""
-        return cast(str, DEVICE_CLASS_PRESENCE)
+        return cast(str, DEVICE_CLASS_OCCUPANCY)
 
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
