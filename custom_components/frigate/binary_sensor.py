@@ -97,7 +97,7 @@ class FrigateObjectPresenceSensor(FrigateMQTTEntity, BinarySensorEntity):  # typ
         """Return a unique ID for this entity."""
         return get_frigate_entity_unique_id(
             self._config_entry.entry_id,
-            "motion_sensor",
+            "presence_sensor",
             f"{self._cam_name}_{self._obj_name}",
         )
 
