@@ -88,7 +88,9 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass, client=client)
 
     entity_registry = er.async_get(hass)
-    expected_results = (TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,)
+    expected_results = {
+        TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID: "frigate/front_door/motion/detected",
+    }
 
     # Keep the patch in place to ensure that coordinator updates that are
     # scheduled during the reload period will use the mocked API.
@@ -96,7 +98,7 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
         "custom_components.frigate.FrigateApiClient",
         return_value=client,
     ):
-        for disabled_entity_id in expected_results:
+        for disabled_entity_id, mqtt_topic in expected_results.items():
             updated_entry = entity_registry.async_update_entity(
                 disabled_entity_id, disabled_by=None
             )
@@ -108,8 +110,8 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
                 dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1),
             )
 
+            async_fire_mqtt_message(hass, mqtt_topic, "True")
             await hass.async_block_till_done()
-
             entity_state = hass.states.get(disabled_entity_id)
             assert entity_state
             assert entity_state.state == "off"
