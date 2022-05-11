@@ -8,6 +8,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
+from . import setup_mock_frigate_config_entry
+
 
 async def _get_diagnostics_for_config_entry(
     hass: HomeAssistant, hass_client: Any, config_entry: ConfigEntry
@@ -26,6 +28,7 @@ async def _get_diagnostics_for_config_entry(
 async def test_diagnostics(hass: HomeAssistant, hass_client: Any) -> None:
     """Test the diagnostics."""
     # try to get config entry
+    await setup_mock_frigate_config_entry(hass)
     config_entry: ConfigEntry = hass.config_entries.async_entries(DOMAIN)[0]
 
     # test values are as expected
