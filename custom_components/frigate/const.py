@@ -40,6 +40,8 @@ ATTR_CLIENT_ID = "client_id"
 # Configuration and options
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"
 CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
+CONF_PASSWORD = "password"
+CONF_PATH = "path"
 CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
 
 # Defaults
