@@ -26,12 +26,10 @@ async def _get_diagnostics_for_config_entry(
 
 async def test_diagnostics(hass: HomeAssistant, hass_client: Any) -> None:
     """Test the diagnostics."""
-    # try to get config entry
     config_entry: ConfigEntry = await setup_mock_frigate_config_entry(hass)
-
-    # test values are as expected
     diagnostic_config: Dict[str, Any] = await _get_diagnostics_for_config_entry(
         hass, hass_client, config_entry
     )
+
     assert diagnostic_config["data"]["frigate_config"]
     assert diagnostic_config["data"]["frigate_stats"]

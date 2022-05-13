@@ -17,16 +17,10 @@ async def async_get_config_entry_diagnostics(
 ) -> Dict[str, Any]:
     """Return diagnostics for a config entry."""
 
-    # get initial config
     config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
-
-    # get redacted config
     redacted_config = async_redact_data(config, REDACT_CONFIG)
 
-    # get initial stats
     stats = await hass.data[DOMAIN][entry.entry_id][ATTR_CLIENT].async_get_stats()
-
-    # get redacted stats
     redacted_stats = async_redact_data(stats, REDACT_CONFIG)
 
     data = {
