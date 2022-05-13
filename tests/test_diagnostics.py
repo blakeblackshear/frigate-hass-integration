@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
-from . import setup_mock_frigate_config_entry
+from . import TEST_CONFIG, TEST_STATS, setup_mock_frigate_config_entry
 
 
 async def _get_diagnostics_for_config_entry(
@@ -31,5 +31,5 @@ async def test_diagnostics(hass: HomeAssistant, hass_client: Any) -> None:
         hass, hass_client, config_entry
     )
 
-    assert diagnostic_config["data"]["frigate_config"]
-    assert diagnostic_config["data"]["frigate_stats"]
+    assert diagnostic_config["data"]["frigate_config"] == TEST_CONFIG
+    assert diagnostic_config["data"]["frigate_stats"] == TEST_STATS
