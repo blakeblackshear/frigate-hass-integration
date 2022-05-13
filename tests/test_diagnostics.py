@@ -3,6 +3,7 @@
 from http import HTTPStatus
 from typing import Any, Dict
 
+from custom_components.frigate.diagnostics import get_redacted_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -31,5 +32,8 @@ async def test_diagnostics(hass: HomeAssistant, hass_client: Any) -> None:
         hass, hass_client, config_entry
     )
 
-    assert diagnostic_config["data"]["frigate_config"] == TEST_CONFIG
-    assert diagnostic_config["data"]["frigate_stats"] == TEST_STATS
+    redacted_test_config = get_redacted_data(TEST_CONFIG)
+    redacted_test_stats = get_redacted_data(TEST_STATS)
+
+    assert diagnostic_config["data"]["frigate_config"] == redacted_test_config
+    assert diagnostic_config["data"]["frigate_stats"] == redacted_test_stats
