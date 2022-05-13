@@ -110,11 +110,11 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
                 dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1),
             )
 
-            async_fire_mqtt_message(hass, mqtt_topic, "True")
+            async_fire_mqtt_message(hass, mqtt_topic, "ON")
             await hass.async_block_till_done()
             entity_state = hass.states.get(disabled_entity_id)
             assert entity_state
-            assert entity_state.state == "off"
+            assert entity_state.state == "on"
 
 
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
