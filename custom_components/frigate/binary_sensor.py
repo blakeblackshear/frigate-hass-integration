@@ -164,10 +164,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        try:
-            self._is_on = bool(msg.payload)
-        except ValueError:
-            self._is_on = False
+        self._is_on = msg.payload == "ON"
         super()._state_message_received(msg)
 
     @property
