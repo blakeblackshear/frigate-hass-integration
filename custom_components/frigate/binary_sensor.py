@@ -156,7 +156,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
             {
                 "topic": (
                     f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/motion/detected"
+                    f"/{self._cam_name}/motion"
                 )
             },
         )

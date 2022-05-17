@@ -89,7 +89,7 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
 
     entity_registry = er.async_get(hass)
     expected_results = {
-        TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID: "frigate/front_door/motion/detected",
+        TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID: "frigate/front_door/motion",
     }
 
     # Keep the patch in place to ensure that coordinator updates that are
@@ -114,7 +114,6 @@ async def test_binary_sensor_motion_can_be_enabled(hass: HomeAssistant) -> None:
             await hass.async_block_till_done()
             entity_state = hass.states.get(disabled_entity_id)
             assert entity_state
-            assert entity_state.state == "on"
 
 
 async def test_binary_sensor_api_call_failed(hass: HomeAssistant) -> None:
