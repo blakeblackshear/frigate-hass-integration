@@ -242,6 +242,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_options.pop(CONF_CAMERA_STATIC_IMAGE_HEIGHT)
         hass.config_entries.async_update_entry(entry, options=new_options)
 
+    # cleanup object_motion sensors.
+    for cam_name, obj_name in get_cameras_zones_and_objects(config):
+        unique_id = get_frigate_entity_unique_id(
+            entry.entry_id,
+            "motion_sensor",
+            f"{cam_name}_{obj_name}",
+        )
+        entity_id = entity_registry.async_get_entity_id(
+            "motion_sensor", DOMAIN, unique_id
+        )
+        if entity_id:
+            entity_registry.async_remove(entity_id)
+
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
