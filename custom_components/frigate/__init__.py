@@ -250,7 +250,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"{cam_name}_{obj_name}",
         )
         entity_id = entity_registry.async_get_entity_id(
-            "motion_sensor", DOMAIN, unique_id
+            "binary_sensor", DOMAIN, unique_id
         )
         if entity_id:
             entity_registry.async_remove(entity_id)
