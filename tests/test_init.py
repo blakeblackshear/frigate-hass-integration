@@ -237,6 +237,61 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
     )
 
 
+async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
+    """Test cleanup of old motion sensor."""
+    entity_registry = er.async_get(hass)
+
+    config_entry: MockConfigEntry = MockConfigEntry(
+        entry_id=TEST_CONFIG_ENTRY_ID,
+        domain=DOMAIN,
+        data={CONF_HOST: "http://host:456"},
+        title="Frigate",
+        version=2,
+    )
+
+    config_entry.add_to_hass(hass)
+
+    old_unique_ids = [
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:steps_person"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_process"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped"),
+    ]
+
+    # Create fake entries with the old unique_ids.
+    for platform, unique_id in old_unique_ids:
+        assert entity_registry.async_get_or_create(
+            platform, DOMAIN, unique_id, config_entry=config_entry
+        )
+
+    # Setup the integration.
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry
+    )
+
+    for platform, unique_id in old_unique_ids:
+        if platform == "binary_sensor" and unique_id.endswith("_person"):
+            assert (
+                entity_registry.async_get_entity_id("motion_sensor", DOMAIN, unique_id)
+                is None
+            )
+        else:
+            assert (
+                entity_registry.async_get_entity_id(platform, DOMAIN, unique_id)
+                is not None
+            )
+
+    assert (
+        entity_registry.async_get_entity_id(
+            "switch", DOMAIN, f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_recordings"
+        )
+        is not None
+    )
+
+
 async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
     """Test the startup message."""
 
