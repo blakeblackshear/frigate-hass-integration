@@ -325,7 +325,7 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
         (
             "sensor",
             f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person",
-            "sensor.front_yard_person_count",
+            "sensor.front_door_person_count",
         ),
     }
 
