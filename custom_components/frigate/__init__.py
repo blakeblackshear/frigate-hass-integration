@@ -255,6 +255,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if entity_id:
             entity_registry.async_remove(entity_id)
 
+    # Rename / change ID of object count sensors.
+    for cam_name, obj_name in get_cameras_zones_and_objects(config):
+        unique_id = get_frigate_entity_unique_id(
+            entry.entry_id,
+            "sensor_object_count",
+            f"{cam_name}_{obj_name}",
+        )
+        entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if entity_id:
+            new_id = f"sensor.{cam_name}_{obj_name}_count"
+            new_name = f"{get_friendly_name(cam_name)} {obj_name} Count".title()
+            entity_registry.async_update_entity(
+                entity_id=entity_id,
+                new_entity_id=new_id,
+                name=new_name,
+            )
+
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
