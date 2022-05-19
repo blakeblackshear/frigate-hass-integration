@@ -325,11 +325,16 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
         (
             "sensor",
             f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person",
+            "sensor.front_yard_person_count",
         ),
     }
 
-    for platform, unique_id in renamed_unique_ids:
-        assert entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is None
+    for platform, unique_id, entity_id in renamed_unique_ids:
+        found_entity_id = entity_registry.async_get_entity_id(
+            platform, DOMAIN, unique_id
+        )
+        assert found_entity_id is not None
+        assert found_entity_id is entity_id
 
     for platform, unique_id in old_unique_ids - renamed_unique_ids:
         assert (
