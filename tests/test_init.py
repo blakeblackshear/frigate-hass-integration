@@ -320,7 +320,7 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
     }
 
     # Create fake entries with the old unique_ids.
-    for platform, unique_id in old_unique_ids:
+    for platform, unique_id, _ in old_unique_ids:
         assert entity_registry.async_get_or_create(
             platform, DOMAIN, unique_id, config_entry=config_entry
         )
