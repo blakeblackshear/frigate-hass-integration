@@ -88,6 +88,16 @@ def get_friendly_name(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+def get_cameras(config: dict[str, Any]) -> set[str]:
+    """Get cameras."""
+    cameras = set()
+
+    for cam_name, _ in config["cameras"].items():
+        cameras.add(cam_name)
+
+    return cameras
+
+
 def get_cameras_and_objects(
     config: dict[str, Any], include_all: bool = True
 ) -> set[tuple[str, str]]:
@@ -232,6 +242,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_options.pop(CONF_CAMERA_STATIC_IMAGE_HEIGHT)
         hass.config_entries.async_update_entry(entry, options=new_options)
 
+    # Cleanup object_motion sensors (replaced with occupancy sensors).
+    for cam_name, obj_name in get_cameras_zones_and_objects(config):
+        unique_id = get_frigate_entity_unique_id(
+            entry.entry_id,
+            "motion_sensor",
+            f"{cam_name}_{obj_name}",
+        )
+        entity_id = entity_registry.async_get_entity_id(
+            "binary_sensor", DOMAIN, unique_id
+        )
+        if entity_id:
+            entity_registry.async_remove(entity_id)
+
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
@@ -289,7 +312,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
             converters: Final[dict[re.Pattern, Callable[[re.Match], list[str]]]] = {
                 re.compile(rf"^{DOMAIN}_(?P<cam_obj>\S+)_binary_sensor$"): lambda m: [
-                    "motion_sensor",
+                    "occupancy_sensor",
                     m.group("cam_obj"),
                 ],
                 re.compile(rf"^{DOMAIN}_(?P<cam>\S+)_camera$"): lambda m: [
