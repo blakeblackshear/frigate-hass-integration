@@ -151,7 +151,7 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
 
     # Ensure all the new transformed entity unique ids are present.
     new_unique_ids = [
-        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:front_door_person"),
         ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
         ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
@@ -166,7 +166,7 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_detector_speed:cpu2"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_detection"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:steps_person"),
-        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:steps_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:steps_person"),
     ]
     for platform, unique_id in new_unique_ids:
         assert (
@@ -189,7 +189,7 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
     config_entry.add_to_hass(hass)
 
     old_unique_ids = [
-        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:front_door_person"),
         ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
         ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
@@ -204,7 +204,7 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_detector_speed:cpu2"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_detection"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:steps_person"),
-        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:steps_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:steps_person"),
     ]
 
     # Create fake entries with the old unique_ids.
@@ -251,7 +251,7 @@ async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
 
     config_entry.add_to_hass(hass)
 
-    old_unique_ids = [
+    old_unique_ids = {
         ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"),
         ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:steps_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
@@ -259,7 +259,8 @@ async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_process"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped"),
-    ]
+        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_recordings"),
+    }
 
     # Create fake entries with the old unique_ids.
     for platform, unique_id in old_unique_ids:
@@ -272,24 +273,18 @@ async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
         hass, config_entry=config_entry
     )
 
-    for platform, unique_id in old_unique_ids:
-        if platform == "binary_sensor" and unique_id.endswith("_person"):
-            assert (
-                entity_registry.async_get_entity_id("motion_sensor", DOMAIN, unique_id)
-                is None
-            )
-        else:
-            assert (
-                entity_registry.async_get_entity_id(platform, DOMAIN, unique_id)
-                is not None
-            )
+    removed_unique_ids = {
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:front_door_person"),
+        ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:motion_sensor:steps_person"),
+    }
 
-    assert (
-        entity_registry.async_get_entity_id(
-            "switch", DOMAIN, f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_recordings"
+    for platform, unique_id in removed_unique_ids:
+        assert entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is None
+
+    for platform, unique_id in old_unique_ids - removed_unique_ids:
+        assert (
+            entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is not None
         )
-        is not None
-    )
 
 
 async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:

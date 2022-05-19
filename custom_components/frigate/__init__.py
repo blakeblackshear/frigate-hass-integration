@@ -242,7 +242,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         new_options.pop(CONF_CAMERA_STATIC_IMAGE_HEIGHT)
         hass.config_entries.async_update_entry(entry, options=new_options)
 
-    # cleanup object_motion sensors.
+    # Cleanup object_motion sensors (replaced with occupancy sensors).
     for cam_name, obj_name in get_cameras_zones_and_objects(config):
         unique_id = get_frigate_entity_unique_id(
             entry.entry_id,
@@ -312,7 +312,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
             converters: Final[dict[re.Pattern, Callable[[re.Match], list[str]]]] = {
                 re.compile(rf"^{DOMAIN}_(?P<cam_obj>\S+)_binary_sensor$"): lambda m: [
-                    "motion_sensor",
+                    "occupancy_sensor",
                     m.group("cam_obj"),
                 ],
                 re.compile(rf"^{DOMAIN}_(?P<cam>\S+)_camera$"): lambda m: [
