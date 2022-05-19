@@ -329,7 +329,7 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
     }
 
     for platform, unique_id in renamed_unique_ids:
-        assert entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is None
+        assert entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is not None
 
     for platform, unique_id in old_unique_ids - renamed_unique_ids:
         assert (
