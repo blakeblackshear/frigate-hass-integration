@@ -173,7 +173,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
         return get_frigate_entity_unique_id(
             self._config_entry.entry_id,
             "motion_sensor",
-            f"{self._cam_name}_motion",
+            f"{self._cam_name}",
         )
 
     @property
