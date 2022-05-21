@@ -103,14 +103,14 @@ async def test_object_count_icon(
     object_icon: tuple[str, str], hass: HomeAssistant
 ) -> None:
     """Test FrigateObjectCountSensor car icon."""
-    object, icon = object_icon
+    object_name, icon = object_icon
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["cameras"]["front_door"]["objects"]["track"] = [object]
+    config["cameras"]["front_door"]["objects"]["track"] = [object_name]
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)
 
-    entity_state = hass.states.get(f"sensor.front_door_{object}")
+    entity_state = hass.states.get(f"sensor.front_door_{object_name}_count")
     assert entity_state
     assert entity_state.attributes["icon"] == icon
 

@@ -287,6 +287,70 @@ async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
         )
 
 
+async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
+    """Test cleanup of old motion sensor."""
+    entity_registry = er.async_get(hass)
+
+    config_entry: MockConfigEntry = MockConfigEntry(
+        entry_id=TEST_CONFIG_ENTRY_ID,
+        domain=DOMAIN,
+        data={CONF_HOST: "http://host:456"},
+        title="Frigate",
+        version=2,
+    )
+
+    config_entry.add_to_hass(hass)
+
+    old_unique_ids = {
+        (
+            "binary_sensor",
+            f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:front_door_person",
+            "binary_sensor.front_door_person_occupancy",
+        ),
+        (
+            "sensor",
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera",
+            "sensor.front_door_camera_fps",
+        ),
+        (
+            "sensor",
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person",
+            "sensor.front_door_person_count",
+        ),
+    }
+
+    # Create fake entries with the old unique_ids.
+    for platform, unique_id, _ in old_unique_ids:
+        assert entity_registry.async_get_or_create(
+            platform, DOMAIN, unique_id, config_entry=config_entry
+        )
+
+    # Setup the integration.
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry
+    )
+
+    renamed_unique_ids = {
+        (
+            "sensor",
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person",
+            "sensor.front_door_person_count",
+        ),
+    }
+
+    for platform, unique_id, entity_id in renamed_unique_ids:
+        found_entity_id = entity_registry.async_get_entity_id(
+            platform, DOMAIN, unique_id
+        )
+        assert found_entity_id is not None
+        assert found_entity_id == entity_id
+
+    for platform, unique_id, _ in old_unique_ids - renamed_unique_ids:
+        assert (
+            entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is not None
+        )
+
+
 async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
     """Test the startup message."""
 
