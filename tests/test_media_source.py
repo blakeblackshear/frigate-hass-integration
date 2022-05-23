@@ -14,7 +14,12 @@ import attr
 import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
-from custom_components.frigate.const import ATTR_CLIENT_ID, ATTR_MQTT, DOMAIN
+from custom_components.frigate.const import (
+    ATTR_CLIENT_ID,
+    ATTR_MQTT,
+    CONF_MEDIA_BROWSER_ENABLE,
+    DOMAIN,
+)
 from custom_components.frigate.media_source import (
     EventIdentifier,
     EventSearchIdentifier,
@@ -31,6 +36,7 @@ from homeassistant.core import HomeAssistant
 
 from . import (
     TEST_CONFIG,
+    TEST_CONFIG_ENTRY_ID,
     TEST_FRIGATE_INSTANCE_ID,
     TEST_URL,
     create_mock_frigate_client,
@@ -77,6 +83,24 @@ def frigate_client() -> Generator[FrigateApiClient, None, None]:
     client = create_mock_frigate_client()
     client.async_get_events = AsyncMock(return_value=load_json(EVENTS_FIXTURE_FILE))
     yield client
+
+
+async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
+    """Test disabled browse media."""
+
+    # Create the default test Frigate instance.
+    create_mock_frigate_config_entry(
+        hass,
+        entry_id="private_id",
+        options={CONF_MEDIA_BROWSER_ENABLE: False},
+        data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
+    )
+
+    media = await media_source.async_browse_media(
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}",
+    )
+    assert media is None
 
 
 async def test_async_browse_media_root(hass: HomeAssistant) -> None:
