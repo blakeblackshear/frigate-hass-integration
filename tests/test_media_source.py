@@ -36,7 +36,6 @@ from homeassistant.core import HomeAssistant
 
 from . import (
     TEST_CONFIG,
-    TEST_CONFIG_ENTRY_ID,
     TEST_FRIGATE_INSTANCE_ID,
     TEST_URL,
     create_mock_frigate_client,
@@ -91,9 +90,7 @@ async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
     # Create the default test Frigate instance.
     create_mock_frigate_config_entry(
         hass,
-        entry_id="private_id",
         options={CONF_MEDIA_BROWSER_ENABLE: False},
-        data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
     media = await media_source.async_browse_media(
