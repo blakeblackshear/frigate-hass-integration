@@ -31,7 +31,7 @@ from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from . import get_friendly_name
 from .api import FrigateApiClient, FrigateApiClientError
-from .const import ATTR_CLIENT, DOMAIN, NAME
+from .const import ATTR_CLIENT, CONF_MEDIA_BROWSER_ENABLE, DOMAIN, NAME
 from .views import (
     get_config_entry_for_frigate_instance_id,
     get_default_config_entry,
@@ -47,7 +47,12 @@ SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
 
 async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
     """Set up Frigate media source."""
-    return FrigateMediaSource(hass)
+    config_entry = hass.config_entries[DOMAIN]
+
+    if config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True):
+        return FrigateMediaSource(hass)
+
+    return None
 
 
 class FrigateBrowseMediaMetadata:
