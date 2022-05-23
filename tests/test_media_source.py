@@ -26,6 +26,7 @@ from custom_components.frigate.media_source import (
     FrigateMediaType,
     Identifier,
     RecordingIdentifier,
+    async_get_media_source,
 )
 from homeassistant.components import media_source
 from homeassistant.components.media_player.errors import BrowseError
@@ -97,6 +98,7 @@ async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
     loaded = False
 
     try:
+        await async_get_media_source(hass)
         await media_source.async_browse_media(
             hass,
             f"{const.URI_SCHEME}{DOMAIN}",
