@@ -28,6 +28,7 @@ from custom_components.frigate.media_source import (
     RecordingIdentifier,
 )
 from homeassistant.components import media_source
+from homeassistant.components.media_player.errors import BrowseError
 from homeassistant.components.media_source import const
 from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
 from homeassistant.components.media_source.models import PlayMedia
@@ -93,11 +94,18 @@ async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
         options={CONF_MEDIA_BROWSER_ENABLE: False},
     )
 
-    media = await media_source.async_browse_media(
-        hass,
-        f"{const.URI_SCHEME}{DOMAIN}",
-    )
-    assert media is None
+    loaded = False
+
+    try:
+        await media_source.async_browse_media(
+            hass,
+            f"{const.URI_SCHEME}{DOMAIN}",
+        )
+        loaded = True
+    except BrowseError:
+        loaded = False
+
+    assert not loaded
 
 
 async def test_async_browse_media_root(hass: HomeAssistant) -> None:
