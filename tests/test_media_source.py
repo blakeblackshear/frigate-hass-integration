@@ -97,17 +97,12 @@ async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
 
     loaded = False
 
-    try:
+    with pytest.raises(BrowseError):
         await async_get_media_source(hass)
         await media_source.async_browse_media(
             hass,
             f"{const.URI_SCHEME}{DOMAIN}",
         )
-        loaded = True
-    except BrowseError:
-        loaded = False
-
-    assert not loaded
 
 
 async def test_async_browse_media_root(hass: HomeAssistant) -> None:
