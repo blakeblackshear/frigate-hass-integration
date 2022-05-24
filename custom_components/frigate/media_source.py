@@ -47,12 +47,12 @@ SECONDS_IN_MONTH = SECONDS_IN_DAY * 31
 
 async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
     """Set up Frigate media source."""
-    config_entry = hass.config_entries.async_entries(DOMAIN)[0]
 
-    if config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True):
-        return FrigateMediaSource(hass)
+    for config_entry in hass.config_entries.async_entries(DOMAIN):
+        if not config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True):
+            return None
 
-    return None
+    return FrigateMediaSource(hass)
 
 
 class FrigateBrowseMediaMetadata:
