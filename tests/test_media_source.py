@@ -95,8 +95,6 @@ async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
         options={CONF_MEDIA_BROWSER_ENABLE: False},
     )
 
-    loaded = False
-
     with pytest.raises(BrowseError):
         await async_get_media_source(hass)
         await media_source.async_browse_media(
