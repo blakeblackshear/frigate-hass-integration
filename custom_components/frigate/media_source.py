@@ -25,6 +25,7 @@ from homeassistant.components.media_source.models import (
     MediaSourceItem,
     PlayMedia,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
@@ -552,9 +553,15 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         self.hass = hass
 
     def _is_allowed_as_media_source(self, instance_id: str) -> bool:
-        """Returns whether a given frigate instance is allowed as a media source."""
-        config_entry = get_config_entry_for_frigate_instance_id(self.hass, instance_id)
-        return config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True) is True
+        """Whether a given frigate instance is allowed as a media source."""
+        config_entry: ConfigEntry = get_config_entry_for_frigate_instance_id(
+            self.hass, instance_id
+        )
+        return (
+            config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True) is True
+            if config_entry
+            else False
+        )
 
     def _get_client(self, identifier: Identifier) -> FrigateApiClient:
         """Get client for a given identifier."""
