@@ -554,7 +554,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     def _is_allowed_as_media_source(self, instance_id: str) -> bool:
         """Returns whether a given frigate instance is allowed as a media source."""
         config_entry = get_config_entry_for_frigate_instance_id(self.hass, instance_id)
-        return config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True)
+        return config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True) is True
 
     def _get_client(self, identifier: Identifier) -> FrigateApiClient:
         """Get client for a given identifier."""
