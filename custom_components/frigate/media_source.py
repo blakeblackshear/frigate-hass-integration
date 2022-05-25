@@ -589,13 +589,15 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             item.identifier,
             default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
-        if identifier:
+        if identifier and self._is_allowed_as_media_source(
+            identifier.frigate_instance_id
+        ):
             server_path = identifier.get_integration_proxy_path()
             return PlayMedia(
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,
             )
-        raise Unresolvable("Unknown identifier: %s" % item.identifier)
+        raise Unresolvable("Unknown or disallowed identifier: %s" % item.identifier)
 
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
@@ -619,7 +621,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 frigate_instance_id = get_frigate_instance_id_for_config_entry(
                     self.hass, config_entry
                 )
-                if frigate_instance_id:
+                if frigate_instance_id and self._is_allowed_as_media_source(
+                    frigate_instance_id
+                ):
                     clips_identifier = EventSearchIdentifier(
                         frigate_instance_id, FrigateMediaType.CLIPS
                     )
@@ -676,7 +680,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
 
-        if isinstance(identifier, EventSearchIdentifier):
+        if self._is_allowed_as_media_source(
+            identifier.frigate_instance_id
+        ) and isinstance(identifier, EventSearchIdentifier):
             if identifier.frigate_media_type == FrigateMediaType.CLIPS:
                 media_kwargs = {"has_clip": True}
             else:
