@@ -1,13 +1,5 @@
 {
     "hacs": "1.6.0",
     "name": "Frigate",
-    "domains": [
-        "media_browser",
-        "sensor",
-        "camera",
-        "binary_sensor",
-        "switch"
-    ],
-    "iot_class": "Local Push",
     "homeassistant": "2022.4.5"
 }
