@@ -25,13 +25,14 @@ from homeassistant.components.media_source.models import (
     MediaSourceItem,
     PlayMedia,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from . import get_friendly_name
 from .api import FrigateApiClient, FrigateApiClientError
-from .const import ATTR_CLIENT, DOMAIN, NAME
+from .const import ATTR_CLIENT, CONF_MEDIA_BROWSER_ENABLE, DOMAIN, NAME
 from .views import (
     get_config_entry_for_frigate_instance_id,
     get_default_config_entry,
@@ -551,6 +552,17 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         super().__init__(DOMAIN)
         self.hass = hass
 
+    def _is_allowed_as_media_source(self, instance_id: str) -> bool:
+        """Whether a given frigate instance is allowed as a media source."""
+        config_entry: ConfigEntry = get_config_entry_for_frigate_instance_id(
+            self.hass, instance_id
+        )
+        return (
+            config_entry.options.get(CONF_MEDIA_BROWSER_ENABLE, True) is True
+            if config_entry
+            else False
+        )
+
     def _get_client(self, identifier: Identifier) -> FrigateApiClient:
         """Get client for a given identifier."""
         config_entry = get_config_entry_for_frigate_instance_id(
@@ -584,13 +596,15 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             item.identifier,
             default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
-        if identifier:
+        if identifier and self._is_allowed_as_media_source(
+            identifier.frigate_instance_id
+        ):
             server_path = identifier.get_integration_proxy_path()
             return PlayMedia(
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,
             )
-        raise Unresolvable("Unknown identifier: %s" % item.identifier)
+        raise Unresolvable("Unknown or disallowed identifier: %s" % item.identifier)
 
     async def async_browse_media(
         self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
@@ -614,7 +628,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 frigate_instance_id = get_frigate_instance_id_for_config_entry(
                     self.hass, config_entry
                 )
-                if frigate_instance_id:
+                if frigate_instance_id and self._is_allowed_as_media_source(
+                    frigate_instance_id
+                ):
                     clips_identifier = EventSearchIdentifier(
                         frigate_instance_id, FrigateMediaType.CLIPS
                     )
@@ -670,6 +686,13 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             item.identifier,
             default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
+
+        if identifier is not None and not self._is_allowed_as_media_source(
+            identifier.frigate_instance_id
+        ):
+            raise MediaSourceError(
+                "Forbidden media source identifier: %s" % item.identifier
+            )
 
         if isinstance(identifier, EventSearchIdentifier):
             if identifier.frigate_media_type == FrigateMediaType.CLIPS:

@@ -14,13 +14,19 @@ import attr
 import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
-from custom_components.frigate.const import ATTR_CLIENT_ID, ATTR_MQTT, DOMAIN
+from custom_components.frigate.const import (
+    ATTR_CLIENT_ID,
+    ATTR_MQTT,
+    CONF_MEDIA_BROWSER_ENABLE,
+    DOMAIN,
+)
 from custom_components.frigate.media_source import (
     EventIdentifier,
     EventSearchIdentifier,
     FrigateMediaType,
     Identifier,
     RecordingIdentifier,
+    async_get_media_source,
 )
 from homeassistant.components import media_source
 from homeassistant.components.media_source import const
@@ -77,6 +83,32 @@ def frigate_client() -> Generator[FrigateApiClient, None, None]:
     client = create_mock_frigate_client()
     client.async_get_events = AsyncMock(return_value=load_json(EVENTS_FIXTURE_FILE))
     yield client
+
+
+async def test_async_disabled_browse_media(hass: HomeAssistant) -> None:
+    """Test disabled browse media."""
+
+    config_entry = create_mock_frigate_config_entry(
+        hass,
+        options={CONF_MEDIA_BROWSER_ENABLE: False},
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry)
+
+    # Test on an empty identifier (won't raise an exception, but won't return
+    # any children).
+    result = await media_source.async_browse_media(
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}",
+    )
+    assert not result.children
+
+    # Test on an forbidden identifier. Will raise.
+    with pytest.raises(MediaSourceError) as exc:
+        await media_source.async_browse_media(
+            hass,
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/CLIP-FOO",
+        )
+    assert "Forbidden media source identifier" in str(exc.value)
 
 
 async def test_async_browse_media_root(hass: HomeAssistant) -> None:
@@ -1169,6 +1201,21 @@ async def test_get_client_non_existent(hass: HomeAssistant) -> None:
         await media_source.async_browse_media(
             hass,
             f"{const.URI_SCHEME}{DOMAIN}/NOT_A_REAL_CONFIG_ENTRY_ID/event-search/clips",
+        )
+
+    # For code coverage and completeness check that _get_client(...) will raise
+    # on an invalid instance_id since it is used inline in many places. There's
+    # no public way to trigger this since there'll always be an earlier call to
+    # _is_allowed_as_media_source will always have caught this issue upstream.
+    source = await async_get_media_source(hass)
+    with pytest.raises(MediaSourceError):
+        # pylint: disable=protected-access
+        source._get_client(
+            Identifier.from_str(
+                "NOT_A_REAL_CONFIG_ENTRY_ID/event-search"
+                "/clips/.this_month.2021-06-04.front_door.person"
+                "/1622764800/1622851200/front_door/person/zone"
+            )
         )
 
 

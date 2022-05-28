@@ -15,6 +15,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
+    CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_RTMP_URL_TEMPLATE,
     DEFAULT_HOST,
@@ -144,6 +145,13 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
                 CONF_NOTIFICATION_PROXY_ENABLE,
                 default=self._config_entry.options.get(
                     CONF_NOTIFICATION_PROXY_ENABLE,
+                    True,
+                ),
+            ): bool,
+            vol.Optional(
+                CONF_MEDIA_BROWSER_ENABLE,
+                default=self._config_entry.options.get(
+                    CONF_MEDIA_BROWSER_ENABLE,
                     True,
                 ),
             ): bool,
