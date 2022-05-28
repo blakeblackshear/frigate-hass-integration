@@ -687,11 +687,14 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             default_frigate_instance_id=self._get_default_frigate_instance_id(),
         )
 
-        if (
-            identifier is not None
-            and self._is_allowed_as_media_source(identifier.frigate_instance_id)
-            and isinstance(identifier, EventSearchIdentifier)
+        if identifier is not None and not self._is_allowed_as_media_source(
+            identifier.frigate_instance_id
         ):
+            raise MediaSourceError(
+                "Forbidden media source identifier: %s" % item.identifier
+            )
+
+        if isinstance(identifier, EventSearchIdentifier):
             if identifier.frigate_media_type == FrigateMediaType.CLIPS:
                 media_kwargs = {"has_clip": True}
             else:
