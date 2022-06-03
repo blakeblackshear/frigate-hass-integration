@@ -10,6 +10,7 @@ from jinja2 import Template
 from yarl import URL
 
 from homeassistant.components.camera import SUPPORT_STREAM, Camera
+from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -86,6 +87,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._url = config_entry.data[CONF_URL]
         self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
+        self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
+            "enabled"
+        )
+        self._motion_topic = (
+            f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
+        )
 
         streaming_template = config_entry.options.get(
             CONF_RTMP_URL_TEMPLATE, ""
@@ -164,6 +171,26 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         if not self._attr_is_streaming:
             return None
         return self._stream_source
+
+    async def async_enable_motion_detection(self) -> None:
+        """Enable motion detection for this camera."""
+        await async_publish(
+            self.hass,
+            self._motion_topic,
+            "ON",
+            0,
+            False,
+        )
+
+    async def async_disable_motion_detection(self) -> None:
+        """Enable motion detection for this camera."""
+        await async_publish(
+            self.hass,
+            self._motion_topic,
+            "OFF",
+            0,
+            False,
+        )
 
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
