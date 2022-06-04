@@ -35,6 +35,7 @@ from . import (
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
@@ -45,7 +46,9 @@ from . import (
     TEST_SERVER_VERSION,
     TEST_STATS,
     create_mock_frigate_client,
+    enable_and_load_entity,
     setup_mock_frigate_config_entry,
+    test_entities_are_setup_correctly_in_registry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,7 +133,10 @@ async def test_object_count_icon(
         ),
         (
             "steps",
-            {TEST_SENSOR_STEPS_PERSON_ENTITY_ID},
+            {
+                TEST_SENSOR_STEPS_ALL_ENTITY_ID,
+                TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
+            },
         ),
     ],
 )
@@ -143,6 +149,9 @@ async def test_per_camerazone_device_info(
 
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
+
+    for entity in entities:
+        entity_registry.async_update_entity(entity, disabled_by=None)
 
     device = device_registry.async_get_device(
         identifiers={(DOMAIN, f"{config_entry.entry_id}:{camerazone}")}
@@ -163,6 +172,7 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
 
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
 
     entity_state = hass.states.get(TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
     assert entity_state
@@ -205,6 +215,14 @@ async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
 
+    entities = {
+        TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+        TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
+        TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
+    }
+    for entity in entities:
+        entity_registry.async_update_entity(entity, disabled_by=None)
+
     device = device_registry.async_get_device(
         identifiers={(DOMAIN, config_entry.entry_id)}
     )
@@ -212,13 +230,11 @@ async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     assert device.manufacturer == NAME
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
-    entities_from_device = [
+    entities_from_device = {
         entry.entity_id
         for entry in er.async_entries_for_device(entity_registry, device.id)
-    ]
-    assert TEST_SENSOR_DETECTION_FPS_ENTITY_ID in entities_from_device
-    assert TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID in entities_from_device
-    assert TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID in entities_from_device
+    }
+    assert entities.issubset(entities_from_device)
 
 
 async def test_detector_speed_sensor(hass: HomeAssistant) -> None:
@@ -226,6 +242,9 @@ async def test_detector_speed_sensor(hass: HomeAssistant) -> None:
 
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(
+        hass, client, TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID
+    )
 
     entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
     assert entity_state
@@ -266,6 +285,9 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
 
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(
+        hass, client, TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID
+    )
 
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
@@ -347,21 +369,40 @@ async def test_camera_unique_id(
     assert registry_entry.unique_id == unique_id
 
 
-async def test_sensor_all_can_be_enabled(hass: HomeAssistant) -> None:
-    """Verify `all` object_count sensor can be enabled."""
+async def test_sensors_setup_correctly_in_registry(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify entities are enabled/visible as appropriate."""
+
     await setup_mock_frigate_config_entry(hass)
-    entity_registry = er.async_get(hass)
-
-    # Test original entity is disabled as expected
-    entry = entity_registry.async_get(TEST_SENSOR_STEPS_ALL_ENTITY_ID)
-    assert entry
-    assert entry.disabled
-    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
-    entity_state = hass.states.get(TEST_SENSOR_STEPS_ALL_ENTITY_ID)
-    assert not entity_state
-
-    # Update and test that entity is now enabled
-    updated_entry = entity_registry.async_update_entity(
-        TEST_SENSOR_STEPS_ALL_ENTITY_ID, disabled_by=None
+    await test_entities_are_setup_correctly_in_registry(
+        hass,
+        entities_enabled={
+            TEST_SENSOR_STEPS_ALL_ENTITY_ID,
+            TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+        },
+        entities_disabled={
+            TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
+            TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
+            TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
+        },
+        entities_hidden={
+            TEST_SENSOR_STEPS_ALL_ENTITY_ID,
+            TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+            TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
+            TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
+            TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
+        },
     )
-    assert not updated_entry.disabled
