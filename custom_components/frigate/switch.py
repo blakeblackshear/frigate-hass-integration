@@ -42,11 +42,13 @@ async def async_setup_entry(
     for camera in frigate_config["cameras"].keys():
         entities.extend(
             [
-                FrigateSwitch(entry, frigate_config, camera, "detect", True),
-                FrigateSwitch(entry, frigate_config, camera, "motion", False),
-                FrigateSwitch(entry, frigate_config, camera, "recordings", True),
-                FrigateSwitch(entry, frigate_config, camera, "snapshots", True),
-                FrigateSwitch(entry, frigate_config, camera, "improve_contrast", False),
+                FrigateSwitch(entry, frigate_config, camera, "detect", True, False),
+                FrigateSwitch(entry, frigate_config, camera, "motion", True, False),
+                FrigateSwitch(entry, frigate_config, camera, "recordings", True, True),
+                FrigateSwitch(entry, frigate_config, camera, "snapshots", True, True),
+                FrigateSwitch(
+                    entry, frigate_config, camera, "improve_contrast", False, False
+                ),
             ]
         )
     async_add_entities(entities)
@@ -64,6 +66,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         cam_name: str,
         switch_name: str,
         default_enabled: bool,
+        default_visible: bool,
     ) -> None:
         """Construct a FrigateSwitch."""
 
@@ -76,6 +79,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
+        self._attr_entity_registry_visible_default = default_visible
 
         if self._switch_name == "snapshots":
             self._icon = ICON_IMAGE_MULTIPLE

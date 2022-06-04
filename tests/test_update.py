@@ -23,6 +23,7 @@ from . import (
     TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID,
     create_mock_frigate_client,
     setup_mock_frigate_config_entry,
+    test_entities_are_setup_correctly_in_registry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,3 +107,17 @@ async def test_update_sensor_bad_latest(hass: HomeAssistant) -> None:
     assert entity_state.attributes[ATTR_INSTALLED_VERSION] == "0.8.4"
     assert entity_state.attributes[ATTR_LATEST_VERSION] is None
     assert entity_state.attributes[ATTR_RELEASE_URL] is None
+
+
+async def test_update_sensor_setup_correctly_in_registry(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify entities are enabled/visible as appropriate."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    await test_entities_are_setup_correctly_in_registry(
+        hass,
+        entities_enabled={TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID},
+        entities_hidden={TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID},
+    )
