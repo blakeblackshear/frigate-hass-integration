@@ -265,8 +265,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"{cam_name}_{obj_name}",
         )
         entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
-        if entity_id:
-            new_id = f"sensor.{cam_name}_{obj_name}_count"
+        new_id = f"sensor.{cam_name}_{obj_name}_count"
+        # Verify the new entity_id doesn't already exist.
+        entry_for_new_id = entity_registry.async_get(new_id)
+        if entity_id and entity_id != new_id and not entry_for_new_id:
             new_name = f"{get_friendly_name(cam_name)} {obj_name} Count".title()
             entity_registry.async_update_entity(
                 entity_id=entity_id,
