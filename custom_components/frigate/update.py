@@ -46,7 +46,6 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
         """Construct a FrigateContainerUpdate."""
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
-        self._attr_entity_registry_visible_default = False
 
     @property
     def unique_id(self) -> str:

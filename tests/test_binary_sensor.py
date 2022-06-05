@@ -183,8 +183,6 @@ async def test_binary_sensors_setup_correctly_in_registry(
             TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,
             TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID,
             TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID,
-        },
-        entities_hidden={
             TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID,
             TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID,
         },

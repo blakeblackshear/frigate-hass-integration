@@ -392,7 +392,7 @@ async def test_sensors_setup_correctly_in_registry(
             TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
             TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
         },
-        entities_hidden={
+        entities_visible={
             TEST_SENSOR_STEPS_ALL_ENTITY_ID,
             TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,

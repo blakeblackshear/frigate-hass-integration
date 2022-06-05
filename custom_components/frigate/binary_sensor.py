@@ -71,7 +71,6 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         self._obj_name = obj_name
         self._is_on = False
         self._frigate_config = frigate_config
-        self._attr_entity_registry_visible_default = obj_name != "all"
 
         super().__init__(
             config_entry,
