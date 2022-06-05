@@ -86,7 +86,6 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
-        self._attr_entity_registry_visible_default = False
 
     @property
     def unique_id(self) -> str:
@@ -150,7 +149,6 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         CoordinatorEntity.__init__(self, coordinator)
         self._detector_name = detector_name
         self._attr_entity_registry_enabled_default = False
-        self._attr_entity_registry_visible_default = False
 
     @property
     def unique_id(self) -> str:
@@ -220,7 +218,6 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         self._cam_name = cam_name
         self._fps_type = fps_type
         self._attr_entity_registry_enabled_default = False
-        self._attr_entity_registry_visible_default = False
 
     @property
     def unique_id(self) -> str:
@@ -291,7 +288,6 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         self._obj_name = obj_name
         self._state = 0
         self._frigate_config = frigate_config
-        self._attr_entity_registry_visible_default = False
 
         if self._obj_name == "person":
             self._icon = ICON_PERSON

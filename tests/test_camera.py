@@ -232,6 +232,8 @@ async def test_cameras_setup_correctly_in_registry(
             TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
             TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
-        entities_visible={TEST_CAMERA_FRONT_DOOR_ENTITY_ID},
-        entities_hidden={TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID},
+        entities_visible={
+            TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
+        },
     )

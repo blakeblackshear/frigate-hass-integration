@@ -200,9 +200,7 @@ async def test_switches_setup_correctly_in_registry(
         entities_visible={
             TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
             TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
-        },
-        entities_hidden={
             TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
             TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID,
-        }.union(DISABLED_SWITCH_ENTITY_IDS),
+        },
     )

@@ -119,5 +119,5 @@ async def test_update_sensor_setup_correctly_in_registry(
     await test_entities_are_setup_correctly_in_registry(
         hass,
         entities_enabled={TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID},
-        entities_hidden={TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID},
+        entities_visible={TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID},
     )

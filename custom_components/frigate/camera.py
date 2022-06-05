@@ -180,7 +180,6 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._last_image: bytes | None = None
-        self._attr_entity_registry_visible_default = False
 
         FrigateMQTTEntity.__init__(
             self,
