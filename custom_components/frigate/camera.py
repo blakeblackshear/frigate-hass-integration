@@ -183,7 +183,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         )
 
     async def async_disable_motion_detection(self) -> None:
-        """Enable motion detection for this camera."""
+        """Disable motion detection for this camera."""
         await async_publish(
             self.hass,
             self._motion_topic,
