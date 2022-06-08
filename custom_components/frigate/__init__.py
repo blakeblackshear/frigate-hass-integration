@@ -23,7 +23,7 @@ from homeassistant.components.mqtt.subscription import (
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
-from homeassistant.core import Config, HomeAssistant, callback
+from homeassistant.core import Config, HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -265,10 +265,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"{cam_name}_{obj_name}",
         )
         entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
-        new_id = f"sensor.{cam_name}_{obj_name}_count"
-        # Verify the new entity_id doesn't already exist.
-        entry_for_new_id = entity_registry.async_get(new_id)
-        if entity_id and entity_id != new_id and not entry_for_new_id:
+        new_id = f"sensor.{slugify(cam_name)}_{slugify(obj_name)}_count"
+
+        if (
+            entity_id
+            and entity_id != new_id
+            and valid_entity_id(new_id)
+            and not entity_registry.async_get(new_id)
+        ):
             new_name = f"{get_friendly_name(cam_name)} {obj_name} Count".title()
             entity_registry.async_update_entity(
                 entity_id=entity_id,

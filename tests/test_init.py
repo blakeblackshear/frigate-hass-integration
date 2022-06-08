@@ -1,6 +1,7 @@
 """Test the frigate binary sensor."""
 from __future__ import annotations
 
+import copy
 import logging
 from typing import Any
 from unittest.mock import AsyncMock, patch
@@ -20,6 +21,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.loader import async_get_integration
 
 from . import (
+    TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
@@ -439,3 +441,47 @@ async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:
             config_entry.entry_id, "sensor_object_count", "steps_person"
         ),
     )
+
+
+async def test_entry_rename_entities_with_unusual_names(hass: HomeAssistant) -> None:
+    """Test that non-simple names work."""
+    # Test for: https://github.com/blakeblackshear/frigate-hass-integration/issues/275
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+
+    # Rename one camera.
+    config["cameras"]["Front-door"] = config["cameras"]["front_door"]
+    del config["cameras"]["front_door"]
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+
+    config_entry = create_mock_frigate_config_entry(hass)
+    unique_id = get_frigate_entity_unique_id(
+        config_entry.entry_id,
+        "sensor_object_count",
+        "Front-door_person",
+    )
+
+    entity_registry = er.async_get(hass)
+    entity_registry.async_get_or_create(
+        domain="sensor",
+        platform=DOMAIN,
+        unique_id=unique_id,
+        config_entry=config_entry,
+        suggested_object_id="front_door_person",
+    )
+
+    # Verify the entity name before we load the config entry.
+    entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+    assert entity_id == "sensor.front_door_person"
+
+    # Load the config entry.
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+    await hass.async_block_till_done()
+
+    # Verify the rename has correctly occurred.
+    entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+    assert entity_id == "sensor.front_door_person_count"
