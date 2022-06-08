@@ -292,13 +292,17 @@ class FrigateDataUpdateCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
     def __init__(self, hass: HomeAssistant, client: FrigateApiClient):
         """Initialize."""
         self._api = client
+        self.server_status = "starting"
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via library."""
         try:
-            return await self._api.async_get_stats()
+            stats = await self._api.async_get_stats()
+            self.server_status = "running"
+            return stats
         except FrigateApiClientError as exc:
+            self.server_status = "error"
             raise UpdateFailed from exc
 
 
