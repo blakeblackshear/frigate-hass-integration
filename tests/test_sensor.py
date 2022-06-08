@@ -21,6 +21,7 @@ from custom_components.frigate.const import (
     ICON_DOG,
     ICON_OTHER,
     ICON_PERSON,
+    ICON_SERVER,
     ICON_SPEEDOMETER,
     MS,
     NAME,
@@ -35,6 +36,7 @@ from . import (
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
@@ -206,6 +208,29 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+
+
+async def test_status_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateStatusSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "starting"
+    assert entity_state.attributes["icon"] == ICON_SERVER
+
+    stats = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "running"
 
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:
