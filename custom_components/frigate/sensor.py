@@ -174,10 +174,7 @@ class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
     @property
     def state(self) -> str:
         """Return the state of the sensor."""
-        if self.coordinator.server_status:
-            return str(self.coordinator.server_status)
-
-        return "unknown"
+        return str(self.coordinator.server_status or "unknown")
 
     @property
     def icon(self) -> str:

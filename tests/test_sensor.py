@@ -222,9 +222,6 @@ async def test_status_sensor(hass: HomeAssistant) -> None:
     assert entity_state.state == "running"
     assert entity_state.attributes["icon"] == ICON_SERVER
 
-    entity_state.coordinator.server_status = None
-    assert entity_state.state == "unknown"
-
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     """Verify switch device information."""
