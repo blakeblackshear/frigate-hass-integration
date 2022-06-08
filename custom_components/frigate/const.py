@@ -16,6 +16,7 @@ ICON_IMAGE_MULTIPLE = "mdi:image-multiple"
 ICON_MOTION_SENSOR = "hass:motion-sensor"
 ICON_OTHER = "mdi:shield-alert"
 ICON_PERSON = "mdi:shield-account"
+ICON_SERVER = "mdi:server"
 ICON_SPEEDOMETER = "mdi:speedometer"
 
 # Platforms
