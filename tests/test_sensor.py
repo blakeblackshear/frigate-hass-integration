@@ -219,18 +219,8 @@ async def test_status_sensor(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
     assert entity_state
-    assert entity_state.state == "starting"
-    assert entity_state.attributes["icon"] == ICON_SERVER
-
-    stats = copy.deepcopy(TEST_STATS)
-    client.async_get_stats = AsyncMock(return_value=stats)
-
-    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
-    await hass.async_block_till_done()
-
-    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
-    assert entity_state
     assert entity_state.state == "running"
+    assert entity_state.attributes["icon"] == ICON_SERVER
 
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:
