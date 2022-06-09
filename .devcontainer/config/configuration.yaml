@@ -9,3 +9,12 @@ logger:
 
 downloader:
   download_dir: www
+
+homeassistant:
+  name: Home
+  latitude: 0
+  longitude: 0
+  elevation: 0
+  unit_system: metric
+  currency: USD
+  time_zone: "America/Los_Angeles"

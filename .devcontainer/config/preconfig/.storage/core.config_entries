@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "core.config_entries",
+  "data": {
+    "entries": [
+      {
+        "entry_id": "ca992286739c95ed0a47f7ca68a2f738",
+        "version": 1,
+        "domain": "sun",
+        "title": "Sun",
+        "data": {},
+        "options": {},
+        "pref_disable_new_entities": false,
+        "pref_disable_polling": false,
+        "source": "import",
+        "unique_id": null,
+        "disabled_by": null
+      },
+      {
+        "entry_id": "77b4c17dc9f77ba49cea06fb3f517b59",
+        "version": 1,
+        "domain": "mqtt",
+        "title": "mqtt",
+        "data": {
+          "broker": "mqtt",
+          "port": 1883,
+          "discovery": true
+        },
+        "options": {},
+        "pref_disable_new_entities": false,
+        "pref_disable_polling": false,
+        "source": "integration_discovery",
+        "unique_id": null,
+        "disabled_by": null
+      },
+      {
+        "entry_id": "66095ab2cc579d5723b1c1f35b890d65",
+        "version": 2,
+        "domain": "frigate",
+        "title": "frigate:5000",
+        "data": {
+          "url": "http://frigate:5000"
+        },
+        "options": {},
+        "pref_disable_new_entities": false,
+        "pref_disable_polling": false,
+        "source": "user",
+        "unique_id": null,
+        "disabled_by": null
+      }
+    ]
+  }
+}

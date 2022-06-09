@@ -1,28 +1,44 @@
 {
-	"name": "Frigate Integration Dev",
-	"dockerComposeFile": "../docker-compose.yml",
-	"service": "dev",
-	"workspaceFolder": "/workspace",
-	"shutdownAction": "stopCompose",
-	"extensions": [
-	  "ms-python.python",
-	  "visualstudioexptteam.vscodeintellicode",
-	  "mhutchie.git-graph",
-	  "ms-azuretools.vscode-docker",
-	  "streetsidesoftware.code-spell-checker",
-	  "eamodio.gitlens",
-	  "esbenp.prettier-vscode",
-	  "ms-python.vscode-pylance"
-	],
-	"settings": {
-	  "python.pythonPath": "/usr/bin/python3",
-	  "python.linting.pylintEnabled": true,
-	  "python.linting.enabled": true,
-	  "python.formatting.provider": "black",
-	  "editor.formatOnPaste": false,
-	  "editor.formatOnSave": true,
-	  "editor.formatOnType": true,
-	  "files.trimTrailingWhitespace": true,
-	  "terminal.integrated.defaultProfile.linux": "/bin/bash"
-	}
+  "name": "Frigate Integration Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "pip install --disable-pip-version-check --upgrade pip && pip install -r requirements_dev.txt",
+  "extensions": [
+    "ms-python.python",
+    "visualstudioexptteam.vscodeintellicode",
+    "mhutchie.git-graph",
+    "ms-azuretools.vscode-docker",
+    "streetsidesoftware.code-spell-checker",
+    "eamodio.gitlens",
+    "esbenp.prettier-vscode",
+    "ms-python.vscode-pylance",
+    "redhat.vscode-yaml",
+    "keesschollaart.vscode-home-assistant"
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "files.trimTrailingWhitespace": true,
+    "yaml.schemas": {
+      "http://frigate:5000/api/config/schema": "/frigate.yml"
+    },
+    "files.associations": {
+      "configuration.yaml": "home-assistant"
+    },
+    "vscode-home-assistant.hostUrl": "http://hass:8123",
+    "vscode-home-assistant.longLivedAccessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhOTZjZTdhYTg0YzU0ODcxYWZhNTJmYmU4OWFmMjg3OSIsImlhdCI6MTY1NDgwNzk2MiwiZXhwIjoxOTcwMTY3OTYyfQ.0JUxrtqWWj-FwkAujcQCc5aRq9sf5_uR_sCI2eWcmIE",
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[yaml]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
   }
+}
