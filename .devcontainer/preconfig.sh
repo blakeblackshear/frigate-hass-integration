@@ -25,7 +25,15 @@ echo "Preconfiguring" >&2
 
 cp --recursive --force --verbose "${source_dir}/." "${target_dir}/"
 
-hass --script auth --config /config change_password "admin" "admin"
+readonly password_file="${source_dir}/.storage/auth_provider.homeassistant"
+if [[ -f "${password_file}" ]]; then
+    readarray -t users < <(jq --raw-output --compact-output '.data.users[].username' "${password_file}")
+    for user in "${users[@]}"; do
+        echo "Setting password for user '${user}" >&2
+        password=$(jq --exit-status --raw-output --arg u "${user}" '.data.users[] | select(.username==$u) | .password' "${password_file}")
+        hass --script auth --config /config change_password "${user}" "${password}"
+    done
+fi
 
 touch "${markfile}"
 
