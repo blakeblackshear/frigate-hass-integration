@@ -216,7 +216,6 @@ async def test_status_sensor_success(hass: HomeAssistant) -> None:
 
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
-    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
 
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
     assert entity_state
