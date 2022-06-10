@@ -13,6 +13,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.frigate import SCAN_INTERVAL
+from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     DOMAIN,
     FPS,
@@ -21,6 +22,7 @@ from custom_components.frigate.const import (
     ICON_DOG,
     ICON_OTHER,
     ICON_PERSON,
+    ICON_SERVER,
     ICON_SPEEDOMETER,
     MS,
     NAME,
@@ -35,6 +37,7 @@ from . import (
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
@@ -206,6 +209,36 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+
+
+async def test_status_sensor_success(hass: HomeAssistant) -> None:
+    """Test FrigateStatusSensor expected state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "running"
+    assert entity_state.attributes["icon"] == ICON_SERVER
+
+
+async def test_status_sensor_error(hass: HomeAssistant) -> None:
+    """Test FrigateStatusSensor unexpected state."""
+
+    client: AsyncMock = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+
+    client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "error"
+    assert entity_state.attributes["icon"] == ICON_SERVER
 
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:

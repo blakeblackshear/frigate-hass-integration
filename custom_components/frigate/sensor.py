@@ -32,6 +32,7 @@ from .const import (
     ICON_DOG,
     ICON_OTHER,
     ICON_PERSON,
+    ICON_SERVER,
     ICON_SPEEDOMETER,
     MS,
     NAME,
@@ -71,6 +72,7 @@ async def async_setup_entry(
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
+    entities.append(FrigateStatusSensor(coordinator, entry))
     async_add_entities(entities)
 
 
@@ -131,6 +133,53 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
+
+
+class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+    """Frigate Status Sensor class."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
+    ) -> None:
+        """Construct a FrigateStatusSensor."""
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._attr_entity_registry_enabled_default = False
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, "sensor_status", "frigate"
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {get_frigate_device_identifier(self._config_entry)},
+            "name": NAME,
+            "model": self._get_model(),
+            "configuration_url": self._config_entry.data.get(CONF_URL),
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Frigate Status"
+
+    @property
+    def state(self) -> str:
+        """Return the state of the sensor."""
+        return str(self.coordinator.server_status)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_SERVER
 
 
 class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
