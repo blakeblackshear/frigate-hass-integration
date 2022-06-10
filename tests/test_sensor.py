@@ -13,6 +13,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.frigate import SCAN_INTERVAL
+from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     DOMAIN,
     FPS,
@@ -210,8 +211,8 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state.state == "unknown"
 
 
-async def test_status_sensor(hass: HomeAssistant) -> None:
-    """Test FrigateStatusSensor state."""
+async def test_status_sensor_success(hass: HomeAssistant) -> None:
+    """Test FrigateStatusSensor expected state."""
 
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
@@ -220,6 +221,20 @@ async def test_status_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "running"
+    assert entity_state.attributes["icon"] == ICON_SERVER
+
+
+async def test_status_sensor_error(hass: HomeAssistant) -> None:
+    """Test FrigateStatusSensor unexpected state."""
+
+    client: AsyncMock = create_mock_frigate_client()
+    client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "error"
     assert entity_state.attributes["icon"] == ICON_SERVER
 
 
