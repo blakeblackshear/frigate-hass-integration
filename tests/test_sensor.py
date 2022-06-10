@@ -228,8 +228,12 @@ async def test_status_sensor_error(hass: HomeAssistant) -> None:
     """Test FrigateStatusSensor unexpected state."""
 
     client: AsyncMock = create_mock_frigate_client()
-    client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
     await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
+
+    client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
     assert entity_state
