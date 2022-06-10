@@ -64,3 +64,9 @@ https://github.com/blakeblackshear/frigate-hass-integration/issues
 # States
 STATE_DETECTED = "active"
 STATE_IDLE = "idle"
+
+# Statuses
+STATUS_ERROR = "error"
+STATUS_RUNNING = "running"
+STATUS_STARTING = "starting"
+STATUS_UNKNOWN = "unknown"

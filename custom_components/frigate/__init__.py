@@ -44,6 +44,9 @@ from .const import (
     NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
+    STATUS_ERROR,
+    STATUS_RUNNING,
+    STATUS_STARTING,
 )
 from .views import (
     JSMPEGProxyView,
@@ -292,17 +295,17 @@ class FrigateDataUpdateCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
     def __init__(self, hass: HomeAssistant, client: FrigateApiClient):
         """Initialize."""
         self._api = client
-        self.server_status = "starting"
+        self.server_status = STATUS_STARTING
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via library."""
         try:
             stats = await self._api.async_get_stats()
-            self.server_status = "running"
+            self.server_status = STATUS_RUNNING
             return stats
         except FrigateApiClientError as exc:
-            self.server_status = "error"
+            self.server_status = STATUS_ERROR
             raise UpdateFailed from exc
 
 
