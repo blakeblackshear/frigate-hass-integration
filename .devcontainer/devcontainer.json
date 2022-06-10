@@ -4,7 +4,7 @@
   "service": "dev",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
-  "postCreateCommand": "pip install --disable-pip-version-check --upgrade pip && pip install -r requirements_dev.txt",
+  "postCreateCommand": ".devcontainer/post_create.sh",
   "extensions": [
     "ms-python.python",
     "visualstudioexptteam.vscodeintellicode",
