@@ -36,7 +36,6 @@ from .const import (
     ICON_SPEEDOMETER,
     MS,
     NAME,
-    STATUS_UNKNOWN,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -175,7 +174,7 @@ class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
     @property
     def state(self) -> str:
         """Return the state of the sensor."""
-        return str(self.coordinator.server_status or STATUS_UNKNOWN)
+        return str(self.coordinator.server_status)
 
     @property
     def icon(self) -> str:
