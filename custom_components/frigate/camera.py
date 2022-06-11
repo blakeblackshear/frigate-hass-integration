@@ -115,6 +115,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._attr_is_recording = msg.payload.decode("utf-8") == "ON"
         super()._state_message_received(msg)
 
+    @callback
+    def _extra_message_recieved(self, msg: ReceiveMessage) -> None:
+        """Handle a new recieved MQTT extra message."""
+        self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
+        super()._extra_message_recieved(msg)
+
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""

@@ -420,6 +420,7 @@ class FrigateMQTTEntity(FrigateEntity):
         config_entry: ConfigEntry,
         frigate_config: dict[str, Any],
         state_topic_config: dict[str, Any],
+        extra_topic_config: dict[str, Any] = None,
     ) -> None:
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
@@ -432,6 +433,13 @@ class FrigateMQTTEntity(FrigateEntity):
             **state_topic_config,
         }
 
+        if extra_topic_config:
+            self._extra_topic_config = {
+                "msg_callback": self._extra_message_recieved,
+                "qos": 0,
+                **extra_topic_config,
+            }
+
     async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
         state = async_prepare_subscribe_topics(
@@ -439,6 +447,7 @@ class FrigateMQTTEntity(FrigateEntity):
             self._sub_state,
             {
                 "state_topic": self._state_topic_config,
+                "extra_topic": self._extra_topic_config if self._extra_topic_config else None,
                 "availability_topic": {
                     "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
                     "msg_callback": self._availability_message_received,
@@ -456,6 +465,11 @@ class FrigateMQTTEntity(FrigateEntity):
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """State message received."""
+        self.async_write_ha_state()
+
+    @callback # type: ignore[misc]
+    def _extra_message_recieved(self, msg: ReceiveMessage) -> None:
+        """Extra message received."""
         self.async_write_ha_state()
 
     @callback  # type: ignore[misc]
