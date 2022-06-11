@@ -126,11 +126,6 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         return self._is_on
 
     @property
-    def entity_registry_enabled_default(self) -> bool:
-        """Whether or not the entity is enabled by default."""
-        return self._obj_name != "all"
-
-    @property
     def device_class(self) -> str:
         """Return the device class."""
         return cast(str, DEVICE_CLASS_OCCUPANCY)
@@ -199,11 +194,6 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._is_on
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        """Whether or not the entity is enabled by default."""
-        return False
 
     @property
     def device_class(self) -> str:

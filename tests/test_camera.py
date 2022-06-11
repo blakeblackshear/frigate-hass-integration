@@ -23,6 +23,7 @@ from . import (
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
+    test_entities_are_setup_correctly_in_registry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -217,3 +218,22 @@ async def test_camera_option_stream_url_template(
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
     assert source == "rtmp://localhost/front_door"
+
+
+async def test_cameras_setup_correctly_in_registry(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify entities are enabled/visible as appropriate."""
+
+    await setup_mock_frigate_config_entry(hass)
+    await test_entities_are_setup_correctly_in_registry(
+        hass,
+        entities_enabled={
+            TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
+        },
+        entities_visible={
+            TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
+        },
+    )

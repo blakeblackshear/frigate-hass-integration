@@ -2,28 +2,28 @@
 version: "3"
 services:
   dev:
-    container_name: dev
     user: vscode
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.dev
+    image: mcr.microsoft.com/vscode/devcontainers/python:0-3.9
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - .:/workspace:cached
-    command: /bin/sh -c "while sleep 1000; do :; done"
+    command: [sleep, infinity]
   hass:
-    container_name: hass
-    image: homeassistant/home-assistant:beta
+    image: homeassistant/home-assistant:stable
+    restart: unless-stopped
     ports:
       - "8123:8123"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - .devcontainer/configuration.yaml:/config/configuration.yaml:ro
+      - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
+      - .devcontainer/config/preconfig:/config/preconfig:ro
+      - .devcontainer/config/configuration.yaml:/config/configuration.yaml:ro
+      - .devcontainer/config/www:/config/www
       - ./custom_components:/config/custom_components:ro
   frigate:
-    container_name: frigate
     privileged: true
     image: blakeblackshear/frigate:stable-amd64
+    restart: unless-stopped
     devices:
       - /dev/bus/usb:/dev/bus/usb
       - /dev/dri:/dev/dri
@@ -35,7 +35,7 @@ services:
       - "5000:5000"
       - "1935:1935"
   mqtt:
-    container_name: mqtt
     image: eclipse-mosquitto:1.6
+    restart: unless-stopped
     ports:
       - "1883:1883"

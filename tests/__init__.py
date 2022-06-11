@@ -1,20 +1,29 @@
 """Tests for the Frigate integration."""
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
 from aiohttp import web
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.frigate.const import DOMAIN
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import RELOAD_AFTER_UPDATE_DELAY, ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+import homeassistant.util.dt as dt_util
 
 TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID = "binary_sensor.front_door_motion"
 TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.front_door_person_occupancy"
+)
+TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID = (
+    "binary_sensor.front_door_all_occupancy"
 )
 TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.steps_person_occupancy"
@@ -22,12 +31,16 @@ TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID = (
 TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID = "binary_sensor.steps_all_occupancy"
 TEST_CAMERA_FRONT_DOOR_ENTITY_ID = "camera.front_door"
 TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
+
 TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID = "switch.front_door_detect"
+TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID = "switch.front_door_motion"
 TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID = "switch.front_door_snapshots"
 TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID = "switch.front_door_recordings"
 TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID = "switch.front_door_improve_contrast"
-TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person_count"
+
 TEST_SENSOR_STEPS_ALL_ENTITY_ID = "sensor.steps_all_count"
+TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person_count"
+TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID = "sensor.front_door_all_count"
 TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID = "sensor.front_door_person_count"
 TEST_SENSOR_DETECTION_FPS_ENTITY_ID = "sensor.detection_fps"
 TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID = "sensor.cpu1_inference_speed"
@@ -36,6 +49,7 @@ TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID = "sensor.front_door_camera_fps"
 TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID = "sensor.front_door_detection_fps"
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
+TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
 TEST_SERVER_VERSION = "0.9.0-09a4d6d"
@@ -307,3 +321,72 @@ async def setup_mock_frigate_config_entry(
         await hass.config_entries.async_setup(config_entry.entry_id)
         await hass.async_block_till_done()
     return config_entry
+
+
+async def test_entities_are_setup_correctly_in_registry(
+    hass: HomeAssistant,
+    entities_enabled: set[str] | None = None,
+    entities_disabled: set[str] | None = None,
+    entities_visible: set[str] | None = None,
+    entities_hidden: set[str] | None = None,
+) -> None:
+    """Verify entities are enabled/visible as appropriate."""
+
+    registry = er.async_get(hass)
+
+    for entity in entities_enabled or {}:
+        entry = registry.async_get(entity)
+        assert entry
+        assert not entry.disabled
+        assert not entry.disabled_by
+
+    for entity in entities_disabled or {}:
+        entry = registry.async_get(entity)
+        assert entry
+        assert entry.disabled
+        assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+
+        entity_state = hass.states.get(entity)
+        assert not entity_state
+
+        # Update and test that entity is now enabled.
+        updated_entry = registry.async_update_entity(entity, disabled_by=None)
+        assert not updated_entry.disabled
+        assert not updated_entry.disabled_by
+
+    for entity in entities_visible or {}:
+        entry = registry.async_get(entity)
+        assert entry
+        assert not entry.hidden
+        assert not entry.hidden_by
+
+    for entity in entities_hidden or {}:
+        entry = registry.async_get(entity)
+        assert entry
+        assert entry.hidden
+        assert entry.hidden_by == er.RegistryEntryHider.INTEGRATION
+
+        # Update and test that entity is now visible.
+        updated_entry = registry.async_update_entity(entity, hidden_by=None)
+        assert not updated_entry.hidden
+        assert not updated_entry.hidden_by
+
+
+async def enable_and_load_entity(
+    hass: HomeAssistant, client: AsyncMock, entity: str
+) -> None:
+    """Enable and load an entity."""
+
+    # Keep the patch in place to ensure that coordinator updates that are
+    # scheduled during the reload period will use the mocked API.
+    with patch(
+        "custom_components.frigate.FrigateApiClient",
+        return_value=client,
+    ):
+        er.async_get(hass).async_update_entity(entity, disabled_by=None)
+        await hass.async_block_till_done()
+        async_fire_time_changed(
+            hass,
+            dt_util.utcnow() + timedelta(seconds=RELOAD_AFTER_UPDATE_DELAY + 1),
+        )
+        await hass.async_block_till_done()

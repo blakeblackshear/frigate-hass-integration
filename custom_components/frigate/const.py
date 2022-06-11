@@ -16,6 +16,7 @@ ICON_IMAGE_MULTIPLE = "mdi:image-multiple"
 ICON_MOTION_SENSOR = "hass:motion-sensor"
 ICON_OTHER = "mdi:shield-alert"
 ICON_PERSON = "mdi:shield-account"
+ICON_SERVER = "mdi:server"
 ICON_SPEEDOMETER = "mdi:speedometer"
 
 # Platforms
@@ -63,3 +64,8 @@ https://github.com/blakeblackshear/frigate-hass-integration/issues
 # States
 STATE_DETECTED = "active"
 STATE_IDLE = "idle"
+
+# Statuses
+STATUS_ERROR = "error"
+STATUS_RUNNING = "running"
+STATUS_STARTING = "starting"
