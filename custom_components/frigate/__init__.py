@@ -439,23 +439,27 @@ class FrigateMQTTEntity(FrigateEntity):
                 "qos": 0,
                 **extra_topic_config,
             }
+        else:
+            self._extra_topic_config = None
 
     async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
+        topic_map = {
+            "state_topic": self._state_topic_config,
+            "availability_topic": {
+                "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
+                "msg_callback": self._availability_message_received,
+                "qos": 0,
+            },
+        }
+
+        if self._extra_topic_config:
+            topic_map["extra_topic"] = self._extra_topic_config
+
         state = async_prepare_subscribe_topics(
             self.hass,
             self._sub_state,
-            {
-                "state_topic": self._state_topic_config,
-                "extra_topic": self._extra_topic_config
-                if self._extra_topic_config
-                else None,
-                "availability_topic": {
-                    "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
-                    "msg_callback": self._availability_message_received,
-                    "qos": 0,
-                },
-            },
+            topic_map,
         )
         self._sub_state = await async_subscribe_topics(self.hass, state)
 
