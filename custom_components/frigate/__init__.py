@@ -420,7 +420,7 @@ class FrigateMQTTEntity(FrigateEntity):
         config_entry: ConfigEntry,
         frigate_config: dict[str, Any],
         state_topic_config: dict[str, Any],
-        extra_topic_config: dict[str, Any] = None,
+        extra_topic_config: None | dict[str, Any] = None,
     ) -> None:
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
