@@ -79,6 +79,13 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
                 ),
                 "encoding": None,
             },
+            {
+                "topic": (
+                    f"{frigate_config['mqtt']['topic_prefix']}"
+                    f"/{cam_name}/motion/state"
+                ),
+                "encoding": None,
+            },
         )
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
