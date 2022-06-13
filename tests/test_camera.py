@@ -17,6 +17,7 @@ from homeassistant.components.camera import (
     async_get_image,
     async_get_stream_source,
 )
+from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
@@ -188,7 +189,7 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
     assert TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID in entities_from_device
 
 
-async def test_camera_built_in_motion_detection(
+async def test_camera_enable_motion_detection(
     hass: HomeAssistant, mqtt_mock: Any
 ) -> None:
     """Test built in motion detection."""
@@ -203,6 +204,9 @@ async def test_camera_built_in_motion_detection(
     async_fire_mqtt_message(hass, "frigate/front_door/motion/state", "ON")
     await hass.async_block_till_done()
 
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+
     await hass.services.async_call(
         CAMERA_DOMAIN,
         SERVICE_ENABLE_MOTION,
@@ -213,6 +217,25 @@ async def test_camera_built_in_motion_detection(
         "frigate/front_door/motion/set", "ON", 0, False
     )
 
+
+async def test_camera_disable_motion_detection(
+    hass: HomeAssistant, mqtt_mock: Any
+) -> None:
+    """Test built in motion detection."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/front_door/motion/state", "OFF")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+
     await hass.services.async_call(
         CAMERA_DOMAIN,
         SERVICE_DISABLE_MOTION,
@@ -220,7 +243,7 @@ async def test_camera_built_in_motion_detection(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/detect/set", "OFF", 0, False
+        "frigate/front_door/motion/set", "OFF", 0, False
     )
 
 
