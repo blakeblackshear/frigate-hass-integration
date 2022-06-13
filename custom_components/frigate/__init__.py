@@ -435,7 +435,7 @@ class FrigateMQTTEntity(FrigateEntity):
 
         if extra_topic_config:
             self._extra_topic_config = {
-                "msg_callback": self._extra_message_recieved,
+                "msg_callback": self._extra_message_received,
                 "qos": 0,
                 **extra_topic_config,
             }
