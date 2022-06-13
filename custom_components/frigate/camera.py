@@ -123,7 +123,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._attr_is_recording = msg.payload.decode("utf-8") == "ON"
         super()._state_message_received(msg)
 
-    @callback
+    @callback  # type: ignore[misc]
     def _extra_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT extra message."""
         self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
@@ -163,7 +163,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         if not self._attr_is_streaming:
             return 0
 
-        return CameraEntityFeature.STREAM
+        return cast(int, CameraEntityFeature.STREAM)
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
