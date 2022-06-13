@@ -447,7 +447,9 @@ class FrigateMQTTEntity(FrigateEntity):
             self._sub_state,
             {
                 "state_topic": self._state_topic_config,
-                "extra_topic": self._extra_topic_config if self._extra_topic_config else None,
+                "extra_topic": self._extra_topic_config
+                if self._extra_topic_config
+                else None,
                 "availability_topic": {
                     "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
                     "msg_callback": self._availability_message_received,
@@ -467,7 +469,7 @@ class FrigateMQTTEntity(FrigateEntity):
         """State message received."""
         self.async_write_ha_state()
 
-    @callback # type: ignore[misc]
+    @callback  # type: ignore[misc]
     def _extra_message_recieved(self, msg: ReceiveMessage) -> None:
         """Extra message received."""
         self.async_write_ha_state()
