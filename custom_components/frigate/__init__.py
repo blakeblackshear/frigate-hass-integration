@@ -440,7 +440,7 @@ class FrigateMQTTEntity(FrigateEntity):
                 **extra_topic_config,
             }
         else:
-            self._extra_topic_config = None
+            self._extra_topic_config = {}
 
     async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
