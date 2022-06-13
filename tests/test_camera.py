@@ -10,7 +10,13 @@ import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME
-from homeassistant.components.camera import async_get_image, async_get_stream_source
+from homeassistant.components.camera import (
+    DOMAIN as CAMERA_DOMAIN,
+    SERVICE_DISABLE_MOTION,
+    SERVICE_ENABLE_MOTION,
+    async_get_image,
+    async_get_stream_source,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
@@ -180,6 +186,44 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
     ]
     assert TEST_CAMERA_FRONT_DOOR_ENTITY_ID in entities_from_device
     assert TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID in entities_from_device
+
+
+async def test_camera_built_in_motion_detection(hass: HomeAssistant) -> None:
+    """Test built in motion detection."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/front_door/motion/state", "ON")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.attributes["motion_detection_enabled"]
+
+    await hass.services.async_call(
+        CAMERA_DOMAIN,
+        SERVICE_ENABLE_MOTION,
+        {ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID},
+        blocking=True,
+    )
+    mqtt_mock.async_publish.assert_called_once_with(
+        "frigate/front_door/motion/set", "ON", 0, False
+    )
+
+    await hass.services.async_call(
+        CAMERA_DOMAIN,
+        SERVICE_DISABLE_MOTION,
+        {ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID},
+        blocking=True,
+    )
+    mqtt_mock.async_publish.assert_called_once_with(
+        "frigate/front_door/detect/set", "OFF", 0, False
+    )
 
 
 @pytest.mark.parametrize(
