@@ -188,7 +188,9 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
     assert TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID in entities_from_device
 
 
-async def test_camera_built_in_motion_detection(hass: HomeAssistant) -> None:
+async def test_camera_built_in_motion_detection(
+    hass: HomeAssistant, mqtt_mock: Any
+) -> None:
     """Test built in motion detection."""
 
     await setup_mock_frigate_config_entry(hass)
