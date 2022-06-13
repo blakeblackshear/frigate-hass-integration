@@ -203,10 +203,6 @@ async def test_camera_built_in_motion_detection(
     async_fire_mqtt_message(hass, "frigate/front_door/motion/state", "ON")
     await hass.async_block_till_done()
 
-    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
-    assert entity_state
-    assert entity_state.attributes["motion_detection_enabled"]
-
     await hass.services.async_call(
         CAMERA_DOMAIN,
         SERVICE_ENABLE_MOTION,
