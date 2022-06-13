@@ -474,7 +474,7 @@ class FrigateMQTTEntity(FrigateEntity):
         self.async_write_ha_state()
 
     @callback  # type: ignore[misc]
-    def _extra_message_recieved(self, msg: ReceiveMessage) -> None:
+    def _extra_message_received(self, msg: ReceiveMessage) -> None:
         """Extra message received."""
         self.async_write_ha_state()
 

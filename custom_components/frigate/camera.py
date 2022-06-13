@@ -9,7 +9,7 @@ import async_timeout
 from jinja2 import Template
 from yarl import URL
 
-from homeassistant.components.camera import SUPPORT_STREAM, Camera
+from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
@@ -85,6 +85,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._cam_name = cam_name
         self._camera_config = camera_config
         self._url = config_entry.data[CONF_URL]
+        self._attr_is_on = True
         self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
@@ -116,8 +117,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         super()._state_message_received(msg)
 
     @callback
-    def _extra_message_recieved(self, msg: ReceiveMessage) -> None:
-        """Handle a new recieved MQTT extra message."""
+    def _extra_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT extra message."""
         self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
         super()._extra_message_recieved(msg)
 
@@ -154,7 +155,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         """Return supported features of this camera."""
         if not self._attr_is_streaming:
             return 0
-        return cast(int, SUPPORT_STREAM)
+
+        return CameraEntityFeature.STREAM
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
