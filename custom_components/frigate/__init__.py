@@ -419,47 +419,27 @@ class FrigateMQTTEntity(FrigateEntity):
         self,
         config_entry: ConfigEntry,
         frigate_config: dict[str, Any],
-        state_topic_config: dict[str, Any],
-        extra_topic_config: None | dict[str, Any] = None,
+        topic_map: dict[str, Any],
     ) -> None:
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
         self._frigate_config = frigate_config
         self._sub_state = None
         self._available = False
-        self._state_topic_config = {
-            "msg_callback": self._state_message_received,
-            "qos": 0,
-            **state_topic_config,
-        }
-
-        if extra_topic_config:
-            self._extra_topic_config = {
-                "msg_callback": self._extra_message_received,
-                "qos": 0,
-                **extra_topic_config,
-            }
-        else:
-            self._extra_topic_config = {}
+        self._topic_map = topic_map
 
     async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
-        topic_map = {
-            "state_topic": self._state_topic_config,
-            "availability_topic": {
-                "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
-                "msg_callback": self._availability_message_received,
-                "qos": 0,
-            },
+        self._topic_map["availability_topic"] = {
+            "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
+            "msg_callback": self._availability_message_received,
+            "qos": 0,
         }
-
-        if self._extra_topic_config:
-            topic_map["extra_topic"] = self._extra_topic_config
 
         state = async_prepare_subscribe_topics(
             self.hass,
             self._sub_state,
-            topic_map,
+            self._topic_map,
         )
         self._sub_state = await async_subscribe_topics(self.hass, state)
 
@@ -468,14 +448,9 @@ class FrigateMQTTEntity(FrigateEntity):
         async_unsubscribe_topics(self.hass, self._sub_state)
         self._sub_state = None
 
-    @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: ReceiveMessage) -> None:
-        """State message received."""
-        self.async_write_ha_state()
-
-    @callback  # type: ignore[misc]
-    def _extra_message_received(self, msg: ReceiveMessage) -> None:
-        """Extra message received."""
+    @callback
+    def _update_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new update message."""
         self.async_write_ha_state()
 
     @callback  # type: ignore[misc]
