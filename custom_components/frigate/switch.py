@@ -66,7 +66,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         default_enabled: bool,
     ) -> None:
         """Construct a FrigateSwitch."""
-
+        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._switch_name = switch_name
         self._is_on = False
@@ -166,6 +166,5 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
                     f"{self._frigate_config['mqtt']['topic_prefix']}"
                     f"/{self._cam_name}/{self._switch_name}/state"
                 ),
-                "encoding": None,
             },
         }

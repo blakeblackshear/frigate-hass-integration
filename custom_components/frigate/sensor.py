@@ -376,7 +376,6 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
-
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)

@@ -69,9 +69,9 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
-        self._cam_name = cam_name
         self._frigate_config = frigate_config
         self._camera_config = camera_config
+        self._cam_name = cam_name
         super().__init__(
             config_entry,
             frigate_config,
@@ -230,6 +230,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         obj_name: str,
     ) -> None:
         """Construct a FrigateMqttSnapshots camera."""
+        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._last_image: bytes | None = None
