@@ -89,19 +89,14 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         super().__init__(
             config_entry,
             frigate_config,
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._switch_name}/state"
-                )
-            },
+            self.get_topics(),
         )
 
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = msg.payload == "ON"
-        super()._state_message_received(msg)
+        super()._update_message_received(msg)
 
     @property
     def unique_id(self) -> str:
@@ -136,6 +131,11 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         """Return true if the binary sensor is on."""
         return self._is_on
 
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return self._icon
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the device on."""
         await async_publish(
@@ -156,7 +156,16 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             False,
         )
 
-    @property
-    def icon(self) -> str:
-        """Return the icon of the sensor."""
-        return self._icon
+    def get_topics(self) -> dict[str, Any]:
+        """Get topics with callbacks."""
+        return {
+            "state_topic": {
+                "msg_callback": self._state_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._switch_name}/state"
+                ),
+                "encoding": None,
+            },
+        }
