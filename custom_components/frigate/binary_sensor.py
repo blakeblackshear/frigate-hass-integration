@@ -75,12 +75,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         super().__init__(
             config_entry,
             frigate_config,
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}"
-                )
-            },
+            self.get_topics(),
         )
 
     @callback  # type: ignore[misc]
@@ -90,7 +85,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
             self._is_on = int(msg.payload) > 0
         except ValueError:
             self._is_on = False
-        super()._state_message_received(msg)
+        super()._update_message_received(msg)
 
     @property
     def unique_id(self) -> str:
@@ -130,6 +125,20 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         """Return the device class."""
         return cast(str, DEVICE_CLASS_OCCUPANCY)
 
+    def get_topics(self) -> dict[str, Any]:
+        """Get topics with callbacks."""
+        return {
+            "state_topic": {
+                "msg_callback": self._state_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._obj_name}"
+                ),
+                "encoding": None,
+            },
+        }
+
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
     """Frigate Motion Sensor class."""
@@ -148,19 +157,14 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
         super().__init__(
             config_entry,
             frigate_config,
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/motion"
-                )
-            },
+            self.get_topics(),
         )
 
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = msg.payload == "ON"
-        super()._state_message_received(msg)
+        super()._update_message_received(msg)
 
     @property
     def unique_id(self) -> str:
@@ -199,3 +203,17 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     def device_class(self) -> str:
         """Return the device class."""
         return cast(str, DEVICE_CLASS_MOTION)
+
+    def get_topics(self) -> dict[str, Any]:
+        """Get topics with callbacks."""
+        return {
+            "state_topic": {
+                "msg_callback": self._state_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/motion"
+                ),
+                "encoding": None,
+            },
+        }

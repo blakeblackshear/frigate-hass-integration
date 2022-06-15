@@ -70,6 +70,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     ) -> None:
         """Initialize a Frigate camera."""
         self._cam_name = cam_name
+        self._frigate_config = frigate_config
         self._camera_config = camera_config
         super().__init__(
             config_entry,
