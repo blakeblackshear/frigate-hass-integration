@@ -352,12 +352,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         super().__init__(
             config_entry,
             frigate_config,
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}"
-                )
-            },
+            self.get_topics(),
         )
 
     @callback  # type: ignore[misc]
