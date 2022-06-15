@@ -214,6 +214,5 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
                     f"{self._frigate_config['mqtt']['topic_prefix']}"
                     f"/{self._cam_name}/motion"
                 ),
-                "encoding": None,
             },
         }
