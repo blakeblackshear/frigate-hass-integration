@@ -448,7 +448,7 @@ class FrigateMQTTEntity(FrigateEntity):
         async_unsubscribe_topics(self.hass, self._sub_state)
         self._sub_state = None
 
-    @callback
+    @callback  # type: ignore[misc]
     def _update_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new update message."""
         self.async_write_ha_state()
