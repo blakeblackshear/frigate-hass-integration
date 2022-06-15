@@ -365,7 +365,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         """Handle a new received MQTT state message."""
         try:
             self._state = int(msg.payload)
-            super()._state_message_received(msg)
+            super()._update_message_received(msg)
         except ValueError:
             pass
 
@@ -412,3 +412,17 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
+
+    def get_topics(self) -> dict[str, Any]:
+        """Get topics with callbacks."""
+        return {
+            "state_topic": {
+                "msg_callback": self._state_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._obj_name}"
+                ),
+                "encoding": None,
+            },
+        }
