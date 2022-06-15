@@ -69,28 +69,15 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
+        self._cam_name = cam_name
+        self._camera_config = camera_config
         super().__init__(
             config_entry,
             frigate_config,
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{cam_name}/recordings/state"
-                ),
-                "encoding": None,
-            },
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{cam_name}/motion/state"
-                ),
-                "encoding": None,
-            },
+            self.get_topics(),
         )
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
-        self._cam_name = cam_name
-        self._camera_config = camera_config
         self._url = config_entry.data[CONF_URL]
         self._attr_is_on = True
         self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
@@ -121,13 +108,13 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._attr_is_recording = msg.payload.decode("utf-8") == "ON"
-        super()._state_message_received(msg)
+        super()._update_message_received(msg)
 
     @callback  # type: ignore[misc]
-    def _extra_message_received(self, msg: ReceiveMessage) -> None:
+    def _motion_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT extra message."""
         self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
-        super()._extra_message_received(msg)
+        super()._update_message_received(msg)
 
     @property
     def unique_id(self) -> str:
@@ -164,6 +151,29 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             return 0
 
         return cast(int, CameraEntityFeature.STREAM)
+
+    def get_topics(self) -> dict[str, Any]:
+        """Get topics with callbacks."""
+        return {
+            "state_topic": {
+                "msg_callback": self._state_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/recordings/state"
+                ),
+                "encoding": None,
+            },
+            "motion_topic": {
+                "msg_callback": self._motion_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/motion/state"
+                ),
+                "encoding": None,
+            },
+        }
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
@@ -227,13 +237,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             self,
             config_entry,
             frigate_config,
-            {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}/snapshot"
-                ),
-                "encoding": None,
-            },
+            self.get_topics(),
         )
         Camera.__init__(self)
 
@@ -283,3 +287,17 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         if self._last_image is None:
             return STATE_IDLE
         return STATE_DETECTED
+
+    def get_topics(self) -> dict[str, Any]:
+        """Get topics with callbacks."""
+        return {
+            "state_topic": {
+                "msg_callback": self._state_message_received,
+                "qos": 0,
+                "topic": (
+                    f"{self._frigate_config['mqtt']['topic_prefix']}"
+                    f"/{self._cam_name}/{self._obj_name}/snapshot"
+                ),
+                "encoding": None,
+            },
+        }
