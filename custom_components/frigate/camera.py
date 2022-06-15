@@ -245,7 +245,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._last_image = msg.payload
-        super()._state_message_received(msg)
+        super()._update_message_received(msg)
 
     @property
     def unique_id(self) -> str:
