@@ -75,7 +75,26 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         super().__init__(
             config_entry,
             frigate_config,
-            self.get_topics(),
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/recordings/state"
+                    ),
+                    "encoding": None,
+                },
+                "motion_topic": {
+                    "msg_callback": self._motion_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/motion/state"
+                    ),
+                    "encoding": None,
+                },
+            },
         )
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
@@ -152,29 +171,6 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             return 0
 
         return cast(int, CameraEntityFeature.STREAM)
-
-    def get_topics(self) -> dict[str, Any]:
-        """Get topics with callbacks."""
-        return {
-            "state_topic": {
-                "msg_callback": self._state_message_received,
-                "qos": 0,
-                "topic": (
-                    f"{self._frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/recordings/state"
-                ),
-                "encoding": None,
-            },
-            "motion_topic": {
-                "msg_callback": self._motion_message_received,
-                "qos": 0,
-                "topic": (
-                    f"{self._frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/motion/state"
-                ),
-                "encoding": None,
-            },
-        }
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
