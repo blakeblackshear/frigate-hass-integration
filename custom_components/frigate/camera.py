@@ -86,7 +86,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
         )
-        self._motion_topic = (
+        self._set_motion_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
         )
 
@@ -202,7 +202,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         """Enable motion detection for this camera."""
         await async_publish(
             self.hass,
-            self._motion_topic,
+            self._set_motion_topic,
             "ON",
             0,
             False,
