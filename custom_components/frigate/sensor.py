@@ -352,7 +352,17 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         super().__init__(
             config_entry,
             frigate_config,
-            self.get_topics(),
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._obj_name}"
+                    ),
+                    "encoding": None,
+                },
+            },
         )
 
     @callback  # type: ignore[misc]
@@ -406,17 +416,3 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return self._icon
-
-    def get_topics(self) -> dict[str, Any]:
-        """Get topics with callbacks."""
-        return {
-            "state_topic": {
-                "msg_callback": self._state_message_received,
-                "qos": 0,
-                "topic": (
-                    f"{self._frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}"
-                ),
-                "encoding": None,
-            },
-        }
