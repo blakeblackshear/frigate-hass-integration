@@ -449,11 +449,6 @@ class FrigateMQTTEntity(FrigateEntity):
         self._sub_state = None
 
     @callback  # type: ignore[misc]
-    def _update_message_received(self, msg: ReceiveMessage) -> None:
-        """Handle a new update message."""
-        self.async_write_ha_state()
-
-    @callback  # type: ignore[misc]
     def _availability_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT availability message."""
         self._available = msg.payload == "online"

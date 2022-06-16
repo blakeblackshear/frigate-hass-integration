@@ -360,7 +360,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         """Handle a new received MQTT state message."""
         try:
             self._state = int(msg.payload)
-            super()._update_message_received(msg)
+            self.async_write_ha_state()
         except ValueError:
             pass
 

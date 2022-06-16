@@ -85,7 +85,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
             self._is_on = int(msg.payload) > 0
         except ValueError:
             self._is_on = False
-        super()._update_message_received(msg)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
@@ -164,7 +164,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = msg.payload == "ON"
-        super()._update_message_received(msg)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
