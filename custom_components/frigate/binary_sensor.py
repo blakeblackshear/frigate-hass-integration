@@ -76,10 +76,15 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
             config_entry,
             frigate_config,
             {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}"
-                )
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._obj_name}"
+                    ),
+                    "encoding": None,
+                },
             },
         )
 
@@ -90,7 +95,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
             self._is_on = int(msg.payload) > 0
         except ValueError:
             self._is_on = False
-        super()._state_message_received(msg)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
@@ -149,10 +154,14 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
             config_entry,
             frigate_config,
             {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/motion"
-                )
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/motion"
+                    ),
+                },
             },
         )
 
@@ -160,7 +169,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = msg.payload == "ON"
-        super()._state_message_received(msg)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:

@@ -419,32 +419,27 @@ class FrigateMQTTEntity(FrigateEntity):
         self,
         config_entry: ConfigEntry,
         frigate_config: dict[str, Any],
-        state_topic_config: dict[str, Any],
+        topic_map: dict[str, Any],
     ) -> None:
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
         self._frigate_config = frigate_config
         self._sub_state = None
         self._available = False
-        self._state_topic_config = {
-            "msg_callback": self._state_message_received,
-            "qos": 0,
-            **state_topic_config,
-        }
+        self._topic_map = topic_map
 
     async def async_added_to_hass(self) -> None:
         """Subscribe mqtt events."""
+        self._topic_map["availability_topic"] = {
+            "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
+            "msg_callback": self._availability_message_received,
+            "qos": 0,
+        }
+
         state = async_prepare_subscribe_topics(
             self.hass,
             self._sub_state,
-            {
-                "state_topic": self._state_topic_config,
-                "availability_topic": {
-                    "topic": f"{self._frigate_config['mqtt']['topic_prefix']}/available",
-                    "msg_callback": self._availability_message_received,
-                    "qos": 0,
-                },
-            },
+            self._topic_map,
         )
         self._sub_state = await async_subscribe_topics(self.hass, state)
 
@@ -452,11 +447,6 @@ class FrigateMQTTEntity(FrigateEntity):
         """Cleanup prior to hass removal."""
         async_unsubscribe_topics(self.hass, self._sub_state)
         self._sub_state = None
-
-    @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: ReceiveMessage) -> None:
-        """State message received."""
-        self.async_write_ha_state()
 
     @callback  # type: ignore[misc]
     def _availability_message_received(self, msg: ReceiveMessage) -> None:

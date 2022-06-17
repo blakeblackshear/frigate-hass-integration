@@ -66,7 +66,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         default_enabled: bool,
     ) -> None:
         """Construct a FrigateSwitch."""
-
+        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._switch_name = switch_name
         self._is_on = False
@@ -90,10 +90,14 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             config_entry,
             frigate_config,
             {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._switch_name}/state"
-                )
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._switch_name}/state"
+                    ),
+                },
             },
         )
 
@@ -101,7 +105,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = msg.payload == "ON"
-        super()._state_message_received(msg)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
@@ -136,6 +140,11 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         """Return true if the binary sensor is on."""
         return self._is_on
 
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return self._icon
+
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the device on."""
         await async_publish(
@@ -155,8 +164,3 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             0,
             False,
         )
-
-    @property
-    def icon(self) -> str:
-        """Return the icon of the sensor."""
-        return self._icon

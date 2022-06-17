@@ -353,10 +353,15 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             config_entry,
             frigate_config,
             {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}"
-                )
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._obj_name}"
+                    ),
+                    "encoding": None,
+                },
             },
         )
 
@@ -365,7 +370,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         """Handle a new received MQTT state message."""
         try:
             self._state = int(msg.payload)
-            super()._state_message_received(msg)
+            self.async_write_ha_state()
         except ValueError:
             pass
 
@@ -381,7 +386,6 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
-
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)

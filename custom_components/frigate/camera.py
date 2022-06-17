@@ -9,7 +9,8 @@ import async_timeout
 from jinja2 import Template
 from yarl import URL
 
-from homeassistant.components.camera import SUPPORT_STREAM, Camera
+from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -68,24 +69,45 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
+        self._frigate_config = frigate_config
+        self._camera_config = camera_config
+        self._cam_name = cam_name
         super().__init__(
             config_entry,
             frigate_config,
             {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{cam_name}/recordings/state"
-                ),
-                "encoding": None,
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/recordings/state"
+                    ),
+                    "encoding": None,
+                },
+                "motion_topic": {
+                    "msg_callback": self._motion_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/motion/state"
+                    ),
+                    "encoding": None,
+                },
             },
         )
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
-        self._cam_name = cam_name
-        self._camera_config = camera_config
         self._url = config_entry.data[CONF_URL]
+        self._attr_is_on = True
         self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
+        self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
+            "enabled"
+        )
+        self._set_motion_topic = (
+            f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
+        )
 
         streaming_template = config_entry.options.get(
             CONF_RTMP_URL_TEMPLATE, ""
@@ -106,7 +128,13 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._attr_is_recording = msg.payload.decode("utf-8") == "ON"
-        super()._state_message_received(msg)
+        self.async_write_ha_state()
+
+    @callback  # type: ignore[misc]
+    def _motion_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT extra message."""
+        self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
@@ -141,7 +169,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         """Return supported features of this camera."""
         if not self._attr_is_streaming:
             return 0
-        return cast(int, SUPPORT_STREAM)
+
+        return cast(int, CameraEntityFeature.STREAM)
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
@@ -165,6 +194,26 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             return None
         return self._stream_source
 
+    async def async_enable_motion_detection(self) -> None:
+        """Enable motion detection for this camera."""
+        await async_publish(
+            self.hass,
+            self._set_motion_topic,
+            "ON",
+            0,
+            False,
+        )
+
+    async def async_disable_motion_detection(self) -> None:
+        """Disable motion detection for this camera."""
+        await async_publish(
+            self.hass,
+            self._set_motion_topic,
+            "OFF",
+            0,
+            False,
+        )
+
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     """Frigate best camera class."""
@@ -177,6 +226,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         obj_name: str,
     ) -> None:
         """Construct a FrigateMqttSnapshots camera."""
+        self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
         self._last_image: bytes | None = None
@@ -186,11 +236,15 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             config_entry,
             frigate_config,
             {
-                "topic": (
-                    f"{frigate_config['mqtt']['topic_prefix']}"
-                    f"/{self._cam_name}/{self._obj_name}/snapshot"
-                ),
-                "encoding": None,
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._obj_name}/snapshot"
+                    ),
+                    "encoding": None,
+                },
             },
         )
         Camera.__init__(self)
@@ -199,7 +253,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._last_image = msg.payload
-        super()._state_message_received(msg)
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
