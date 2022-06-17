@@ -1,5 +1,5 @@
 ---
-version: "3"
+version: '3'
 services:
   dev:
     user: vscode
@@ -12,7 +12,7 @@ services:
     image: homeassistant/home-assistant:stable
     restart: unless-stopped
     ports:
-      - "8123:8123"
+      - 48123:8123
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
@@ -32,10 +32,10 @@ services:
       - .devcontainer/frigate.yml:/config/config.yml:ro
       - ./frigate:/media/frigate
     ports:
-      - "5000:5000"
-      - "1935:1935"
+      - 45000:5000
+      - 41935:1935
   mqtt:
     image: eclipse-mosquitto:1.6
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - 41883:1883
