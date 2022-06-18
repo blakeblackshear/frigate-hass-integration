@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace_resources",
+  "data": {
+    "items": [
+      {
+        "url": "https://cdn.jsdelivr.net/gh/thomasloven/lovelace-auto-entities@1.11.0/auto-entities.js",
+        "type": "module",
+        "id": "00c459541bac4290af01c51bf9c06ba2"
+      }
+    ]
+  }
+}

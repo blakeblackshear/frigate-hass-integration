@@ -73,6 +73,7 @@ ctags.tmp
 .vscode/*
 !.vscode/cSpell.json
 !.vscode/extensions.json
+!.vscode/launch.json
 !.vscode/tasks.json
 .env
 
