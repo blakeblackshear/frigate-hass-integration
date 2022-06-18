@@ -494,4 +494,4 @@ async def test_zone_specific_objects(hass: HomeAssistant) -> None:
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["cameras"]["front_door"]["zones"]["steps"]["objects"] = ["person"]
     labels = get_cameras_zones_and_objects(config)
-    assert "all" not in labels
+    assert ("steps", "all") not in labels
