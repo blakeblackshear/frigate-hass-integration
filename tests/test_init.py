@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate import (
+    get_cameras_zones_and_objects,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
@@ -485,3 +486,12 @@ async def test_entry_rename_entities_with_unusual_names(hass: HomeAssistant) -> 
     # Verify the rename has correctly occurred.
     entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
     assert entity_id == "sensor.front_door_person_count"
+
+
+async def test_zone_specific_objects(hass: HomeAssistant) -> None:
+    """Test that all is not inserted to single item object list."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["cameras"]["front_door"]["zones"]["steps"]["objects"] = ["person"]
+    labels = get_cameras_zones_and_objects(config)
+    assert "all" not in labels
