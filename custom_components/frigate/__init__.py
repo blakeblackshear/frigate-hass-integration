@@ -134,7 +134,9 @@ def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]
 
             # add an artificial all label to track
             # all objects for this zone
-            zone_objects.add((zone_name, "all"))
+            # NOTE: only add for zones that contain more than 1 object
+            if len(zone_name_objects) > 1:
+                zone_objects.add((zone_name, "all"))
     return camera_objects.union(zone_objects)
 
 
