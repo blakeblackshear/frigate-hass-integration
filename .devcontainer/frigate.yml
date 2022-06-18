@@ -7,7 +7,7 @@ detectors:
 mqtt:
   host: mqtt
 cameras:
-  demo:
+  big_buck_bunny:
     ffmpeg:
       inputs:
         - path: rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4
