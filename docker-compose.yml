@@ -16,7 +16,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
-      - .devcontainer/config/preconfig:/config/preconfig:ro
+      - .devcontainer/config/preconfig:/config/preconfig
       - .devcontainer/config/configuration.yaml:/config/configuration.yaml:ro
       - .devcontainer/config/www:/config/www
       - ./custom_components:/config/custom_components:ro

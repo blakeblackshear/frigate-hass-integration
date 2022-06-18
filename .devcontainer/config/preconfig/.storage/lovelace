@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace",
+  "data": {
+    "config": {
+      "title": "Frigate Integration",
+      "views": [
+        {
+          "theme": "Backend-selected",
+          "title": "Integration",
+          "path": "integration",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:auto-entities",
+              "filter": {
+                "include": [
+                  {
+                    "integration": "frigate"
+                  }
+                ]
+              },
+              "sort": {
+                "method": "friendly_name"
+              },
+              "card": {
+                "type": "custom:auto-entities",
+                "card": {
+                  "type": "entities"
+                },
+                "filter": {
+                  "include": [],
+                  "exclude": []
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
