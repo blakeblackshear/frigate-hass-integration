@@ -436,6 +436,12 @@ def _response_header(response: aiohttp.ClientResponse) -> dict[str, str]:
             # hdrs.CONTENT_LENGTH,
             hdrs.CONTENT_TYPE,
             hdrs.CONTENT_ENCODING,
+            # Strips inbound CORS response headers since the aiohttp_cors
+            # library will assert that they are not already present for CORS
+            # requests.
+            hdrs.ACCESS_CONTROL_ALLOW_ORIGIN,
+            hdrs.ACCESS_CONTROL_ALLOW_CREDENTIALS,
+            hdrs.ACCESS_CONTROL_EXPOSE_HEADERS,
         ):
             continue
         headers[name] = value
