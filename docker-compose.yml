@@ -1,5 +1,5 @@
 ---
-version: '3'
+version: "3"
 services:
   dev:
     user: vscode
@@ -9,7 +9,7 @@ services:
       - .:/workspace:cached
     command: [sleep, infinity]
   hass:
-    image: homeassistant/home-assistant:stable
+    image: "homeassistant/home-assistant:${HA_VERSION:-stable}"
     restart: unless-stopped
     ports:
       - 48123:8123
@@ -22,7 +22,7 @@ services:
       - ./custom_components:/config/custom_components:ro
   frigate:
     privileged: true
-    image: blakeblackshear/frigate:stable-amd64
+    image: "blakeblackshear/frigate:${FRIGATE_VERSION:-stable-amd64}"
     restart: unless-stopped
     devices:
       - /dev/bus/usb:/dev/bus/usb

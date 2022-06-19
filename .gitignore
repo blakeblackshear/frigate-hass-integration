@@ -75,7 +75,6 @@ ctags.tmp
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/tasks.json
-.env
 
 # Built docs
 docs/build
