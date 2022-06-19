@@ -28,3 +28,9 @@ homeassistant:
     - type: homeassistant
 
 demo:
+
+panel_iframe:
+  frigate:
+    title: "Frigate"
+    url: "http://localhost:45000"
+    icon: "mdi:cctv"
