@@ -11,6 +11,7 @@ from yarl import URL
 
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
+from homeassistant.components.stream import CONF_LIVE_FLV
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -108,6 +109,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._set_motion_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
         )
+        self.stream_options[CONF_LIVE_FLV] = True
 
         streaming_template = config_entry.options.get(
             CONF_RTMP_URL_TEMPLATE, ""
