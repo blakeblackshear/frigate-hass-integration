@@ -33,10 +33,11 @@ MS = "ms"
 
 # Attributes
 ATTR_CLIENT = "client"
+ATTR_CLIENT_ID = "client_id"
 ATTR_CONFIG = "config"
 ATTR_COORDINATOR = "coordinator"
+ATTR_EVENT_ID = "event_id"
 ATTR_MQTT = "mqtt"
-ATTR_CLIENT_ID = "client_id"
 
 # Configuration and options
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"

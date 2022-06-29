@@ -4,12 +4,14 @@ from __future__ import annotations
 import copy
 import logging
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
+
+import aiohttp
+from aiohttp import web
 
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME
 from homeassistant.components.camera import (
     DOMAIN as CAMERA_DOMAIN,
     SERVICE_DISABLE_MOTION,
@@ -21,6 +23,9 @@ from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
+from custom_components.frigate.api import FrigateApiClient
+from custom_components.frigate.const import ATTR_EVENT_ID, CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME, SERVICE_FAVORITE_EVENT
+
 from . import (
     TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
@@ -30,6 +35,7 @@ from . import (
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
+    start_frigate_server,
     test_entities_are_setup_correctly_in_registry,
 )
 
@@ -302,3 +308,29 @@ async def test_cameras_setup_correctly_in_registry(
             TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
     )
+
+@patch("custom_components.frigate.camera.get_client_for_frigate_instance_id")
+async def test_retain_service_call(
+    mock_server, aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Test retain service call."""
+    post_success = {"success": True, "message": "Post success"}
+    post_handler = Mock(return_value=web.json_response(post_success))
+
+    event_id = "1656282822.206673-bovnfg"
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.post(f"/api/events/{event_id}/retain", post_handler),
+        ],
+    )
+    mock_server.return_value = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+
+    await setup_mock_frigate_config_entry(hass)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_FAVORITE_EVENT,
+        {ATTR_EVENT_ID: event_id},
+        blocking=True,
+    )
+    assert post_handler.called

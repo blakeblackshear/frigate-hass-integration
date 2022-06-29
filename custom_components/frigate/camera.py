@@ -7,7 +7,7 @@ from typing import Any, cast
 import aiohttp
 import async_timeout
 from jinja2 import Template
-from voluptuous import vol
+import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
@@ -36,6 +36,7 @@ from . import (
 )
 from .const import (
     ATTR_CONFIG,
+    ATTR_EVENT_ID,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     NAME,
@@ -74,7 +75,7 @@ async def async_setup_entry(
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         SERVICE_FAVORITE_EVENT,
-        {vol.Optional("event_id"): str},
+        {vol.Optional(ATTR_EVENT_ID): str},
         SERVICE_FAVORITE_EVENT,
     )
 
