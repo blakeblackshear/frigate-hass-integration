@@ -1,6 +1,7 @@
 """Test the frigate binary sensor."""
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 import copy
 import logging
 from typing import Any
@@ -8,7 +9,6 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import aiohttp
 from aiohttp import web
-from collections.abc import AsyncGenerator
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
@@ -339,14 +339,18 @@ async def test_retain_service_call(
         [
             web.get("/api/stats", Mock(return_value=web.json_response(TEST_STATS))),
             web.get("/api/config", Mock(return_value=web.json_response(TEST_CONFIG))),
-            web.get("/api/version", Mock(return_value=web.json_response(TEST_SERVER_VERSION))),
-            web.get("/api/events/summary", Mock(return_value=web.json_response(TEST_EVENT_SUMMARY))),
+            web.get(
+                "/api/version",
+                Mock(return_value=web.json_response(TEST_SERVER_VERSION)),
+            ),
+            web.get(
+                "/api/events/summary",
+                Mock(return_value=web.json_response(TEST_EVENT_SUMMARY)),
+            ),
             web.post(f"/api/events/{event_id}/retain", post_handler),
         ],
     )
-    client = FrigateApiClient(
-        str(server.make_url("/")), aiohttp_session
-    )
+    client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
 
     await setup_mock_frigate_config_entry(hass, client=client)
     await hass.services.async_call(
