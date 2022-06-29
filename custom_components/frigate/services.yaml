@@ -1,7 +1,7 @@
 ---
-toggle_event_retention:
-  name: Toggle Event Retention
-  description: Retains or Un-retains
+favorite_event:
+  name: Favorite Event
+  description: Retains or Un-retains an Event Indefinitely
   target:
   fields:
     event_id:
