@@ -14,7 +14,9 @@ import jwt
 from multidict import CIMultiDict
 from yarl import URL
 
+from custom_components.frigate.api import FrigateApiClient
 from custom_components.frigate.const import (
+    ATTR_CLIENT,
     ATTR_CLIENT_ID,
     ATTR_CONFIG,
     ATTR_MQTT,
@@ -64,6 +66,20 @@ def get_config_entry_for_frigate_instance_id(
         config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
         if config and get_frigate_instance_id(config) == frigate_instance_id:
             return config_entry
+    return None
+
+
+def get_client_for_frigate_instance_id(
+    hass: HomeAssistant, frigate_instance_id: str
+) -> FrigateApiClient | None:
+    """Get a client for a given frigate_instance_id."""
+
+    config_entry = get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
+    if config_entry:
+        return cast(
+            FrigateApiClient,
+            hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CLIENT),
+        )
     return None
 
 

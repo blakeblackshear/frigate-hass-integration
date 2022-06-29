@@ -32,8 +32,9 @@ from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
 from . import get_friendly_name
 from .api import FrigateApiClient, FrigateApiClientError
-from .const import ATTR_CLIENT, CONF_MEDIA_BROWSER_ENABLE, DOMAIN, NAME
+from .const import CONF_MEDIA_BROWSER_ENABLE, DOMAIN, NAME
 from .views import (
+    get_client_for_frigate_instance_id,
     get_config_entry_for_frigate_instance_id,
     get_default_config_entry,
     get_frigate_instance_id_for_config_entry,
@@ -565,16 +566,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
     def _get_client(self, identifier: Identifier) -> FrigateApiClient:
         """Get client for a given identifier."""
-        config_entry = get_config_entry_for_frigate_instance_id(
+        client = get_client_for_frigate_instance_id(
             self.hass, identifier.frigate_instance_id
         )
-
-        if config_entry:
-            client: FrigateApiClient = (
-                self.hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CLIENT)
-            )
-            if client:
-                return client
+        if client:
+            return client
 
         raise MediaSourceError(
             "Could not find client for frigate instance id: %s"

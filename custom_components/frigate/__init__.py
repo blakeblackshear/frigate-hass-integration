@@ -56,6 +56,7 @@ from .views import (
     VodProxyView,
     VodSegmentProxyView,
 )
+from .ws_api import async_setup as ws_api_async_setup
 
 SCAN_INTERVAL = timedelta(seconds=5)
 
@@ -168,6 +169,8 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     )
 
     hass.data.setdefault(DOMAIN, {})
+
+    ws_api_async_setup(hass)
 
     session = async_get_clientsession(hass)
     hass.http.register_view(JSMPEGProxyView(session))

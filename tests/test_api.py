@@ -264,3 +264,32 @@ async def test_async_get_version(
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert await frigate_client.async_get_version() == TEST_SERVER_VERSION
+
+
+async def test_async_retain(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_retain."""
+
+    post_success = {"success": True, "message": "Post success"}
+    post_handler = Mock(return_value=web.json_response(post_success))
+
+    delete_success = {"success": True, "message": "Delete success"}
+    delete_handler = Mock(return_value=web.json_response(delete_success))
+
+    event_id = "1656282822.206673-bovnfg"
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.post(f"/api/events/{event_id}/retain", post_handler),
+            web.delete(f"/api/events/{event_id}/retain", delete_handler),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert await frigate_client.async_retain(event_id, True) == post_success
+    assert post_handler.called
+    assert not delete_handler.called
+
+    assert await frigate_client.async_retain(event_id, False) == delete_success
+    assert delete_handler.called
