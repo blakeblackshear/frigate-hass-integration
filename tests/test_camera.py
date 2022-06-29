@@ -8,10 +8,18 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import aiohttp
 from aiohttp import web
-
+from collections.abc import AsyncGenerator
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
+from custom_components.frigate.api import FrigateApiClient
+from custom_components.frigate.const import (
+    ATTR_EVENT_ID,
+    CONF_RTMP_URL_TEMPLATE,
+    DOMAIN,
+    NAME,
+    SERVICE_FAVORITE_EVENT,
+)
 from homeassistant.components.camera import (
     DOMAIN as CAMERA_DOMAIN,
     SERVICE_DISABLE_MOTION,
@@ -23,15 +31,14 @@ from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
-from custom_components.frigate.api import FrigateApiClient
-from custom_components.frigate.const import ATTR_EVENT_ID, CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME, SERVICE_FAVORITE_EVENT
-
 from . import (
     TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
+    TEST_EVENT_SUMMARY,
     TEST_SERVER_VERSION,
+    TEST_STATS,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
@@ -40,6 +47,13 @@ from . import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@pytest.fixture
+async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession, None]:
+    """Test fixture for aiohttp.ClientSerssion."""
+    async with aiohttp.ClientSession() as session:
+        yield session
 
 
 async def test_frigate_camera_setup(
@@ -309,9 +323,11 @@ async def test_cameras_setup_correctly_in_registry(
         },
     )
 
-@patch("custom_components.frigate.camera.get_client_for_frigate_instance_id")
+
 async def test_retain_service_call(
-    mock_server, aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any, hass: HomeAssistant
+    aiohttp_session: aiohttp.ClientSession,
+    aiohttp_server: Any,
+    hass: HomeAssistant,
 ) -> None:
     """Test retain service call."""
     post_success = {"success": True, "message": "Post success"}
@@ -321,16 +337,22 @@ async def test_retain_service_call(
     server = await start_frigate_server(
         aiohttp_server,
         [
+            web.get("/api/stats", Mock(return_value=web.json_response(TEST_STATS))),
+            web.get("/api/config", Mock(return_value=web.json_response(TEST_CONFIG))),
+            web.get("/api/version", Mock(return_value=web.json_response(TEST_SERVER_VERSION))),
+            web.get("/api/events/summary", Mock(return_value=web.json_response(TEST_EVENT_SUMMARY))),
             web.post(f"/api/events/{event_id}/retain", post_handler),
         ],
     )
-    mock_server.return_value = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session
+    )
 
-    await setup_mock_frigate_config_entry(hass)
+    await setup_mock_frigate_config_entry(hass, client=client)
     await hass.services.async_call(
         DOMAIN,
         SERVICE_FAVORITE_EVENT,
-        {ATTR_EVENT_ID: event_id},
+        {ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID, ATTR_EVENT_ID: event_id},
         blocking=True,
     )
     assert post_handler.called
