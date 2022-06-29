@@ -69,3 +69,6 @@ STATE_IDLE = "idle"
 STATUS_ERROR = "error"
 STATUS_RUNNING = "running"
 STATUS_STARTING = "starting"
+
+# Frigate Services
+SERVICE_FAVORITE_EVENT = "favorite_event"
