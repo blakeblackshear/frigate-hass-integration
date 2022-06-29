@@ -1,7 +1,7 @@
 ---
 favorite_event:
   name: Favorite Event
-  description: Retains or Un-retains an Event Indefinitely
+  description: Favorites or unfavorites an event indefinitely.
   target:
   fields:
     event_id:
@@ -11,3 +11,10 @@ favorite_event:
       advanced: false
       example: "1656510950.19548-ihtjj7"
       default: ""
+    favorite:
+      name: Favorite
+      description: If the event should be favorited / unfavorited.
+      required: true
+      advanced: false
+      example: true
+      default:
