@@ -149,7 +149,9 @@ class FrigateApiClient:
             async with async_timeout.timeout(TIMEOUT):
                 func = getattr(self._session, method)
                 if func:
-                    response = await func(url, headers=headers, raise_for_status=True)
+                    response = await func(
+                        url, headers=headers, raise_for_status=True, json=data
+                    )
                     if decode_json:
                         return await response.json()
                     return await response.text()
