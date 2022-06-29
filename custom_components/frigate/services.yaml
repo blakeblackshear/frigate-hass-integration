@@ -1,0 +1,13 @@
+---
+toggle_event_retention:
+  name: Toggle Event Retention
+  description: Retains or Un-retains
+  target:
+  fields:
+    event_id:
+      name: Event ID
+      description: ID of the event to retain.
+      required: true
+      advanced: false
+      example: "1656510950.19548-ihtjj7"
+      default: ""
