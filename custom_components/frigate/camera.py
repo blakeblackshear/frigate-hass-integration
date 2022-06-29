@@ -37,6 +37,7 @@ from . import (
 from .const import (
     ATTR_CONFIG,
     ATTR_EVENT_ID,
+    ATTR_FAVORITE,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     NAME,
@@ -75,7 +76,7 @@ async def async_setup_entry(
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         SERVICE_FAVORITE_EVENT,
-        {vol.Optional(ATTR_EVENT_ID): str},
+        {vol.Required(ATTR_EVENT_ID): str, vol.Required(ATTR_FAVORITE): bool},
         SERVICE_FAVORITE_EVENT,
     )
 
@@ -238,13 +239,15 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             False,
         )
 
-    async def favorite_event(self, event_id=None):
+    async def favorite_event(
+        self, event_id: str | None = None, favorite: bool | None = None
+    ):
         """Favorite An Event."""
-        if not event_id:
-            _LOGGER.error("%s needs to be provided.", event_id)
+        if not event_id or not favorite:
+            _LOGGER.error("event id and favorite need to be provided.")
             return
 
-        self._client.async_retain(event_id, True)
+        self._client.async_retain(event_id, favorite)
 
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]

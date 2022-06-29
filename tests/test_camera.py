@@ -5,7 +5,7 @@ from collections.abc import AsyncGenerator
 import copy
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import aiohttp
 from aiohttp import web
@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 from custom_components.frigate.api import FrigateApiClient
 from custom_components.frigate.const import (
     ATTR_EVENT_ID,
+    ATTR_FAVORITE,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     NAME,
@@ -356,7 +357,11 @@ async def test_retain_service_call(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_FAVORITE_EVENT,
-        {ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID, ATTR_EVENT_ID: event_id},
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+            ATTR_FAVORITE: True,
+        },
         blocking=True,
     )
     assert post_handler.called

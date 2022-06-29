@@ -37,6 +37,7 @@ ATTR_CLIENT_ID = "client_id"
 ATTR_CONFIG = "config"
 ATTR_COORDINATOR = "coordinator"
 ATTR_EVENT_ID = "event_id"
+ATTR_FAVORITE = "favorite"
 ATTR_MQTT = "mqtt"
 
 # Configuration and options
