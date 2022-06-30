@@ -17,4 +17,4 @@ favorite_event:
       required: true
       advanced: false
       example: true
-      default:
+      default: true

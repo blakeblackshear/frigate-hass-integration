@@ -321,8 +321,6 @@ async def test_cameras_setup_correctly_in_registry(
 
 
 async def test_retain_service_call(
-    aiohttp_session: aiohttp.ClientSession,
-    aiohttp_server: Any,
     hass: HomeAssistant,
 ) -> None:
     """Test retain service call."""
