@@ -293,3 +293,53 @@ async def test_async_retain(
 
     assert await frigate_client.async_retain(event_id, False) == delete_success
     assert delete_handler.called
+
+
+async def test_async_get_recordings_summary(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_recordings_summary."""
+
+    summary_success = {"summary": "goes_here"}
+    summary_handler = Mock(return_value=web.json_response(summary_success))
+    camera = "front_door"
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get(f"/api/{camera}/recordings/summary", summary_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert await frigate_client.async_get_recordings_summary(camera) == summary_success
+    assert summary_handler.called
+
+
+async def test_async_get_recordings(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_recordings."""
+
+    recordings_success = {"recordings": "goes_here"}
+    camera = "front_door"
+    after = 1
+    before = 2
+
+    async def recordings_handler(request: web.Request) -> web.Response:
+        """Events handler."""
+        _assert_request_params(
+            request,
+            {
+                "before": str(before),
+                "after": str(after),
+            },
+        )
+        return web.json_response(recordings_success)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get(f"/api/{camera}/recordings", recordings_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_get_recordings(camera, after, before)
+        == recordings_success
+    )
