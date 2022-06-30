@@ -131,6 +131,42 @@ class FrigateApiClient:
             ),
         )
 
+    async def async_get_recordings_summary(self, camera: str) -> dict[str, Any]:
+        """Get recordings summary."""
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "get",
+                str(URL(self._host) / f"api/{camera}/recordings/summary"),
+                decode_json=True,
+            ),
+        )
+
+    async def async_get_recordings(
+        self,
+        camera: str,
+        after: int | None = None,
+        before: int | None = None,
+    ) -> dict[str, Any]:
+        """Get recordings."""
+        params = {
+            "after": after,
+            "before": before,
+        }
+
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "get",
+                str(
+                    URL(self._host)
+                    / f"api/{camera}/recordings"
+                    % {k: v for k, v in params.items() if v is not None}
+                ),
+                decode_json=True,
+            ),
+        )
+
     async def api_wrapper(
         self,
         method: str,

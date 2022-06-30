@@ -201,6 +201,7 @@ class SnapshotsProxyView(ProxyView):
         return f"api/events/{kwargs['eventid']}/snapshot.jpg"
 
 
+# TODO(@dermotduffy): Remove the RecordingsProxyView after the v4.0.0-rc.2 card release.
 class RecordingsProxyView(ProxyView):
     """A proxy for recordings."""
 

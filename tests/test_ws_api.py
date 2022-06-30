@@ -16,6 +16,7 @@ from tests import (
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
+TEST_CAMERA = "front_door"
 TEST_EVENT_ID = "1656282822.206673-bovnfg"
 
 
@@ -116,6 +117,120 @@ async def test_retain_api_error(hass: HomeAssistant, hass_ws_client: Any) -> Non
     mock_client.async_retain = AsyncMock(side_effect=FrigateApiClientError)
 
     await ws_client.send_json(retain_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+
+async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving recordings successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    recording_json = {
+        "id": 1,
+        "type": "frigate/recordings/summary",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": TEST_CAMERA,
+    }
+
+    recording_success = {"recording": "summary"}
+    mock_client.async_get_recordings_summary = AsyncMock(return_value=recording_success)
+    await ws_client.send_json(recording_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_recordings_summary.assert_called_with(TEST_CAMERA)
+    assert response["success"]
+    assert response["result"] == recording_success
+
+    recording_success = {"recording": "get"}
+    after = 1
+    before = 2
+    mock_client.async_get_recordings = AsyncMock(return_value=recording_success)
+    await ws_client.send_json(
+        {
+            **recording_json,
+            "id": 2,
+            "type": "frigate/recordings/get",
+            "after": after,
+            "before": before,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_recordings.assert_called_with(TEST_CAMERA, after, before)
+    assert response["success"]
+    assert response["result"] == recording_success
+
+
+async def test_get_recordings_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving recordings from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    recording_json = {
+        "id": 1,
+        "type": "frigate/recordings/summary",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+        "camera": TEST_CAMERA,
+    }
+
+    await ws_client.send_json(recording_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+    await ws_client.send_json(
+        {
+            **recording_json,
+            "id": 2,
+            "type": "frigate/recordings/get",
+        }
+    )
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_get_recordings_api_error(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving recordings when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    recording_json = {
+        "id": 1,
+        "type": "frigate/recordings/summary",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": TEST_CAMERA,
+    }
+
+    mock_client.async_get_recordings_summary = AsyncMock(
+        side_effect=FrigateApiClientError
+    )
+
+    await ws_client.send_json(recording_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+    mock_client.async_get_recordings = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(
+        {
+            **recording_json,
+            "id": 2,
+            "type": "frigate/recordings/get",
+        }
+    )
     response = await ws_client.receive_json()
     assert not response["success"]
     assert response["error"]["code"] == "frigate_error"
