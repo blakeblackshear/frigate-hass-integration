@@ -5,14 +5,12 @@ from collections.abc import AsyncGenerator
 import copy
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import aiohttp
-from aiohttp import web
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.api import FrigateApiClient
 from custom_components.frigate.const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
@@ -37,13 +35,10 @@ from . import (
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
-    TEST_EVENT_SUMMARY,
     TEST_SERVER_VERSION,
-    TEST_STATS,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
-    start_frigate_server,
     test_entities_are_setup_correctly_in_registry,
 )
 
@@ -332,28 +327,12 @@ async def test_retain_service_call(
 ) -> None:
     """Test retain service call."""
     post_success = {"success": True, "message": "Post success"}
-    post_handler = Mock(return_value=web.json_response(post_success))
+
+    client = create_mock_frigate_client()
+    client.async_retain = AsyncMock(return_value=post_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     event_id = "1656282822.206673-bovnfg"
-    server = await start_frigate_server(
-        aiohttp_server,
-        [
-            web.get("/api/stats", Mock(return_value=web.json_response(TEST_STATS))),
-            web.get("/api/config", Mock(return_value=web.json_response(TEST_CONFIG))),
-            web.get(
-                "/api/version",
-                Mock(return_value=web.json_response(TEST_SERVER_VERSION)),
-            ),
-            web.get(
-                "/api/events/summary",
-                Mock(return_value=web.json_response(TEST_EVENT_SUMMARY)),
-            ),
-            web.post(f"/api/events/{event_id}/retain", post_handler),
-        ],
-    )
-    client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
-
-    await setup_mock_frigate_config_entry(hass, client=client)
     await hass.services.async_call(
         DOMAIN,
         SERVICE_FAVORITE_EVENT,
@@ -364,4 +343,16 @@ async def test_retain_service_call(
         },
         blocking=True,
     )
-    assert post_handler.called
+    client.async_retain.assert_called_with(event_id, True)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_FAVORITE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+            ATTR_FAVORITE: False,
+        },
+        blocking=True,
+    )
+    client.async_retain.assert_called_with(event_id, False)
