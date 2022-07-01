@@ -11,10 +11,6 @@ import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
-from custom_components.frigate.views import (
-    get_client_for_frigate_instance_id,
-    get_frigate_instance_id,
-)
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
@@ -35,6 +31,7 @@ from . import (
     get_frigate_entity_unique_id,
 )
 from .const import (
+    ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
@@ -55,9 +52,7 @@ async def async_setup_entry(
     """Camera entry setup."""
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
-    frigate_client = get_client_for_frigate_instance_id(
-        hass, get_frigate_instance_id(frigate_config)
-    )
+    frigate_client = hass.data[DOMAIN][entry.entry_id][ATTR_CLIENT]
 
     async_add_entities(
         [
@@ -239,14 +234,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             False,
         )
 
-    async def favorite_event(
-        self, event_id: str | None = None, favorite: bool | None = None
-    ):
-        """Favorite An Event."""
-        if not event_id or favorite is None:
-            _LOGGER.error("event id and favorite need to be provided.")
-            return
-
+    async def favorite_event(self, event_id: str, favorite: bool) -> None:
+        """Favorite an event."""
         await self._client.async_retain(event_id, favorite)
 
 
