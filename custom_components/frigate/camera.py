@@ -243,11 +243,11 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self, event_id: str | None = None, favorite: bool | None = None
     ):
         """Favorite An Event."""
-        if not event_id or not favorite:
+        if not event_id or favorite is None:
             _LOGGER.error("event id and favorite need to be provided.")
             return
 
-        self._client.async_retain(event_id, favorite)
+        await self._client.async_retain(event_id, favorite)
 
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
