@@ -1,13 +1,11 @@
 """Test the frigate binary sensor."""
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator
 import copy
 import logging
 from typing import Any
 from unittest.mock import AsyncMock
 
-import aiohttp
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
