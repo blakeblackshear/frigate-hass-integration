@@ -51,7 +51,6 @@ from .const import (
 from .views import (
     JSMPEGProxyView,
     NotificationsProxyView,
-    RecordingsProxyView,
     SnapshotsProxyView,
     VodProxyView,
     VodSegmentProxyView,
@@ -175,7 +174,6 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     session = async_get_clientsession(hass)
     hass.http.register_view(JSMPEGProxyView(session))
     hass.http.register_view(NotificationsProxyView(session))
-    hass.http.register_view(RecordingsProxyView(session))
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(VodProxyView(session))
     hass.http.register_view(VodSegmentProxyView(session))
