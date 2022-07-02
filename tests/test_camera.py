@@ -45,13 +45,6 @@ from . import (
 _LOGGER = logging.getLogger(__name__)
 
 
-@pytest.fixture
-async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession, None]:
-    """Test fixture for aiohttp.ClientSerssion."""
-    async with aiohttp.ClientSession() as session:
-        yield session
-
-
 async def test_frigate_camera_setup(
     hass: HomeAssistant,
     aioclient_mock: Any,
