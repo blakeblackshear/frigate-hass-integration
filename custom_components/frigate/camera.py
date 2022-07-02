@@ -7,13 +7,16 @@ from typing import Any, cast
 import aiohttp
 import async_timeout
 from jinja2 import Template
+import voluptuous as vol
 from yarl import URL
 
+from custom_components.frigate.api import FrigateApiClient
 from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -28,10 +31,14 @@ from . import (
     get_frigate_entity_unique_id,
 )
 from .const import (
+    ATTR_CLIENT,
     ATTR_CONFIG,
+    ATTR_EVENT_ID,
+    ATTR_FAVORITE,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     NAME,
+    SERVICE_FAVORITE_EVENT,
     STATE_DETECTED,
     STATE_IDLE,
 )
@@ -45,16 +52,27 @@ async def async_setup_entry(
     """Camera entry setup."""
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    frigate_client = hass.data[DOMAIN][entry.entry_id][ATTR_CLIENT]
 
     async_add_entities(
         [
-            FrigateCamera(entry, cam_name, frigate_config, camera_config)
+            FrigateCamera(
+                entry, cam_name, frigate_client, frigate_config, camera_config
+            )
             for cam_name, camera_config in frigate_config["cameras"].items()
         ]
         + [
             FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
             for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
         ]
+    )
+
+    # setup services
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_FAVORITE_EVENT,
+        {vol.Required(ATTR_EVENT_ID): str, vol.Required(ATTR_FAVORITE): bool},
+        SERVICE_FAVORITE_EVENT,
     )
 
 
@@ -65,10 +83,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self,
         config_entry: ConfigEntry,
         cam_name: str,
+        frigate_client: FrigateApiClient,
         frigate_config: dict[str, Any],
         camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
+        self._client = frigate_client
         self._frigate_config = frigate_config
         self._camera_config = camera_config
         self._cam_name = cam_name
@@ -213,6 +233,10 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             0,
             False,
         )
+
+    async def favorite_event(self, event_id: str, favorite: bool) -> None:
+        """Favorite an event."""
+        await self._client.async_retain(event_id, favorite)
 
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]

@@ -9,7 +9,14 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from custom_components.frigate.const import CONF_RTMP_URL_TEMPLATE, DOMAIN, NAME
+from custom_components.frigate.const import (
+    ATTR_EVENT_ID,
+    ATTR_FAVORITE,
+    CONF_RTMP_URL_TEMPLATE,
+    DOMAIN,
+    NAME,
+    SERVICE_FAVORITE_EVENT,
+)
 from homeassistant.components.camera import (
     DOMAIN as CAMERA_DOMAIN,
     SERVICE_DISABLE_MOTION,
@@ -302,3 +309,39 @@ async def test_cameras_setup_correctly_in_registry(
             TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
     )
+
+
+async def test_retain_service_call(
+    hass: HomeAssistant,
+) -> None:
+    """Test retain service call."""
+    post_success = {"success": True, "message": "Post success"}
+
+    client = create_mock_frigate_client()
+    client.async_retain = AsyncMock(return_value=post_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    event_id = "1656282822.206673-bovnfg"
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_FAVORITE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+            ATTR_FAVORITE: True,
+        },
+        blocking=True,
+    )
+    client.async_retain.assert_called_with(event_id, True)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_FAVORITE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+            ATTR_FAVORITE: False,
+        },
+        blocking=True,
+    )
+    client.async_retain.assert_called_with(event_id, False)

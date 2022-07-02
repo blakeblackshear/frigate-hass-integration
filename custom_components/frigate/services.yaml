@@ -1,0 +1,20 @@
+---
+favorite_event:
+  name: Favorite Event
+  description: Favorites or unfavorites an event indefinitely.
+  target:
+  fields:
+    event_id:
+      name: Event ID
+      description: ID of the event to retain.
+      required: true
+      advanced: false
+      example: "1656510950.19548-ihtjj7"
+      default: ""
+    favorite:
+      name: Favorite
+      description: If the event should be favorited / unfavorited.
+      required: true
+      advanced: false
+      example: true
+      default: true
