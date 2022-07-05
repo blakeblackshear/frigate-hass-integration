@@ -345,3 +345,14 @@ async def test_retain_service_call(
         blocking=True,
     )
     client.async_retain.assert_called_with(event_id, False)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_FAVORITE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+        },
+        blocking=True,
+    )
+    client.async_retain.assert_called_with(event_id, True)

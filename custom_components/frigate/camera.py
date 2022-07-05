@@ -36,6 +36,7 @@ from .const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     CONF_RTMP_URL_TEMPLATE,
+    DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
     SERVICE_FAVORITE_EVENT,
@@ -71,7 +72,10 @@ async def async_setup_entry(
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         SERVICE_FAVORITE_EVENT,
-        {vol.Required(ATTR_EVENT_ID): str, vol.Required(ATTR_FAVORITE): bool},
+        {
+            vol.Required(ATTR_EVENT_ID): str,
+            vol.Optional(ATTR_FAVORITE, default=True): bool,
+        },
         SERVICE_FAVORITE_EVENT,
     )
 
@@ -120,6 +124,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         Camera.__init__(self)
         self._url = config_entry.data[CONF_URL]
         self._attr_is_on = True
+        self._attr_device_class = DEVICE_CLASS_CAMERA
         self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(

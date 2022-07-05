@@ -1,20 +1,32 @@
 ---
 favorite_event:
-  name: Favorite Event
-  description: Favorites or unfavorites an event indefinitely.
+  name: Favorite or unfavorite Event
+  description: >
+    Favorites or unfavorites an event. Favorited events are retained
+    indefinitely.
   target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
   fields:
     event_id:
       name: Event ID
-      description: ID of the event to retain.
+      description: ID of the event to favorite or unfavorite.
       required: true
       advanced: false
       example: "1656510950.19548-ihtjj7"
       default: ""
+      selector:
+        text:
     favorite:
       name: Favorite
-      description: If the event should be favorited / unfavorited.
-      required: true
+      description: >
+        If the event should be favorited or unfavorited. Enable to favorite,
+        disable to unfavorite.
+      required: false
       advanced: false
       example: true
       default: true
+      selector:
+        boolean:

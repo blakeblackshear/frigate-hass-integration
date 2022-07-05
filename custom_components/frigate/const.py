@@ -27,6 +27,11 @@ CAMERA = "camera"
 UPDATE = "update"
 PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR, UPDATE]
 
+# Device Classes
+# This device class does not exist in HA, but we use it to be able
+# to filter cameras in selectors
+DEVICE_CLASS_CAMERA = "camera"
+
 # Unit of measurement
 FPS = "fps"
 MS = "ms"
