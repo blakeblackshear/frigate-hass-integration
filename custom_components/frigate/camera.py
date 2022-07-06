@@ -124,6 +124,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         Camera.__init__(self)
         self._url = config_entry.data[CONF_URL]
         self._attr_is_on = True
+        # The device_class is used to filter out regular camera entities
+        # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._attr_is_streaming = self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
