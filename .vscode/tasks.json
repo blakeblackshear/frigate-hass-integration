@@ -4,12 +4,23 @@
     {
       "label": "Restart Home Assistant",
       "type": "shell",
-      "command": "docker compose restart hass && sleep 5",
+      "command": "docker compose restart hass && .devcontainer/wait_port.sh",
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
         "reveal": "silent",
-        "close": true,
+        "close": true
+      }
+    },
+    {
+      "label": "Reconfigure Home Assistant",
+      "type": "shell",
+      "command": "docker compose up --detach --force-recreate hass && .devcontainer/wait_port.sh",
+      "problemMatcher": [],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "silent",
+        "close": true
       }
     },
     {
@@ -33,7 +44,7 @@
       },
       "isBackground": true,
       "presentation": {
-        "reveal": "always",
+        "reveal": "always"
       }
     }
   ]

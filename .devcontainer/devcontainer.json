@@ -51,6 +51,9 @@
     },
     "[yaml]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[home-assistant]": {
+      "editor.defaultFormatter": "keesschollaart.vscode-home-assistant"
     }
   }
 }

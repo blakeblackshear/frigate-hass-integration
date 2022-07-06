@@ -3,9 +3,9 @@ version: "3"
 
 services:
   dev:
+    build: .devcontainer
     user: vscode
     init: true
-    build: .devcontainer
     env_file:
       - .env
     volumes:
@@ -14,11 +14,8 @@ services:
   hass:
     image: "homeassistant/home-assistant:${HA_VERSION:-stable}"
     restart: unless-stopped
-    environment:
-      - PYTHON_DEBUG=true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - .devcontainer/home_assistant_run.sh:/etc/services.d/home-assistant/run:ro
       - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
       - .devcontainer/preconfig:/preconfig.d/01-integration:ro
       - .devcontainer/config/configuration.yaml:/config/configuration.yaml:ro
