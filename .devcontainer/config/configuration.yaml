@@ -17,7 +17,8 @@ homeassistant:
         0.0.0.0/0: 1141ee80e0a647c1a4687d0b7631a019
       allow_bypass_login: true
     - type: homeassistant
-  packages: !include specific_configuration.yaml
+  packages:
+    specific: !include specific_configuration.yaml
 
 logger:
   default: error
