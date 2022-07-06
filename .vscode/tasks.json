@@ -19,7 +19,7 @@
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
-        "reveal": "silent",
+        "reveal": "always",
         "close": true
       }
     },
