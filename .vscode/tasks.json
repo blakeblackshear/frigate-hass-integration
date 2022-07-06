@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Restart Home Assistant",
+      "type": "shell",
+      "command": "docker compose restart hass && sleep 5",
+      "problemMatcher": [],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "silent",
+        "close": true,
+      }
+    },
+    {
+      "label": "Fetch Home Assistant Logs",
+      "type": "shell",
+      "command": "docker compose logs --follow --no-log-prefix hass",
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "this line will never be found",
+          "endsPattern": "."
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+      }
+    }
+  ]
+}

@@ -1,9 +1,21 @@
 {
   "dockerComposeFile": "../docker-compose.yml",
   "service": "dev",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "${localWorkspaceFolder}",
   "shutdownAction": "stopCompose",
+  "initializeCommand": ".devcontainer/set_dot_env.sh",
   "postCreateCommand": ".devcontainer/post_create.sh",
+  "forwardPorts": ["hass:8123", "frigate:5000"],
+  "portsAttributes": {
+    "hass:8123": {
+      "label": "Home Assistant",
+      "onAutoForward": "silent"
+    },
+    "frigate:5000": {
+      "label": "Frigate",
+      "onAutoForward": "silent"
+    }
+  },
   "extensions": [
     "ms-python.python",
     "visualstudioexptteam.vscodeintellicode",
@@ -14,7 +26,8 @@
     "esbenp.prettier-vscode",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
-    "keesschollaart.vscode-home-assistant"
+    "keesschollaart.vscode-home-assistant",
+    "ms-azuretools.vscode-docker"
   ],
   "settings": {
     "python.defaultInterpreterPath": "/usr/bin/python3",

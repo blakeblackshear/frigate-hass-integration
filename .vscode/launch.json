@@ -2,11 +2,20 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "pwa-chrome",
-      "request": "launch",
-      "name": "Launch Chrome against Home Assistant",
-      "url": "http://localhost:48123",
-      "resolveSourceMapLocations": ["!**"]
+      "name": "Python: Attach to Home Assistant",
+      "type": "python",
+      "request": "attach",
+      "connect": { "host": "hass", "port": 5678 },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/custom_components/frigate",
+          "remoteRoot": "/config/custom_components/frigate"
+        }
+      ],
+      "justMyCode": true,
+      "preLaunchTask": "Fetch Home Assistant Logs",
+      // This ensures that the restart button works
+      "postDebugTask": "Restart Home Assistant"
     }
   ]
 }

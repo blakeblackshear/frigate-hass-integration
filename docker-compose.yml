@@ -1,20 +1,24 @@
 ---
 version: "3"
+
 services:
   dev:
     user: vscode
-    image: mcr.microsoft.com/vscode/devcontainers/python:0-3.9
+    init: true
+    build: .devcontainer
+    env_file:
+      - .env
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - .:/workspace:cached
-    command: [sleep, infinity]
+      - /var/run/docker.sock:/var/run/docker-host.sock
+      - .:${LOCAL_WORKSPACE_FOLDER}:cached
   hass:
     image: "homeassistant/home-assistant:${HA_VERSION:-stable}"
     restart: unless-stopped
-    ports:
-      - 48123:8123
+    environment:
+      - PYTHON_DEBUG=true
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - .devcontainer/home_assistant_run.sh:/etc/services.d/home-assistant/run:ro
       - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
       - .devcontainer/preconfig:/preconfig.d/01-integration:ro
       - .devcontainer/config/configuration.yaml:/config/configuration.yaml:ro
@@ -31,11 +35,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - .devcontainer/frigate.yml:/config/config.yml:ro
       - ./frigate:/media/frigate
-    ports:
-      - 45000:5000
-      - 41935:1935
   mqtt:
     image: eclipse-mosquitto:1.6
     restart: unless-stopped
-    ports:
-      - 41883:1883
