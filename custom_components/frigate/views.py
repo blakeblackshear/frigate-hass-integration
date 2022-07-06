@@ -201,20 +201,6 @@ class SnapshotsProxyView(ProxyView):
         return f"api/events/{kwargs['eventid']}/snapshot.jpg"
 
 
-# TODO(@dermotduffy): Remove the RecordingsProxyView after the v4.0.0-rc.2 card release.
-class RecordingsProxyView(ProxyView):
-    """A proxy for recordings."""
-
-    url = "/api/frigate/{frigate_instance_id:.+}/{camera:.+}/recordings{path:.*}"
-    extra_urls = ["/api/frigate/{camera:.+}/recordings{path:.*}"]
-
-    name = "api:frigate:recordings"
-
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"api/{kwargs['camera']}/recordings{kwargs['path']}"
-
-
 class NotificationsProxyView(ProxyView):
     """A proxy for notifications."""
 

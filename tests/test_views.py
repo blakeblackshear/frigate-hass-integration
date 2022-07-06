@@ -149,8 +149,6 @@ async def hass_client_local_frigate(
             web.get("/api/events/event_id/thumbnail.jpg", handler),
             web.get("/api/events/event_id/snapshot.jpg", handler),
             web.get("/api/events/event_id/clip.mp4", handler),
-            web.get("/api/front_door/recordings", qs_handler),
-            web.get("/api/front_door/recordings/summary", handler),
             web.get("/live/front_door", ws_echo_handler),
             web.get("/live/querystring", ws_qs_echo_handler),
         ],
@@ -674,23 +672,3 @@ async def test_ws_proxy_missing_path(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
         assert resp.status == HTTPStatus.NOT_FOUND
-
-
-async def test_recordings(
-    hass_client_local_frigate: Any,
-    hass: Any,
-) -> None:
-    """Test recordings."""
-
-    frigate_entries = hass.config_entries.async_entries(DOMAIN)
-    assert frigate_entries
-
-    resp = await hass_client_local_frigate.get(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/front_door/recordings/summary"
-    )
-    assert resp.status == HTTPStatus.OK
-
-    resp = await hass_client_local_frigate.get(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/front_door/recordings?key=value"
-    )
-    assert resp.status == HTTPStatus.OK
