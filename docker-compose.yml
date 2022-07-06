@@ -19,6 +19,7 @@ services:
       - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
       - .devcontainer/preconfig:/preconfig.d/01-integration:ro
       - .devcontainer/config/configuration.yaml:/config/configuration.yaml:ro
+      - .devcontainer/config/specific_configuration.yaml:/config/specific_configuration.yaml:ro
       - .devcontainer/config/www:/config/www
       - ./custom_components:/config/custom_components:ro
   frigate:

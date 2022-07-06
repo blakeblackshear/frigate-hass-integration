@@ -17,24 +17,16 @@ homeassistant:
         0.0.0.0/0: 1141ee80e0a647c1a4687d0b7631a019
       allow_bypass_login: true
     - type: homeassistant
-
-debugpy:
-  # host: "0.0.0.0"
-  # port: 5678
-  # start: false
-  # wait: false
+  packages: !include specific_configuration.yaml
 
 logger:
-  default: warning
+  default: error
   logs:
     custom_components.frigate: debug
     homeassistant.components.mqtt: error
 
 downloader:
   download_dir: www
-
-camera:
-  - platform: demo
 
 panel_iframe:
   frigate:

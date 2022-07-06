@@ -39,10 +39,13 @@
       "http://frigate:5000/api/config/schema": "/frigate.yml"
     },
     "files.associations": {
-      "configuration.yaml": "home-assistant"
+      "**/config/*configuration.yaml": "home-assistant"
     },
     "vscode-home-assistant.hostUrl": "http://hass:8123",
     "vscode-home-assistant.longLivedAccessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhOTZjZTdhYTg0YzU0ODcxYWZhNTJmYmU4OWFmMjg3OSIsImlhdCI6MTY1NDgwNzk2MiwiZXhwIjoxOTcwMTY3OTYyfQ.0JUxrtqWWj-FwkAujcQCc5aRq9sf5_uR_sCI2eWcmIE",
+    "[home-assistant]": {
+      "editor.defaultFormatter": "keesschollaart.vscode-home-assistant"
+    },
     "[json]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
@@ -51,9 +54,6 @@
     },
     "[yaml]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[home-assistant]": {
-      "editor.defaultFormatter": "keesschollaart.vscode-home-assistant"
     }
   }
 }
