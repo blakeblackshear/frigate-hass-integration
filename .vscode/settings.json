@@ -4,5 +4,9 @@
   "python.formatting.provider": "black",
   "python.testing.pytestArgs": ["--no-cov", "-p", "no:sugar", "tests"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "yaml.schemas": {
+    "http://frigate:5000/api/config/schema": "/frigate.yml",
+    "https://json.schemastore.org/github-workflow.json": "/.github/workflows/*.yaml"
+  }
 }

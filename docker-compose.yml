@@ -8,9 +8,12 @@ services:
     build: .devcontainer
     env_file:
       - .env
+    environment:
+      # Save pre-commit cache between rebuilds
+      - PRE_COMMIT_HOME=${LOCAL_WORKSPACE_FOLDER?}/.pre-commit
     volumes:
       - /var/run/docker.sock:/var/run/docker-host.sock
-      - .:${LOCAL_WORKSPACE_FOLDER}:cached
+      - .:${LOCAL_WORKSPACE_FOLDER?}:cached
   hass:
     image: "homeassistant/home-assistant:${HA_VERSION:-stable}"
     restart: unless-stopped

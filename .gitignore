@@ -79,3 +79,9 @@ ctags.tmp
 
 # Built docs
 docs/build
+
+# mypy
+.mypy_cache
+
+# pre-commit
+.pre-commit

@@ -1233,19 +1233,15 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> int:
         """Return count of events that match the identifier."""
         return sum(
-            [
-                d["count"]
-                for d in summary_data.data
-                if (
-                    (identifier.after is None or d["timestamp"] >= identifier.after)
-                    and (
-                        identifier.before is None or d["timestamp"] < identifier.before
-                    )
-                    and (identifier.camera is None or identifier.camera in d["camera"])
-                    and (identifier.label is None or identifier.label in d["label"])
-                    and (identifier.zone is None or identifier.zone in d["zones"])
-                )
-            ]
+            d["count"]
+            for d in summary_data.data
+            if (
+                (identifier.after is None or d["timestamp"] >= identifier.after)
+                and (identifier.before is None or d["timestamp"] < identifier.before)
+                and (identifier.camera is None or identifier.camera in d["camera"])
+                and (identifier.label is None or identifier.label in d["label"])
+                and (identifier.zone is None or identifier.zone in d["zones"])
+            )
         )
 
     @classmethod

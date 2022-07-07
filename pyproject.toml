@@ -1,5 +1,37 @@
+[tool.poetry]
+name = "frigate-hass-integration"
+version = "0.0.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = "^3.9"
+aiohttp = "^3.8.1"
+aiohttp_cors = "0.7.0"
+attr = "^0.3.1"
+homeassistant = "~2022.6.1"
+paho-mqtt = "1.6.1"
+python-dateutil = "^2.8.2"
+yarl = "^1.7.2"
+
+[tool.poetry.dev-dependencies]
+black = "^22.6.0"
+flake8 = "^4.0.1"
+mypy = "0.910"
+pre-commit = "^2.19.0"
+pytest = "7.1.1"
+pytest-homeassistant-custom-component = "^0.9.11"
+pylint-pytest = "^1.1.2"
+pylint = "2.8.3"
+pytest-aiohttp = "0.3.0"
+types-python-dateutil = "^2.8.18"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.black]
-target-version = ["py38"]
+target-version = ["py39"]
 exclude = 'generated'
 
 [tool.isort]
@@ -112,8 +144,7 @@ overgeneral-exceptions = [
 ]
 
 [tool.pylint.TYPING]
-py-version = "3.8"
-runtime-typing = false
+py-version = "3.9"
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -128,7 +159,7 @@ addopts = "--timeout=10 --cov-report=xml:coverage.xml --cov-report=term-missing 
 [tool.mypy]
 # Stock HomeAssistant mypy configuration.
 ignore_missing_imports = true
-python_version = "3.8"
+python_version = "3.9"
 follow_imports = "silent"
 strict_equality = true
 warn_incomplete_stub = true

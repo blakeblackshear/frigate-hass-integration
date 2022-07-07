@@ -1,6 +1,7 @@
 """Diagnostics support for Frigate."""
+from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
@@ -11,7 +12,7 @@ from .const import ATTR_CLIENT, ATTR_CONFIG, CONF_PASSWORD, CONF_PATH, DOMAIN
 REDACT_CONFIG = {CONF_PASSWORD, CONF_PATH}
 
 
-def get_redacted_data(data: Dict[str, Any]) -> Any:
+def get_redacted_data(data: dict[str, Any]) -> Any:
     """Redact sensitive vales from data."""
     return async_redact_data(data, REDACT_CONFIG)
 
@@ -19,7 +20,7 @@ def get_redacted_data(data: Dict[str, Any]) -> Any:
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: ConfigEntry,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
 
     config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]

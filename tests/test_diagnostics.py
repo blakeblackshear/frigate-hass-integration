@@ -1,7 +1,8 @@
 """Tests frigate diagnostics."""
+from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, Dict
+from typing import Any
 
 from custom_components.frigate.diagnostics import get_redacted_data
 from homeassistant.config_entries import ConfigEntry
@@ -28,7 +29,7 @@ async def _get_diagnostics_for_config_entry(
 async def test_diagnostics(hass: HomeAssistant, hass_client: Any) -> None:
     """Test the diagnostics."""
     config_entry: ConfigEntry = await setup_mock_frigate_config_entry(hass)
-    diagnostic_config: Dict[str, Any] = await _get_diagnostics_for_config_entry(
+    diagnostic_config: dict[str, Any] = await _get_diagnostics_for_config_entry(
         hass, hass_client, config_entry
     )
 

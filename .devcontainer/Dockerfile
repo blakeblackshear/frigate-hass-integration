@@ -10,3 +10,5 @@ RUN bash -c "$(curl -fsSL "https://raw.githubusercontent.com/microsoft/vscode-de
     && rm -rf /var/lib/apt/lists/*
 ENTRYPOINT ["/usr/local/share/docker-init.sh"]
 CMD ["sleep", "infinity"]
+
+RUN pipx install poetry

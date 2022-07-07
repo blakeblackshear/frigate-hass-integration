@@ -2,12 +2,6 @@
 
 set -euxo pipefail
 
-pip install --disable-pip-version-check --upgrade pip
+poetry install
 
-pip install pre-commit
-
-pip install -r requirements_dev.txt &
-
-pre-commit install --install-hooks &
-
-wait
+poetry run pre-commit install

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import voluptuous as vol
 from yarl import URL
@@ -66,11 +66,11 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
         for existing_entry in self._async_current_entries(include_ignore=False):
             if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
                 return cast(
-                    Dict[str, Any], self.async_abort(reason="already_configured")
+                    dict[str, Any], self.async_abort(reason="already_configured")
                 )
 
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.async_create_entry(
                 title=get_config_entry_title(user_input[CONF_URL]), data=user_input
             ),
@@ -86,7 +86,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
             user_input = {}
 
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.async_show_form(
                 step_id="user",
                 data_schema=vol.Schema(
@@ -122,12 +122,12 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
         """Manage the options."""
         if user_input is not None:
             return cast(
-                Dict[str, Any], self.async_create_entry(title="", data=user_input)
+                dict[str, Any], self.async_create_entry(title="", data=user_input)
             )
 
         if not self.show_advanced_options:
             return cast(
-                Dict[str, Any], self.async_abort(reason="only_advanced_options")
+                dict[str, Any], self.async_abort(reason="only_advanced_options")
             )
 
         schema: dict[Any, Any] = {
@@ -158,6 +158,6 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
         }
 
         return cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.async_show_form(step_id="init", data_schema=vol.Schema(schema)),
         )
