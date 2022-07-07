@@ -24,13 +24,15 @@ jobs:
         uses: actions/setup-python@v4.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
       - name: Install requirements
         run: |
-          pip install pip
-          pip install -r requirements_dev.txt
+          poetry install
       - name: Run pre-commit on all files
         run: |
-          pre-commit run --all-files --show-diff-on-failure --color=always
+          poetry run pre-commit run --all-files \
+            --show-diff-on-failure --color=always
 
   hacs:
     runs-on: "ubuntu-latest"
