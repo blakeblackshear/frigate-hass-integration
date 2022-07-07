@@ -3,9 +3,8 @@ version: "3"
 
 services:
   dev:
-    user: vscode
-    init: true
     build: .devcontainer
+    init: true
     env_file:
       - .env
     environment:

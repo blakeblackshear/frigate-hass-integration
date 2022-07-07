@@ -2,7 +2,7 @@
   "python.linting.pylintEnabled": true,
   "python.linting.enabled": true,
   "python.formatting.provider": "black",
-  "python.testing.pytestArgs": ["--no-cov", "-p", "no:sugar", "tests"],
+  "python.testing.pytestArgs": ["--no-cov"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "yaml.schemas": {
