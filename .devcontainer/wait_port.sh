@@ -6,10 +6,7 @@ set -euo pipefail
 
 echo -n "Waiting for Home Assistant Debugger to launch on 5678" >&2
 
-while ! timeout 1 bash -c "echo > /dev/tcp/hass/5678" &>/dev/null; do
-  sleep 1
-  echo -n "." >&2
-done
+sleep 5
 echo
 
 echo "Home Assistant Debugger launched" >&2
