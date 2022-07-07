@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.2
 
-FROM mcr.microsoft.com/vscode/devcontainers/python:0-3.9
+FROM mcr.microsoft.com/vscode/devcontainers/python:0-3.10
 
 # Install Docker
 ENV DOCKER_BUILDKIT="1"
