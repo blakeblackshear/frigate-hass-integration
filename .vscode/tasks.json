@@ -4,7 +4,7 @@
     {
       "label": "Restart Home Assistant",
       "type": "shell",
-      "command": "docker compose restart hass && .devcontainer/wait_port.sh",
+      "command": "docker compose restart hass",
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
@@ -15,7 +15,7 @@
     {
       "label": "Reconfigure Home Assistant",
       "type": "shell",
-      "command": "docker compose up --detach --force-recreate hass && .devcontainer/wait_port.sh",
+      "command": "docker compose up --detach --force-recreate hass",
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
@@ -24,9 +24,9 @@
       }
     },
     {
-      "label": "Fetch Home Assistant Logs",
+      "label": "Home Assistant",
       "type": "shell",
-      "command": "docker compose logs --follow --no-log-prefix hass",
+      "command": ".devcontainer/follow_ha.sh",
       "problemMatcher": {
         "pattern": [
           {
@@ -38,8 +38,8 @@
         ],
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "this line will never be found",
-          "endsPattern": "."
+          "beginsPattern": "^this line shall never match$",
+          "endsPattern": "Listening for remote debug connection on"
         }
       },
       "isBackground": true,
