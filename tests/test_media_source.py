@@ -70,8 +70,8 @@ DRILLDOWN_BASE: dict[str, Any] = {
 EVENTS_FIXTURE_FILE = "events_front_door.json"
 
 
-@pytest.fixture
-def frigate_client() -> Generator[FrigateApiClient, None, None]:
+@pytest.fixture(name="frigate_client")
+def fixture_frigate_client() -> Generator[FrigateApiClient, None, None]:
     """Fixture that creates a frigate client."""
 
     def load_json(filename: str) -> Any:
@@ -230,17 +230,18 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
     }
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_clip_search_root(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
     """Test browsing the media clips root."""
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
-    media = await media_source.async_browse_media(
-        hass,
-        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event-search/clips",
-    )
+
+    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY):
+        media = await media_source.async_browse_media(
+            hass,
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event-search/clips",
+        )
 
     assert len(media.as_dict()["children"]) == 58
     assert media.as_dict()["title"] == "Clips (321)"
@@ -322,7 +323,6 @@ async def test_async_browse_media_clip_search_root(
     } in media.as_dict()["children"]
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_clip_search_drilldown(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
@@ -330,13 +330,14 @@ async def test_async_browse_media_clip_search_drilldown(
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
-    media = await media_source.async_browse_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event-search/clips/.front_door/////"
-        ),
-    )
+    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY):
+        media = await media_source.async_browse_media(
+            hass,
+            (
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+                "/event-search/clips/.front_door/////"
+            ),
+        )
 
     assert len(media.as_dict()["children"]) == 58
 
@@ -423,13 +424,14 @@ async def test_async_browse_media_clip_search_drilldown(
     } in media.as_dict()["children"]
 
     # Drill down into this month.
-    media = await media_source.async_browse_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event-search/clips/.this_month/1622530800////"
-        ),
-    )
+    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY):
+        media = await media_source.async_browse_media(
+            hass,
+            (
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+                "/event-search/clips/.this_month/1622530800////"
+            ),
+        )
 
     # There are 50 events, and 5 drilldowns.
     assert len(media.as_dict()["children"]) == 55
@@ -577,7 +579,6 @@ async def test_async_browse_media_clip_search_drilldown(
     } in media.as_dict()["children"]
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_clip_search_multi_month_drilldown(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
@@ -668,7 +669,6 @@ async def test_async_resolve_media(
         )
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_recordings_root(
     caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
@@ -953,7 +953,6 @@ async def test_async_browse_media_recordings_root(
     }
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_async_get_event_summary_error(
     caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
@@ -972,7 +971,6 @@ async def test_async_browse_media_async_get_event_summary_error(
         )
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_async_get_events_error(
     caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
@@ -989,7 +987,6 @@ async def test_async_browse_media_async_get_events_error(
         )
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_async_browse_media_async_get_path_error(
     caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
@@ -1366,7 +1363,6 @@ async def test_media_types() -> None:
     assert clips.extension == "m3u8"
 
 
-@patch("custom_components.frigate.media_source.dt.datetime", new=TODAY)
 async def test_in_progress_event(hass: HomeAssistant) -> None:
     """Verify in progress events are handled correctly."""
     client = create_mock_frigate_client()
@@ -1402,14 +1398,15 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
     )
     await setup_mock_frigate_config_entry(hass, client=client)
 
-    media = await media_source.async_browse_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event-search/snapshots/.this_month.2021-06-04.front_door.person"
-            "/1622764800/1622851200/front_door/person/"
-        ),
-    )
+    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY):
+        media = await media_source.async_browse_media(
+            hass,
+            (
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+                "/event-search/snapshots/.this_month.2021-06-04.front_door.person"
+                "/1622764800/1622851200/front_door/person/"
+            ),
+        )
 
     assert len(media.as_dict()["children"]) == 1
 
