@@ -3,7 +3,7 @@ black
 flake8
 mypy==0.910
 pre-commit
-pytest==7.1.1
+pytest
 pytest-homeassistant-custom-component>=0.10.2
 pylint-pytest
 pylint==2.8.3
