@@ -1,15 +1,6 @@
 ---
 default_config:
 
-logger:
-  default: error
-  logs:
-    custom_components.frigate: debug
-    homeassistant.components.mqtt: error
-
-downloader:
-  download_dir: www
-
 homeassistant:
   name: Home
   latitude: 0
@@ -26,11 +17,20 @@ homeassistant:
         0.0.0.0/0: 1141ee80e0a647c1a4687d0b7631a019
       allow_bypass_login: true
     - type: homeassistant
+  packages:
+    specific: !include specific_configuration.yaml
 
-demo:
+logger:
+  default: error
+  logs:
+    custom_components.frigate: debug
+    homeassistant.components.mqtt: error
+
+downloader:
+  download_dir: www
 
 panel_iframe:
   frigate:
     title: "Frigate"
-    url: "http://localhost:45000"
+    url: "http://localhost:5000"
     icon: "mdi:cctv"

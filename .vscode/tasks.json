@@ -4,18 +4,29 @@
     {
       "label": "Restart Home Assistant",
       "type": "shell",
-      "command": "docker compose restart hass && sleep 5",
+      "command": "docker compose restart hass",
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
-        "reveal": "silent",
-        "close": true,
+        "reveal": "always",
+        "close": true
       }
     },
     {
-      "label": "Fetch Home Assistant Logs",
+      "label": "Reconfigure Home Assistant",
       "type": "shell",
-      "command": "docker compose logs --follow --no-log-prefix hass",
+      "command": "docker compose up --detach --force-recreate hass",
+      "problemMatcher": [],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "close": true
+      }
+    },
+    {
+      "label": "Home Assistant",
+      "type": "shell",
+      "command": ".devcontainer/follow_ha.sh",
       "problemMatcher": {
         "pattern": [
           {
@@ -27,13 +38,13 @@
         ],
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "this line will never be found",
-          "endsPattern": "."
+          "beginsPattern": "^this line shall never match$",
+          "endsPattern": "Listening for remote debug connection on"
         }
       },
       "isBackground": true,
       "presentation": {
-        "reveal": "always",
+        "reveal": "always"
       }
     }
   ]

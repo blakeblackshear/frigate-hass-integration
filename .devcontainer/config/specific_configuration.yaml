@@ -1,0 +1,5 @@
+debugpy:
+
+logger:
+  logs:
+    homeassistant.components.debugpy: warning

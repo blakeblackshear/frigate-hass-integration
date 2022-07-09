@@ -13,7 +13,7 @@
         }
       ],
       "justMyCode": true,
-      "preLaunchTask": "Fetch Home Assistant Logs",
+      "preLaunchTask": "Home Assistant",
       // This ensures that the restart button works
       "postDebugTask": "Restart Home Assistant"
     }
