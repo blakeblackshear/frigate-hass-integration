@@ -133,7 +133,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {get_friendly_name(self._switch_name)}".title()
+        return f"{get_friendly_name(self._switch_name)}".title()
 
     @property
     def is_on(self) -> bool:

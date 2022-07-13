@@ -396,6 +396,8 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 class FrigateEntity(Entity):  # type: ignore[misc]
     """Base class for Frigate entities."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, config_entry: ConfigEntry):
         """Construct a FrigateEntity."""
         Entity.__init__(self)

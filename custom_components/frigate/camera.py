@@ -83,6 +83,9 @@ async def async_setup_entry(
 class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     """Representation a Frigate camera."""
 
+    # sets the entity name to same as device name ex: camera.front_doorbell
+    _attr_name = None
+
     def __init__(
         self,
         config_entry: ConfigEntry,
@@ -171,11 +174,6 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             "camera",
             self._cam_name,
         )
-
-    @property
-    def name(self) -> str:
-        """Return the name of the camera."""
-        return get_friendly_name(self._cam_name)
 
     @property
     def device_info(self) -> dict[str, Any]:
@@ -312,7 +310,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._obj_name}".title()
+        return self._obj_name.title()
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None

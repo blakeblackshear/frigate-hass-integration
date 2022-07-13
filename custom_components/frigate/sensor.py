@@ -80,6 +80,7 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "Detection fps"
 
     def __init__(
         self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
@@ -108,11 +109,6 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return "Detection Fps"
-
-    @property
     def state(self) -> int | None:
         """Return the state of the sensor."""
         if self.coordinator.data:
@@ -139,6 +135,7 @@ class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
     """Frigate Status Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "Status"
 
     def __init__(
         self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
@@ -165,11 +162,6 @@ class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
             "configuration_url": self._config_entry.data.get(CONF_URL),
             "manufacturer": NAME,
         }
-
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return "Frigate Status"
 
     @property
     def state(self) -> str:
@@ -220,7 +212,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._detector_name)} inference speed".title()
+        return f"{get_friendly_name(self._detector_name)} inference speed"
 
     @property
     def state(self) -> int | None:
@@ -294,7 +286,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._fps_type} FPS".title()
+        return f"{self._fps_type} fps"
 
     @property
     def unit_of_measurement(self) -> str:
@@ -400,7 +392,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Count".title()
+        return f"{self._obj_name} count"
 
     @property
     def state(self) -> int:

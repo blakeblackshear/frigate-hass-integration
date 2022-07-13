@@ -36,7 +36,7 @@ async def async_setup_entry(
 class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate container update."""
 
-    _attr_name = "Frigate Server"
+    _attr_name = "Server"
 
     def __init__(
         self,

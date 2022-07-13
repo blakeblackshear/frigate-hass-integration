@@ -123,7 +123,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} {self._obj_name} Occupancy".title()
+        return f"{self._obj_name} occupancy"
 
     @property
     def is_on(self) -> bool:
@@ -138,6 +138,8 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
     """Frigate Motion Sensor class."""
+
+    _attr_name = "Motion"
 
     def __init__(
         self,
@@ -193,11 +195,6 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,
         }
-
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} Motion".title()
 
     @property
     def is_on(self) -> bool:
