@@ -454,7 +454,7 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{self._name.split('_')} temperature"
+        return f"{self._name.replace('_', ' ')} temperature"
 
     @property
     def state(self) -> float | None:
@@ -473,7 +473,7 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return None
 
     @property
-    def unit_of_measurement(self) -> str:
+    def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
         return TEMP_CELSIUS
 
