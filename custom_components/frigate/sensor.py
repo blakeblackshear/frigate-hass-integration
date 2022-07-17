@@ -461,7 +461,7 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Return the state of the sensor."""
         if self.coordinator.data:
             data = (
-                self.coordinator.data.get("services", {})
+                self.coordinator.data.get("service", {})
                 .get("temperatures", {})
                 .get(self._name, 0.0)
             )
