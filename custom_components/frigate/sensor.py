@@ -420,7 +420,6 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate Coral Temperature Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name = "Detection coral temperature"
 
     def __init__(
         self,
@@ -451,6 +450,11 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
             "configuration_url": self._config_entry.data.get(CONF_URL),
             "manufacturer": NAME,
         }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{self._name.split('_')} temperature"
 
     @property
     def state(self) -> float | None:
