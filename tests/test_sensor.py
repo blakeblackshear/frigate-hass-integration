@@ -227,7 +227,7 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
     assert entity_state.attributes["icon"] == ICON_CORAL
     assert entity_state.attributes["unit_of_measurement"] == TEMP_CELSIUS
 
-    stats = copy.deepcopy(TEST_STATS)
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
     stats["service"]["temperatures"]["apex_0"] = 41.9
