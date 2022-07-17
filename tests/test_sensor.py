@@ -246,7 +246,7 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "unknown"
 
-    stats["detection_fps"] = "NOT_A_NUMBER"
+    stats["service"]["temperatures"]["apex_0"] = "NOT_A_NUMBER"
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
