@@ -189,6 +189,7 @@ TEST_STATS = {
         "uptime": 101113,
         "version": "0.8.4-09a4d6d",
         "latest_version": "0.10.1",
+        "temperatures": { "apex_0": 50.0 },
     },
 }
 TEST_EVENT_SUMMARY = [
