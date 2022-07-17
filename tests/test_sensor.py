@@ -219,7 +219,7 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
 
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
-    await enable_and_load_entity(hass, client, TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
 
     entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
     assert entity_state
