@@ -58,14 +58,9 @@ async def async_setup_entry(
             for name in value.keys():
                 entities.append(DetectorSpeedSensor(coordinator, entry, name))
         elif key == "service":
-            # storage & media is not currently supported.
-
-            # setup sensors for coral temp (pcie coral only)
-            temperatures = value.get("temperatures", {})
-
-            if temperatures:
-                for name in temperatures.keys():
-                    entities.append(CoralTempSensor(coordinator, entry, name))
+            # Temperature is only supported on PCIe Coral.
+            for name in value.get("temperatures", {}):
+              entities.append(CoralTempSensor(coordinator, entry, name))
         else:
             entities.extend(
                 [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
