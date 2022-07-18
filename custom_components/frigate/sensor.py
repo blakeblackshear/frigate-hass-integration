@@ -60,7 +60,7 @@ async def async_setup_entry(
         elif key == "service":
             # Temperature is only supported on PCIe Coral.
             for name in value.get("temperatures", {}):
-              entities.append(CoralTempSensor(coordinator, entry, name))
+                entities.append(CoralTempSensor(coordinator, entry, name))
         else:
             entities.extend(
                 [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
@@ -460,10 +460,10 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
                 .get("temperatures", {})
                 .get(self._name, 0.0)
             )
-              try:
-                  return float(data)
-              except TypeError, ValueError:
-                  pass
+            try:
+                return float(data)
+            except (TypeError, ValueError):
+                pass
         return None
 
     @property
