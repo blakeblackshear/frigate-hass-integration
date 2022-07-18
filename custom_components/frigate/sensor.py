@@ -454,7 +454,7 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{self._name.replace('_', ' ')} temperature"
+        return f"{get_friendly_name(self._name)} temperature"
 
     @property
     def state(self) -> float | None:
