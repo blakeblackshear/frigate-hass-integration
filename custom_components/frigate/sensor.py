@@ -465,11 +465,10 @@ class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
                 .get("temperatures", {})
                 .get(self._name, 0.0)
             )
-            if data is not None:
-                try:
-                    return float(data)
-                except ValueError:
-                    pass
+              try:
+                  return float(data)
+              except TypeError, ValueError:
+                  pass
         return None
 
     @property
