@@ -60,7 +60,7 @@ async def async_setup_entry(
         elif key == "service":
             # Temperature is only supported on PCIe Coral.
             for name in value.get("temperatures", {}):
-                entities.append(CoralTempSensor(coordinator, entry, name))
+                entities.append(DeviceTempSensor(coordinator, entry, name))
         else:
             entities.extend(
                 [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
@@ -411,7 +411,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         return self._icon
 
 
-class CoralTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     """Frigate Coral Temperature Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
