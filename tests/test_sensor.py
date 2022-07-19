@@ -19,6 +19,7 @@ from custom_components.frigate.const import (
     FPS,
     ICON_CAR,
     ICON_CAT,
+    ICON_CORAL,
     ICON_DOG,
     ICON_OTHER,
     ICON_PERSON,
@@ -27,6 +28,7 @@ from custom_components.frigate.const import (
     MS,
     NAME,
 )
+from homeassistant.const import TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
@@ -34,6 +36,7 @@ import homeassistant.util.dt as dt_util
 from . import (
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
+    TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID,
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
@@ -207,6 +210,47 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
+async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
+    """Test CoralTempSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "50.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == TEMP_CELSIUS
+
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["service"]["temperatures"]["apex_0"] = 41.9
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "41.9"
+
+    stats["service"]["temperatures"]["apex_0"] = None
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["service"]["temperatures"]["apex_0"] = "NOT_A_NUMBER"
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
 

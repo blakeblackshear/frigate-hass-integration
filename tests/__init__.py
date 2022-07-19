@@ -38,6 +38,7 @@ TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID = "switch.front_door_snapshots"
 TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID = "switch.front_door_recordings"
 TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID = "switch.front_door_improve_contrast"
 
+TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID = "sensor.frigate_apex_0_temperature"
 TEST_SENSOR_STEPS_ALL_ENTITY_ID = "sensor.steps_all_count"
 TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person_count"
 TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID = "sensor.front_door_all_count"
@@ -189,6 +190,7 @@ TEST_STATS = {
         "uptime": 101113,
         "version": "0.8.4-09a4d6d",
         "latest_version": "0.10.1",
+        "temperatures": {"apex_0": 50.0},
     },
 }
 TEST_EVENT_SUMMARY = [
