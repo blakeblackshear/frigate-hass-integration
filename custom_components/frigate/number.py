@@ -72,9 +72,11 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
         """Construct a FrigateNumber."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
-        self._is_on = False
+        self._current_contour_area = self._frigate_config["cameras"][self._cam_name][
+            "motion"
+        ]["contour_area"]
         self._command_topic = (
-            f"{frigate_config['mqtt']['topic_prefix']}"
+            f"{self._frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/contour_area/set"
         )
 
@@ -99,7 +101,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
-            self.state = float(msg.payload)
+            self._current_contour_area = float(msg.payload)
             self.async_write_ha_state()
         except (TypeError, ValueError):
             pass
@@ -148,6 +150,11 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
         return MAX_CONTOUR_AREA
 
     @property
+    def native_value(self) -> float:
+        """Return the current value."""
+        return self._current_contour_area
+
+    @property
     def icon(self) -> str:
         """Return the icon of the number."""
         return ICON_SPEEDOMETER
@@ -169,7 +176,9 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
         """Construct a FrigateNumber."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
-        self._is_on = False
+        self._current_threshold = self._frigate_config["cameras"][self._cam_name][
+            "motion"
+        ]["threshold"]
         self._command_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/threshold/set"
@@ -196,7 +205,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
-            self.state = float(msg.payload)
+            self._current_threshold = float(msg.payload)
             self.async_write_ha_state()
         except (TypeError, ValueError):
             pass
@@ -243,6 +252,11 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
     def native_max_value(self) -> int:
         """Return the max of the number."""
         return MAX_THRESHOLD
+
+    @property
+    def native_value(self) -> float:
+        """Return the current value."""
+        return self._current_threshold
 
     @property
     def icon(self) -> str:
