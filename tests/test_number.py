@@ -6,7 +6,7 @@ from typing import Any
 
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from homeassistant.components.number import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -70,7 +70,7 @@ async def test_number_state(hass: HomeAssistant) -> None:
 
 
 async def test_number_set_value(hass: HomeAssistant, mqtt_mock: Any) -> None:
-    """Verify turning a switch on."""
+    """Verify turning a number on."""
     await setup_mock_frigate_config_entry(hass)
 
     async_fire_mqtt_message(hass, "frigate/available", "online")
@@ -87,8 +87,8 @@ async def test_number_set_value(hass: HomeAssistant, mqtt_mock: Any) -> None:
     )
 
 
-async def test_switch_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
-    """Verify turning a switch off."""
+async def test_number_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
+    """Verify turning a number off."""
     await setup_mock_frigate_config_entry(hass)
 
     async_fire_mqtt_message(hass, "frigate/available", "online")
@@ -105,7 +105,7 @@ async def test_switch_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
     )
 
 
-async def test_switch_unique_id(hass: HomeAssistant) -> None:
+async def test_number_unique_id(hass: HomeAssistant) -> None:
     """Verify entity unique_id(s)."""
     await setup_mock_frigate_config_entry(hass)
     registry_entry = er.async_get(hass).async_get(
@@ -118,7 +118,7 @@ async def test_switch_unique_id(hass: HomeAssistant) -> None:
     )
 
 
-async def test_switches_setup_correctly_in_registry(
+async def test_numberes_setup_correctly_in_registry(
     aiohttp_server: Any, hass: HomeAssistant
 ) -> None:
     """Verify entities are enabled/visible as appropriate."""
