@@ -129,23 +129,23 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
             "manufacturer": NAME,
         }
 
-    async def async_set_native_value(self, value: int) -> None:
+    async def async_set_native_value(self, value: float) -> None:
         """Turn the device on."""
         await async_publish(
             self.hass,
             self._command_topic,
-            value,
+            int(value),
             0,
             False,
         )
 
     @property
-    def native_min_value(self) -> int:
+    def native_min_value(self) -> float:
         """Return the min of the number."""
         return MIN_CONTOUR_AREA
 
     @property
-    def native_max_value(self) -> int:
+    def native_max_value(self) -> float:
         """Return the max of the number."""
         return MAX_CONTOUR_AREA
 
@@ -153,6 +153,11 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
     def native_value(self) -> float:
         """Return the current value."""
         return self._current_contour_area
+
+    @property
+    def native_step(self) -> float:
+        """Return the increment/decrement step."""
+        return 1
 
     @property
     def icon(self) -> str:
@@ -233,23 +238,23 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
             "manufacturer": NAME,
         }
 
-    async def async_set_native_value(self, value: int) -> None:
+    async def async_set_native_value(self, value: float) -> None:
         """Turn the device on."""
         await async_publish(
             self.hass,
             self._command_topic,
-            value,
+            int(value),
             0,
             False,
         )
 
     @property
-    def native_min_value(self) -> int:
+    def native_min_value(self) -> float:
         """Return the min of the number."""
         return MIN_THRESHOLD
 
     @property
-    def native_max_value(self) -> int:
+    def native_max_value(self) -> float:
         """Return the max of the number."""
         return MAX_THRESHOLD
 
@@ -257,6 +262,11 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
     def native_value(self) -> float:
         """Return the current value."""
         return self._current_threshold
+
+    @property
+    def native_step(self) -> float:
+        """Return the increment/decrement step."""
+        return 1
 
     @property
     def icon(self) -> str:
