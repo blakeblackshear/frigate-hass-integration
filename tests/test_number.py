@@ -6,8 +6,6 @@ from typing import Any
 
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from homeassistant.components.number import DOMAIN as SWITCH_DOMAIN
-from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -15,7 +13,6 @@ from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID,
     TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID,
-    TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     setup_mock_frigate_config_entry,
     test_entities_are_setup_correctly_in_registry,
 )
@@ -51,13 +48,13 @@ async def test_number_state(hass: HomeAssistant) -> None:
         assert entity_state
         assert entity_state.state is int
 
-    async_fire_mqtt_message(hass, "frigate/front_door/contour_area/state", 50)
+    async_fire_mqtt_message(hass, "frigate/front_door/contour_area/state", "50")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID)
     assert entity_state
     assert entity_state.state == 50
 
-    async_fire_mqtt_message(hass, "frigate/front_door/threshold/state", 255)
+    async_fire_mqtt_message(hass, "frigate/front_door/threshold/state", "255")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID)
     assert entity_state
@@ -67,42 +64,6 @@ async def test_number_state(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unavailable"
-
-
-async def test_number_set_value(hass: HomeAssistant, mqtt_mock: Any) -> None:
-    """Verify turning a number on."""
-    await setup_mock_frigate_config_entry(hass)
-
-    async_fire_mqtt_message(hass, "frigate/available", "online")
-    await hass.async_block_till_done()
-
-    await hass.services.async_call(
-        SWITCH_DOMAIN,
-        SERVICE_TURN_ON,
-        {ATTR_ENTITY_ID: TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID},
-        blocking=True,
-    )
-    mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/detect/set", "ON", 0, False
-    )
-
-
-async def test_number_turn_off(hass: HomeAssistant, mqtt_mock: Any) -> None:
-    """Verify turning a number off."""
-    await setup_mock_frigate_config_entry(hass)
-
-    async_fire_mqtt_message(hass, "frigate/available", "online")
-    await hass.async_block_till_done()
-
-    await hass.services.async_call(
-        SWITCH_DOMAIN,
-        SERVICE_TURN_OFF,
-        {ATTR_ENTITY_ID: TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID},
-        blocking=True,
-    )
-    mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/detect/set", "OFF", 0, False
-    )
 
 
 async def test_number_unique_id(hass: HomeAssistant) -> None:
