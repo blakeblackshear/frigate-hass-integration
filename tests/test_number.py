@@ -95,7 +95,9 @@ async def test_bad_numbers(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "35"
 
-    async_fire_mqtt_message(hass, "frigate/front_door/motion_threshold/state", "255")
+    async_fire_mqtt_message(
+        hass, "frigate/front_door/motion_threshold/state", "NOT_A_NUMBER"
+    )
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID)
     assert entity_state
@@ -132,7 +134,7 @@ async def test_number_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
     )
 
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/threshold/set", "35", 0, False
+        "frigate/front_door/motion_threshold/set", "35", 0, False
     )
 
 
