@@ -104,13 +104,13 @@ async def test_bad_numbers(hass: HomeAssistant) -> None:
     assert entity_state.state == "25"
 
 
-async def test_number_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
+async def test_contour_area_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
     """Verify setting a number."""
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
-
-    for entity_id in DISABLED_NUMBER_ENTITY_IDS:
-        await enable_and_load_entity(hass, client, entity_id)
+    await enable_and_load_entity(
+        hass, client, TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID
+    )
 
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
@@ -125,6 +125,18 @@ async def test_number_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
     mqtt_mock.async_publish.assert_called_once_with(
         "frigate/front_door/motion_contour_area/set", "35", 0, False
     )
+
+
+async def test_threshold_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
+    """Verify setting a number."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(
+        hass, client, TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID
+    )
+
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
 
     await hass.services.async_call(
         "number",
