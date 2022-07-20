@@ -44,7 +44,7 @@ async def test_number_state(hass: HomeAssistant) -> None:
     for entity_id in DISABLED_NUMBER_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert entity_state
-        assert entity_state.state is int
+        assert entity_state.state is float
 
     async_fire_mqtt_message(hass, "frigate/front_door/motion_contour_area/state", "50")
     await hass.async_block_till_done()
@@ -78,7 +78,7 @@ async def test_bad_numbers(hass: HomeAssistant) -> None:
     for entity_id in DISABLED_NUMBER_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert entity_state
-        assert entity_state.state is int
+        assert entity_state.state is float
 
     async_fire_mqtt_message(
         hass, "frigate/front_door/motion_contour_area/state", "NOT_A_NUMBER"
