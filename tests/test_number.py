@@ -52,13 +52,13 @@ async def test_number_state(hass: HomeAssistant) -> None:
         assert entity_state
         assert entity_state.state is int
 
-    async_fire_mqtt_message(hass, "frigate/front_door/contour_area/state", "50")
+    async_fire_mqtt_message(hass, "frigate/front_door/motion_contour_area/state", "50")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID)
     assert entity_state
     assert entity_state.state == 50
 
-    async_fire_mqtt_message(hass, "frigate/front_door/threshold/state", "255")
+    async_fire_mqtt_message(hass, "frigate/front_door/motion_threshold/state", "255")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID)
     assert entity_state

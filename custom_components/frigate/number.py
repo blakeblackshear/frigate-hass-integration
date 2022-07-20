@@ -77,7 +77,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
         ]["contour_area"]
         self._command_topic = (
             f"{self._frigate_config['mqtt']['topic_prefix']}"
-            f"/{self._cam_name}/contour_area/set"
+            f"/{self._cam_name}/motion_contour_area/set"
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
@@ -91,7 +91,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
                     "qos": 0,
                     "topic": (
                         f"{self._frigate_config['mqtt']['topic_prefix']}"
-                        f"/{self._cam_name}/contour_area/state"
+                        f"/{self._cam_name}/motion_contour_area/state"
                     ),
                 },
             },
@@ -181,7 +181,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
         ]["threshold"]
         self._command_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}"
-            f"/{self._cam_name}/threshold/set"
+            f"/{self._cam_name}/motion_threshold/set"
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
@@ -195,7 +195,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
                     "qos": 0,
                     "topic": (
                         f"{self._frigate_config['mqtt']['topic_prefix']}"
-                        f"/{self._cam_name}/threshold/state"
+                        f"/{self._cam_name}/motion_threshold/state"
                     ),
                 },
             },
