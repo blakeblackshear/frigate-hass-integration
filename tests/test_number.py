@@ -30,7 +30,7 @@ DISABLED_NUMBER_ENTITY_IDS = {
 
 
 async def test_number_state(hass: HomeAssistant) -> None:
-    """Verify a successful binary sensor setup."""
+    """Verify a successful number setup."""
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
 
@@ -68,6 +68,35 @@ async def test_number_state(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unavailable"
+
+
+async def test_bad_numbers(hass: HomeAssistant) -> None:
+    """Verify bad state."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    for entity_id in DISABLED_NUMBER_ENTITY_IDS:
+        await enable_and_load_entity(hass, client, entity_id)
+
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    for entity_id in ENABLED_NUMBER_ENTITY_IDS:
+        entity_state = hass.states.get(entity_id)
+        assert entity_state
+        assert entity_state.state is int
+
+    async_fire_mqtt_message(hass, "frigate/front_door/motion_contour_area/state", "NOT_A_NUMBER")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "35.0"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/motion_threshold/state", "255")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "25.0"
 
 
 async def test_number_unique_id(hass: HomeAssistant) -> None:
