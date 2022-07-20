@@ -32,6 +32,9 @@ TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID = "binary_sensor.steps_all_occu
 TEST_CAMERA_FRONT_DOOR_ENTITY_ID = "camera.front_door"
 TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
 
+TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID = "number.front_door_contour_area"
+TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID = "number.front_door_threshold"
+
 TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID = "switch.front_door_detect"
 TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID = "switch.front_door_motion"
 TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID = "switch.front_door_snapshots"
@@ -80,7 +83,7 @@ TEST_CONFIG = {
             "frame_shape": [1080, 1920],
             "height": 1080,
             "motion": {
-                "contour_area": 100,
+                "contour_area": 35,
                 "delta_alpha": 0.2,
                 "frame_alpha": 0.2,
                 "frame_height": 180,
