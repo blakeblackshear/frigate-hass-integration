@@ -38,13 +38,16 @@ async def async_setup_entry(
     # add generic motion sensors for cameras
     for cam_name in get_cameras(frigate_config):
         entities.extend(
-            [FrigateCameraContourArea(entry, frigate_config, cam_name, False)]
+            [FrigateMotionContourArea(entry, frigate_config, cam_name, False)]
+        )
+        entities.extend(
+            [FrigateMotionThreshold(entry, frigate_config, cam_name, False)]
         )
 
     async_add_entities(entities)
 
 
-class FrigateCameraContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
+class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     """Frigate Number class."""
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -86,8 +89,11 @@ class FrigateCameraContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        self._is_on = msg.payload == "ON"
-        self.async_write_ha_state()
+        try:
+            self.state = float(msg.payload)
+            self.async_write_ha_state()
+        except (TypeError, ValueError):
+            pass
 
     @property
     def unique_id(self) -> str:
@@ -131,6 +137,103 @@ class FrigateCameraContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
     def native_max_value(self) -> int:
         """Return the max of the number."""
         return 50
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the number."""
+        return ICON_SPEEDOMETER
+
+
+class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
+    """Frigate Number class."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_name = "Threshold"
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        default_enabled: bool,
+    ) -> None:
+        """Construct a FrigateNumber."""
+        self._frigate_config = frigate_config
+        self._cam_name = cam_name
+        self._is_on = False
+        self._command_topic = (
+            f"{frigate_config['mqtt']['topic_prefix']}"
+            f"/{self._cam_name}/threshold/set"
+        )
+
+        self._attr_entity_registry_enabled_default = default_enabled
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/threshold/state"
+                    ),
+                },
+            },
+        )
+
+    @callback  # type: ignore[misc]
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            self.state = float(msg.payload)
+            self.async_write_ha_state()
+        except (TypeError, ValueError):
+            pass
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "number",
+            f"{self._cam_name}_contour_area",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    async def async_set_native_value(self, value: int) -> None:
+        """Turn the device on."""
+        await async_publish(
+            self.hass,
+            self._command_topic,
+            value,
+            0,
+            False,
+        )
+
+    @property
+    def native_min_value(self) -> int:
+        """Return the min of the number."""
+        return 1
+
+    @property
+    def native_max_value(self) -> int:
+        """Return the max of the number."""
+        return 255
 
     @property
     def icon(self) -> str:
