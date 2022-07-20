@@ -22,11 +22,12 @@ ICON_SPEEDOMETER = "mdi:speedometer"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
+NUMBER = "number"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
 UPDATE = "update"
-PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR, UPDATE]
+PLATFORMS = [SENSOR, CAMERA, NUMBER, SWITCH, BINARY_SENSOR, UPDATE]
 
 # Device Classes
 # This device class does not exist in HA, but we use it to be able
