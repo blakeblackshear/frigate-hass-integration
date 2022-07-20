@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.mqtt import async_publish
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -56,7 +56,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
+class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
     """Frigate Number class."""
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -165,7 +165,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
         return ICON_SPEEDOMETER
 
 
-class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
+class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
     """Frigate Number class."""
 
     _attr_entity_category = EntityCategory.CONFIG
