@@ -13,6 +13,8 @@ from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID,
     TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID,
+    create_mock_frigate_client,
+    enable_and_load_entity,
     setup_mock_frigate_config_entry,
     test_entities_are_setup_correctly_in_registry,
 )
@@ -29,7 +31,8 @@ DISABLED_NUMBER_ENTITY_IDS = {
 
 async def test_number_state(hass: HomeAssistant) -> None:
     """Verify a successful binary sensor setup."""
-    await setup_mock_frigate_config_entry(hass)
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     for entity_id in ENABLED_NUMBER_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
@@ -39,6 +42,7 @@ async def test_number_state(hass: HomeAssistant) -> None:
     for entity_id in DISABLED_NUMBER_ENTITY_IDS:
         entity_state = hass.states.get(entity_id)
         assert not entity_state
+        await enable_and_load_entity(hass, client, entity_id)
 
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
@@ -90,8 +94,4 @@ async def test_numberes_setup_correctly_in_registry(
         hass,
         entities_enabled=ENABLED_NUMBER_ENTITY_IDS,
         entities_disabled=DISABLED_NUMBER_ENTITY_IDS,
-        entities_visible={
-            TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID,
-            TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID,
-        },
     )
