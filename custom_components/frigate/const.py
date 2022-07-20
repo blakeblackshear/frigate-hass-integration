@@ -70,6 +70,14 @@ https://github.com/blakeblackshear/frigate-hass-integration/issues
 -------------------------------------------------------------------
 """
 
+# Min Values
+MAX_CONTOUR_AREA = 50
+MAX_THRESHOLD = 255
+
+# Min Values
+MIN_CONTOUR_AREA = 15
+MIN_THRESHOLD = 1
+
 # States
 STATE_DETECTED = "active"
 STATE_IDLE = "idle"

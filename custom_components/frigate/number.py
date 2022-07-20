@@ -20,7 +20,16 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import ATTR_CONFIG, DOMAIN, ICON_SPEEDOMETER, NAME
+from .const import (
+    ATTR_CONFIG,
+    DOMAIN,
+    ICON_SPEEDOMETER,
+    MAX_CONTOUR_AREA,
+    MAX_THRESHOLD,
+    MIN_CONTOUR_AREA,
+    MIN_THRESHOLD,
+    NAME,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -131,12 +140,12 @@ class FrigateMotionContourArea(FrigateMQTTEntity, SwitchEntity):  # type: ignore
     @property
     def native_min_value(self) -> int:
         """Return the min of the number."""
-        return 15
+        return MIN_CONTOUR_AREA
 
     @property
     def native_max_value(self) -> int:
         """Return the max of the number."""
-        return 50
+        return MAX_CONTOUR_AREA
 
     @property
     def icon(self) -> str:
@@ -228,12 +237,12 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
     @property
     def native_min_value(self) -> int:
         """Return the min of the number."""
-        return 1
+        return MIN_THRESHOLD
 
     @property
     def native_max_value(self) -> int:
         """Return the max of the number."""
-        return 255
+        return MAX_THRESHOLD
 
     @property
     def icon(self) -> str:
