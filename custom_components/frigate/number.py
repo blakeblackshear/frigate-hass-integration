@@ -207,7 +207,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, SwitchEntity):  # type: ignore[m
         return get_frigate_entity_unique_id(
             self._config_entry.entry_id,
             "number",
-            f"{self._cam_name}_contour_area",
+            f"{self._cam_name}_threshold",
         )
 
     @property
