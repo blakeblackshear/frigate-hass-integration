@@ -72,9 +72,9 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
         """Construct a FrigateNumber."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
-        self._current_contour_area = self._frigate_config["cameras"][self._cam_name][
+        self._current_contour_area = float(self._frigate_config["cameras"][self._cam_name][
             "motion"
-        ]["contour_area"]
+        ]["contour_area"])
         self._command_topic = (
             f"{self._frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/motion_contour_area/set"
@@ -181,9 +181,9 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
         """Construct a FrigateNumber."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
-        self._current_threshold = self._frigate_config["cameras"][self._cam_name][
+        self._current_threshold = float(self._frigate_config["cameras"][self._cam_name][
             "motion"
-        ]["threshold"]
+        ]["threshold"])
         self._command_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/motion_threshold/set"
