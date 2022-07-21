@@ -134,7 +134,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
         }
 
     async def async_set_native_value(self, value: float) -> None:
-        """Turn the device on."""
+        """Update motion contour area."""
         await async_publish(
             self.hass,
             self._command_topic,
@@ -226,7 +226,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
         }
 
     async def async_set_native_value(self, value: float) -> None:
-        """Turn the device on."""
+        """Update motion threshold."""
         await async_publish(
             self.hass,
             self._command_topic,
