@@ -61,6 +61,9 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Contour area"
+    _attr_native_min_value = MIN_CONTOUR_AREA
+    _attr_native_max_value = MAX_CONTOUR_AREA
+    _attr_native_step = 1
 
     def __init__(
         self,
@@ -72,7 +75,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
         """Construct a FrigateNumber."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
-        self._current_contour_area = float(
+        self._attr_native_value = float(
             self._frigate_config["cameras"][self._cam_name]["motion"]["contour_area"]
         )
         self._command_topic = (
@@ -101,7 +104,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
-            self._current_contour_area = float(msg.payload)
+            self._attr_native_value = float(msg.payload)
         except (TypeError, ValueError):
             pass
 
@@ -141,26 +144,6 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
         )
 
     @property
-    def native_min_value(self) -> float:
-        """Return the min of the number."""
-        return MIN_CONTOUR_AREA
-
-    @property
-    def native_max_value(self) -> float:
-        """Return the max of the number."""
-        return MAX_CONTOUR_AREA
-
-    @property
-    def native_value(self) -> float:
-        """Return the current value."""
-        return self._current_contour_area
-
-    @property
-    def native_step(self) -> float:
-        """Return the increment/decrement step."""
-        return 1
-
-    @property
     def icon(self) -> str:
         """Return the icon of the number."""
         return ICON_SPEEDOMETER
@@ -171,6 +154,9 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Threshold"
+    _attr_native_min_value = MIN_THRESHOLD
+    _attr_native_max_value = MAX_THRESHOLD
+    _attr_native_step = 1
 
     def __init__(
         self,
@@ -182,7 +168,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
         """Construct a FrigateNumber."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
-        self._current_threshold = float(
+        self._attr_native_value = float(
             self._frigate_config["cameras"][self._cam_name]["motion"]["threshold"]
         )
         self._command_topic = (
@@ -211,7 +197,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
-            self._current_threshold = float(msg.payload)
+            self._attr_native_value = float(msg.payload)
             self.async_write_ha_state()
         except (TypeError, ValueError):
             pass
@@ -248,26 +234,6 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
             0,
             False,
         )
-
-    @property
-    def native_min_value(self) -> float:
-        """Return the min of the number."""
-        return MIN_THRESHOLD
-
-    @property
-    def native_max_value(self) -> float:
-        """Return the max of the number."""
-        return MAX_THRESHOLD
-
-    @property
-    def native_value(self) -> float:
-        """Return the current value."""
-        return self._current_threshold
-
-    @property
-    def native_step(self) -> float:
-        """Return the increment/decrement step."""
-        return 1
 
     @property
     def icon(self) -> str:
