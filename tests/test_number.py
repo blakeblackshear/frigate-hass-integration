@@ -156,7 +156,7 @@ async def test_number_unique_id(hass: HomeAssistant) -> None:
     )
 
 
-async def test_numberes_setup_correctly_in_registry(
+async def test_numbers_setup_correctly_in_registry(
     aiohttp_server: Any, hass: HomeAssistant
 ) -> None:
     """Verify entities are enabled/visible as appropriate."""
