@@ -198,9 +198,10 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
         """Handle a new received MQTT state message."""
         try:
             self._attr_native_value = float(msg.payload)
-            self.async_write_ha_state()
         except (TypeError, ValueError):
             pass
+
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
