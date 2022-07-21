@@ -102,9 +102,10 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
         """Handle a new received MQTT state message."""
         try:
             self._current_contour_area = float(msg.payload)
-            self.async_write_ha_state()
         except (TypeError, ValueError):
             pass
+
+        self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
