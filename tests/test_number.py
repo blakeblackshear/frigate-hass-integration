@@ -154,6 +154,14 @@ async def test_number_unique_id(hass: HomeAssistant) -> None:
         registry_entry.unique_id
         == f"{TEST_CONFIG_ENTRY_ID}:number:front_door_contour_area"
     )
+    registry_entry = er.async_get(hass).async_get(
+        TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID
+    )
+    assert registry_entry
+    assert (
+        registry_entry.unique_id
+        == f"{TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID}:number:front_door_threshold"
+    )
 
 
 async def test_numberes_setup_correctly_in_registry(
