@@ -57,7 +57,7 @@ async def async_setup_entry(
 
 
 class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
-    """Frigate Number class."""
+    """FrigateMotionContourArea class."""
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Contour area"
