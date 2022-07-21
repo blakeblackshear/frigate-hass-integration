@@ -57,7 +57,7 @@ async def async_setup_entry(
 
 
 class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
-    """Frigate Number class."""
+    """FrigateMotionContourArea class."""
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Contour area"
@@ -150,7 +150,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
 
 
 class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
-    """Frigate Number class."""
+    """FrigateMotionThreshold class."""
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_name = "Threshold"
@@ -165,7 +165,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
         cam_name: str,
         default_enabled: bool,
     ) -> None:
-        """Construct a FrigateNumber."""
+        """Construct a FrigateMotionThreshold."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._attr_native_value = float(
