@@ -160,7 +160,7 @@ async def test_number_unique_id(hass: HomeAssistant) -> None:
     assert registry_entry
     assert (
         registry_entry.unique_id
-        == f"{TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID}:number:front_door_threshold"
+        == f"{TEST_CONFIG_ENTRY_ID}:number:front_door_threshold"
     )
 
 
