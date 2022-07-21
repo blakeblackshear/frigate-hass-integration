@@ -21,6 +21,7 @@ from custom_components.frigate.const import (
     ICON_CAT,
     ICON_CORAL,
     ICON_DOG,
+    ICON_MOTORCYCLE,
     ICON_OTHER,
     ICON_PERSON,
     ICON_SERVER,
@@ -105,6 +106,7 @@ async def test_object_count_sensor(hass: HomeAssistant) -> None:
         ("car", ICON_CAR),
         ("dog", ICON_DOG),
         ("cat", ICON_CAT),
+        ("motorcycle", ICON_MOTORCYCLE),
         ("SOMETHING_ELSE", ICON_OTHER),
     ],
 )

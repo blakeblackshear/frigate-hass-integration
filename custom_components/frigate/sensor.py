@@ -31,6 +31,7 @@ from .const import (
     ICON_CAT,
     ICON_CORAL,
     ICON_DOG,
+    ICON_MOTORCYCLE,
     ICON_OTHER,
     ICON_PERSON,
     ICON_SERVER,
@@ -339,6 +340,8 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             self._icon = ICON_DOG
         elif self._obj_name == "cat":
             self._icon = ICON_CAT
+        elif self._obj_name == "motorcycle":
+            self._icon = ICON_MOTORCYCLE
         else:
             self._icon = ICON_OTHER
 
