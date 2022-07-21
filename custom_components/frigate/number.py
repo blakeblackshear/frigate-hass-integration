@@ -178,7 +178,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
         cam_name: str,
         default_enabled: bool,
     ) -> None:
-        """Construct a FrigateNumber."""
+        """Construct a FrigateMotionThreshold."""
         self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._current_threshold = float(
