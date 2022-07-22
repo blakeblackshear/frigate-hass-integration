@@ -23,11 +23,12 @@ ICON_SPEEDOMETER = "mdi:speedometer"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
+NUMBER = "number"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
 UPDATE = "update"
-PLATFORMS = [SENSOR, CAMERA, SWITCH, BINARY_SENSOR, UPDATE]
+PLATFORMS = [SENSOR, CAMERA, NUMBER, SWITCH, BINARY_SENSOR, UPDATE]
 
 # Device Classes
 # This device class does not exist in HA, but we use it to be able
@@ -69,6 +70,14 @@ If you have any issues with this you need to open an issue here:
 https://github.com/blakeblackshear/frigate-hass-integration/issues
 -------------------------------------------------------------------
 """
+
+# Min Values
+MAX_CONTOUR_AREA = 50
+MAX_THRESHOLD = 255
+
+# Min Values
+MIN_CONTOUR_AREA = 15
+MIN_THRESHOLD = 1
 
 # States
 STATE_DETECTED = "active"
