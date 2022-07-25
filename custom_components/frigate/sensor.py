@@ -27,10 +27,13 @@ from .const import (
     ATTR_COORDINATOR,
     DOMAIN,
     FPS,
+    ICON_BICYCLE,
     ICON_CAR,
     ICON_CAT,
     ICON_CORAL,
+    ICON_COW,
     ICON_DOG,
+    ICON_HORSE,
     ICON_MOTORCYCLE,
     ICON_OTHER,
     ICON_PERSON,
@@ -342,6 +345,12 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             self._icon = ICON_CAT
         elif self._obj_name == "motorcycle":
             self._icon = ICON_MOTORCYCLE
+        elif self._obj_name == "bicycle":
+            self._icon = ICON_BICYCLE
+        elif self._obj_name == "cow":
+            self._icon = ICON_COW
+        elif self._obj_name == "horse":
+            self._icon = ICON_HORSE
         else:
             self._icon = ICON_OTHER
 

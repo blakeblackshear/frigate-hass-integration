@@ -17,10 +17,13 @@ from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     DOMAIN,
     FPS,
+    ICON_BICYCLE,
     ICON_CAR,
     ICON_CAT,
     ICON_CORAL,
+    ICON_COW,
     ICON_DOG,
+    ICON_HORSE,
     ICON_MOTORCYCLE,
     ICON_OTHER,
     ICON_PERSON,
@@ -107,6 +110,9 @@ async def test_object_count_sensor(hass: HomeAssistant) -> None:
         ("dog", ICON_DOG),
         ("cat", ICON_CAT),
         ("motorcycle", ICON_MOTORCYCLE),
+        ("bicycle", ICON_BICYCLE),
+        ("cow", ICON_COW),
+        ("horse", ICON_HORSE),
         ("SOMETHING_ELSE", ICON_OTHER),
     ],
 )
