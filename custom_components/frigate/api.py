@@ -120,52 +120,51 @@ class FrigateApiClient:
         """Get data from the API."""
         return await self.api_wrapper("get", str(URL(self._host) / f"{path}/"))
 
-    async def async_retain(self, event_id: str, retain: bool) -> dict[str, Any]:
+    async def async_retain(
+        self, event_id: str, retain: bool, decode_json: bool = True
+    ) -> dict[str, Any] | str:
         """Un/Retain an event."""
-        return cast(
-            dict[str, Any],
-            await self.api_wrapper(
-                "post" if retain else "delete",
-                str(URL(self._host) / f"api/events/{event_id}/retain"),
-                decode_json=True,
-            ),
+        result = await self.api_wrapper(
+            "post" if retain else "delete",
+            str(URL(self._host) / f"api/events/{event_id}/retain"),
+            decode_json=decode_json,
         )
+        return cast(dict[str, Any], result) if decode_json else result
 
-    async def async_get_recordings_summary(self, camera: str) -> dict[str, Any]:
+    async def async_get_recordings_summary(
+        self, camera: str, decode_json: bool = True
+    ) -> dict[str, Any] | str:
         """Get recordings summary."""
-        return cast(
-            dict[str, Any],
-            await self.api_wrapper(
-                "get",
-                str(URL(self._host) / f"api/{camera}/recordings/summary"),
-                decode_json=True,
-            ),
+        result = await self.api_wrapper(
+            "get",
+            str(URL(self._host) / f"api/{camera}/recordings/summary"),
+            decode_json=decode_json,
         )
+        return cast(dict[str, Any], result) if decode_json else result
 
     async def async_get_recordings(
         self,
         camera: str,
         after: int | None = None,
         before: int | None = None,
-    ) -> dict[str, Any]:
+        decode_json: bool = True,
+    ) -> dict[str, Any] | str:
         """Get recordings."""
         params = {
             "after": after,
             "before": before,
         }
 
-        return cast(
-            dict[str, Any],
-            await self.api_wrapper(
-                "get",
-                str(
-                    URL(self._host)
-                    / f"api/{camera}/recordings"
-                    % {k: v for k, v in params.items() if v is not None}
-                ),
-                decode_json=True,
+        result = await self.api_wrapper(
+            "get",
+            str(
+                URL(self._host)
+                / f"api/{camera}/recordings"
+                % {k: v for k, v in params.items() if v is not None}
             ),
+            decode_json=decode_json,
         )
+        return cast(dict[str, Any], result) if decode_json else result
 
     async def api_wrapper(
         self,
