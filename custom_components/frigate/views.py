@@ -176,7 +176,7 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
 
             try:
                 await response.prepare(request)
-                async for data in result.content.iter_chunked(4096):
+                async for data in result.content.iter_any():
                     await response.write(data)
 
             except (aiohttp.ClientError, aiohttp.ClientPayloadError) as err:
