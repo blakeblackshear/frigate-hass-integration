@@ -201,6 +201,19 @@ class SnapshotsProxyView(ProxyView):
         return f"api/events/{kwargs['eventid']}/snapshot.jpg"
 
 
+class ThumbnailsProxyView(ProxyView):
+    """A proxy for snapshots."""
+
+    # Having static in the url will use the CacheFirst() workbox strategy
+    url = "/api/static/frigate/{frigate_instance_id:.+}/thumbnail/{eventid:.*}"
+
+    name = "api:frigate:thumbnails"
+
+    def _create_path(self, **kwargs: Any) -> str | None:
+        """Create path."""
+        return f"api/events/{kwargs['eventid']}/thumbnail.jpg"
+
+
 class NotificationsProxyView(ProxyView):
     """A proxy for notifications."""
 

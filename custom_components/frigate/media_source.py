@@ -869,7 +869,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
-                    thumbnail=f"data:image/jpeg;base64,{event['thumbnail']}",
+                    thumbnail=f"/api/static/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
                     frigate=FrigateBrowseMediaMetadata(event=event),
                 )
             )

@@ -72,6 +72,7 @@ class FrigateApiClient:
             "limit": limit,
             "has_clip": int(has_clip) if has_clip is not None else None,
             "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
+            "include_thumbnails": 0,
         }
 
         return cast(
