@@ -1277,7 +1277,6 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                 "start_time": 1622764801,
                 "top_score": 0.7265625,
                 "zones": [],
-                "thumbnail": "thumbnail",
             }
         ]
     )
@@ -1392,7 +1391,6 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                 "start_time": 1622764820.0,
                 "top_score": 0.7265625,
                 "zones": [],
-                "thumbnail": "thumbnail",
             }
         ]
     )
@@ -1472,7 +1470,6 @@ async def test_bad_event(hass: HomeAssistant) -> None:
                 "label": "person",
                 "top_score": 0.7265625,
                 "zones": [],
-                "thumbnail": "thumbnail",
             }
         ]
     )

@@ -59,13 +59,7 @@ class FrigateBrowseMediaMetadata:
 
     def __init__(self, event: dict[str, Any]):
         """Initialize a FrigateBrowseMediaMetadata object."""
-        self.event = {
-            # Strip out the thumbnail from the Frigate event, as it is already
-            # included in the BrowseMediaSource.
-            k: event[k]
-            for k in event
-            if k != "thumbnail"
-        }
+        self.event = event
 
     def as_dict(self) -> dict:
         """Convert the object to a dictionary."""
