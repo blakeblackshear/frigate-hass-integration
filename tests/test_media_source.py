@@ -351,7 +351,7 @@ async def test_async_browse_media_clip_search_drilldown(
         "can_play": True,
         "can_expand": False,
         "children_media_class": None,
-        "thumbnail": "data:image/jpeg;base64,thumbnail",
+        "thumbnail": f"/api/static/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/1623454583.525913-y14xk9",
         "title": "2021-06-11 23:36:23 [8s, Person 72%]",
         "frigate": {
             "event": {
@@ -1277,7 +1277,6 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                 "start_time": 1622764801,
                 "top_score": 0.7265625,
                 "zones": [],
-                "thumbnail": "thumbnail",
             }
         ]
     )
@@ -1317,7 +1316,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                 "can_play": False,
                 "can_expand": False,
                 "children_media_class": None,
-                "thumbnail": "data:image/jpeg;base64,thumbnail",
+                "thumbnail": f"/api/static/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/1622764801.555377-55xy6j",
                 "frigate": {
                     "event": {
                         "camera": "front_door",
@@ -1392,7 +1391,6 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                 "start_time": 1622764820.0,
                 "top_score": 0.7265625,
                 "zones": [],
-                "thumbnail": "thumbnail",
             }
         ]
     )
@@ -1435,7 +1433,7 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                 "can_play": False,
                 "can_expand": False,
                 "children_media_class": None,
-                "thumbnail": "data:image/jpeg;base64,thumbnail",
+                "thumbnail": f"/api/static/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/1622764820.555377-55xy6j",
                 "frigate": {
                     "event": {
                         "camera": "front_door",
@@ -1472,7 +1470,6 @@ async def test_bad_event(hass: HomeAssistant) -> None:
                 "label": "person",
                 "top_score": 0.7265625,
                 "zones": [],
-                "thumbnail": "thumbnail",
             }
         ]
     )

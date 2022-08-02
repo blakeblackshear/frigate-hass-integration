@@ -59,13 +59,7 @@ class FrigateBrowseMediaMetadata:
 
     def __init__(self, event: dict[str, Any]):
         """Initialize a FrigateBrowseMediaMetadata object."""
-        self.event = {
-            # Strip out the thumbnail from the Frigate event, as it is already
-            # included in the BrowseMediaSource.
-            k: event[k]
-            for k in event
-            if k != "thumbnail"
-        }
+        self.event = event
 
     def as_dict(self) -> dict:
         """Convert the object to a dictionary."""
@@ -869,7 +863,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
-                    thumbnail=f"data:image/jpeg;base64,{event['thumbnail']}",
+                    thumbnail=f"/api/static/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
                     frigate=FrigateBrowseMediaMetadata(event=event),
                 )
             )

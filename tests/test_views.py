@@ -378,6 +378,28 @@ async def test_snapshots_with_frigate_instance_id(
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
+async def test_thumbnails_with_frigate_instance_id(
+    hass_client_local_frigate: Any,
+    hass: Any,
+) -> None:
+    """Test snapshot with config entry ids."""
+
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    assert frigate_entries
+
+    # A Frigate instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        f"/api/static/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/event_id"
+    )
+    assert resp.status == HTTPStatus.OK
+
+    # An invalid instance id is specified.
+    resp = await hass_client_local_frigate.get(
+        "/api/static/frigate/NOT_A_REAL_ID/thumbnail/event_id"
+    )
+    assert resp.status == HTTPStatus.BAD_REQUEST
+
+
 async def test_vod_with_frigate_instance_id(
     hass_client_local_frigate: Any,
     hass: Any,
