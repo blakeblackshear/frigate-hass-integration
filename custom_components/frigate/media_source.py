@@ -9,6 +9,7 @@ from typing import Any
 import attr
 from dateutil.relativedelta import relativedelta
 
+from homeassistant.components.http.auth import async_sign_path
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
     MEDIA_CLASS_IMAGE,
@@ -828,9 +829,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
         return base
 
-    @classmethod
     def _build_event_response(
-        cls, identifier: EventSearchIdentifier, events: list[dict[str, Any]]
+        self, identifier: EventSearchIdentifier, events: list[dict[str, Any]]
     ) -> BrowseMediaSource:
         children = []
         for event in events:
@@ -849,6 +849,10 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             else:
                 duration = int(end_time - start_time)
 
+            thumbnail = f"/api/static/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}"
+            event["signed_thumbnail_url"] = async_sign_path(
+                self.hass, thumbnail, dt.timedelta(seconds=30)
+            )
             children.append(
                 FrigateBrowseMediaSource(
                     domain=DOMAIN,
@@ -863,8 +867,10 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
-                    thumbnail=f"/api/static/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
-                    frigate=FrigateBrowseMediaMetadata(event=event),
+                    thumbnail=thumbnail,
+                    frigate=FrigateBrowseMediaMetadata(
+                        event=event,
+                    ),
                 )
             )
         return children

@@ -330,7 +330,10 @@ async def test_async_browse_media_clip_search_drilldown(
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
-    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY):
+    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY), patch(
+        "custom_components.frigate.media_source.async_sign_path",
+        return_value="signed_thumbnail",
+    ):
         media = await media_source.async_browse_media(
             hass,
             (
@@ -365,6 +368,7 @@ async def test_async_browse_media_clip_search_drilldown(
                 "start_time": 1623454583.525913,
                 "top_score": 0.720703125,
                 "zones": [],
+                "signed_thumbnail_url": "signed_thumbnail",
             }
         },
     } in media.as_dict()["children"]
@@ -1282,14 +1286,18 @@ async def test_snapshots(hass: HomeAssistant) -> None:
     )
     await setup_mock_frigate_config_entry(hass, client=client)
 
-    media = await media_source.async_browse_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/event-search/snapshots/.this_month.2021-06-04.front_door.person"
-            "/1622764800/1622851200/front_door/person/"
-        ),
-    )
+    with patch(
+        "custom_components.frigate.media_source.async_sign_path",
+        return_value="signed_thumbnail",
+    ):
+        media = await media_source.async_browse_media(
+            hass,
+            (
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+                "/event-search/snapshots/.this_month.2021-06-04.front_door.person"
+                "/1622764800/1622851200/front_door/person/"
+            ),
+        )
 
     assert len(media.as_dict()["children"]) == 1
 
@@ -1329,6 +1337,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                         "start_time": 1622764801,
                         "top_score": 0.7265625,
                         "zones": [],
+                        "signed_thumbnail_url": "signed_thumbnail",
                     }
                 },
             }
@@ -1396,7 +1405,10 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
     )
     await setup_mock_frigate_config_entry(hass, client=client)
 
-    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY):
+    with patch("custom_components.frigate.media_source.dt.datetime", new=TODAY), patch(
+        "custom_components.frigate.media_source.async_sign_path",
+        return_value="signed_thumbnail",
+    ):
         media = await media_source.async_browse_media(
             hass,
             (
@@ -1446,6 +1458,7 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                         "start_time": 1622764820.0,
                         "top_score": 0.7265625,
                         "zones": [],
+                        "signed_thumbnail_url": "signed_thumbnail",
                     }
                 },
             }
