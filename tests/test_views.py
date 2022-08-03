@@ -389,13 +389,13 @@ async def test_thumbnails_with_frigate_instance_id(
 
     # A Frigate instance id is specified.
     resp = await hass_client_local_frigate.get(
-        f"/api/static/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/event_id"
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/event_id"
     )
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
     resp = await hass_client_local_frigate.get(
-        "/api/static/frigate/NOT_A_REAL_ID/thumbnail/event_id"
+        "/api/frigate/NOT_A_REAL_ID/thumbnail/event_id"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 

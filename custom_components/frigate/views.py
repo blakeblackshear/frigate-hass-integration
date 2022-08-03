@@ -204,8 +204,7 @@ class SnapshotsProxyView(ProxyView):
 class ThumbnailsProxyView(ProxyView):
     """A proxy for snapshots."""
 
-    # Having static in the url will use the CacheFirst() workbox strategy
-    url = "/api/static/frigate/{frigate_instance_id:.+}/thumbnail/{eventid:.*}"
+    url = "/api/frigate/{frigate_instance_id:.+}/thumbnail/{eventid:.*}"
 
     name = "api:frigate:thumbnails"
 
