@@ -17,7 +17,6 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_IMAGE,
     MEDIA_TYPE_VIDEO,
 )
-from homeassistant.components.media_source.const import MEDIA_MIME_TYPES
 from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
@@ -597,7 +596,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         raise Unresolvable("Unknown or disallowed identifier: %s" % item.identifier)
 
     async def async_browse_media(
-        self, item: MediaSourceItem, media_types: tuple[str] = MEDIA_MIME_TYPES
+        self,
+        item: MediaSourceItem,
     ) -> BrowseMediaSource:
         """Browse media."""
 
@@ -863,7 +863,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int(event['top_score']*100)}%]",
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
-                    thumbnail=f"/api/static/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
+                    thumbnail=f"/api/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
                     frigate=FrigateBrowseMediaMetadata(event=event),
                 )
             )
