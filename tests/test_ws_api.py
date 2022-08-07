@@ -40,7 +40,7 @@ async def test_retain_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
     await ws_client.send_json(retain_json)
 
     response = await ws_client.receive_json()
-    mock_client.async_retain.assert_called_with(TEST_EVENT_ID, True, decode_json=False)
+    mock_client.async_retain.assert_called_with(TEST_EVENT_ID, True)
     assert response["success"]
     assert response["result"] == retain_success
 
@@ -55,7 +55,7 @@ async def test_retain_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
     )
 
     response = await ws_client.receive_json()
-    mock_client.async_retain.assert_called_with(TEST_EVENT_ID, False, decode_json=False)
+    mock_client.async_retain.assert_called_with(TEST_EVENT_ID, False)
     assert response["success"]
     assert response["result"] == unretain_success
 
@@ -141,9 +141,7 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
     await ws_client.send_json(recording_json)
 
     response = await ws_client.receive_json()
-    mock_client.async_get_recordings_summary.assert_called_with(
-        TEST_CAMERA, decode_json=False
-    )
+    mock_client.async_get_recordings_summary.assert_called_with(TEST_CAMERA)
     assert response["success"]
     assert response["result"] == recording_success
 
@@ -162,9 +160,7 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
     )
 
     response = await ws_client.receive_json()
-    mock_client.async_get_recordings.assert_called_with(
-        TEST_CAMERA, after, before, decode_json=False
-    )
+    mock_client.async_get_recordings.assert_called_with(TEST_CAMERA, after, before)
     assert response["success"]
     assert response["result"] == recording_success
 

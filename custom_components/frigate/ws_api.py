@@ -59,9 +59,7 @@ async def ws_retain_event(
     try:
         connection.send_result(
             msg["id"],
-            await client.async_retain(
-                msg["event_id"], msg["retain"], decode_json=False
-            ),
+            await client.async_retain(msg["event_id"], msg["retain"]),
         )
     except FrigateApiClientError:
         connection.send_error(
@@ -95,7 +93,7 @@ async def ws_get_recordings(
         connection.send_result(
             msg["id"],
             await client.async_get_recordings(
-                msg["camera"], msg.get("after"), msg.get("before"), decode_json=False
+                msg["camera"], msg.get("after"), msg.get("before")
             ),
         )
     except FrigateApiClientError:
@@ -127,7 +125,7 @@ async def ws_get_recordings_summary(
     try:
         connection.send_result(
             msg["id"],
-            await client.async_get_recordings_summary(msg["camera"], decode_json=False),
+            await client.async_get_recordings_summary(msg["camera"]),
         )
     except FrigateApiClientError:
         connection.send_error(
