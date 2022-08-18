@@ -164,7 +164,11 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
             request.method,
             url,
             headers=source_header,
-            params=request.query,
+            params={
+                k: v
+                for k, v in request.query.items()
+                if k != "authSig" or isinstance(self, VodProxyView)
+            },
             allow_redirects=False,
             data=data,
         ) as result:
