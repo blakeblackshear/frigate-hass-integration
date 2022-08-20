@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 from http import HTTPStatus
 from ipaddress import ip_address
 import logging
@@ -138,6 +139,11 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
 
         raise HTTPBadGateway() from None
 
+    @staticmethod
+    def _get_query_params(request: web.Request) -> Mapping[str, str]:
+        """Get the query params to send upstream."""
+        return {k: v for k, v in request.query.items() if k != "authSig"}
+
     async def _handle_request(
         self,
         request: web.Request,
@@ -164,7 +170,7 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
             request.method,
             url,
             headers=source_header,
-            params=request.query,
+            params=self._get_query_params(request),
             allow_redirects=False,
             data=data,
         ) as result:
@@ -246,7 +252,12 @@ class VodProxyView(ProxyView):
     url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{manifest:.+}.m3u8"
     extra_urls = ["/api/frigate/vod/{path:.+}/{manifest:.+}.m3u8"]
 
-    name = "api:frigate:vod:mainfest"
+    name = "api:frigate:vod:manifest"
+
+    @staticmethod
+    def _get_query_params(request: web.Request) -> Mapping[str, str]:
+        """Get the query params to send upstream."""
+        return request.query
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
