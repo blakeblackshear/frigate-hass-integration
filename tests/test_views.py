@@ -50,7 +50,7 @@ def _get_fixed_datetime() -> datetime:
     return datetime_today
 
 
-TODAY = _get_fixed_datetime()
+FIXED_TEST_DATETIME = _get_fixed_datetime()
 
 
 class ClientErrorStreamResponse(web.StreamResponse):
@@ -629,7 +629,9 @@ async def test_notifications_with_no_expiration(
     unauthenticated_hass_client = await hass_client_no_auth()
 
     # Fake time is 2021-11-01T19:02:00
-    with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
+    with patch(
+        "custom_components.frigate.views.datetime.datetime", new=FIXED_TEST_DATETIME
+    ):
         # Old event id should be served
         # Test event timestamp is 2020-01-01 00:00:00
         resp = await unauthenticated_hass_client.get(
@@ -664,7 +666,9 @@ async def test_expired_notifications_are_forbidden(
     unauthenticated_hass_client = await hass_client_no_auth()
 
     # Fake time is 2021-11-01T19:02:00
-    with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
+    with patch(
+        "custom_components.frigate.views.datetime.datetime", new=FIXED_TEST_DATETIME
+    ):
         # Well-formed, not expired events should be served
         # Test event timestamp is 2021-11-01T19:00:00 - 2 minutes prior test (fake) time
         resp = await unauthenticated_hass_client.get(
@@ -712,7 +716,9 @@ async def test_expired_notifications_are_served_when_authenticated(
     authenticated_hass_client = await hass_client()
 
     # Fake time is 2021-11-01T19:02:00
-    with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
+    with patch(
+        "custom_components.frigate.views.datetime.datetime", new=FIXED_TEST_DATETIME
+    ):
         # Expired event ids SHOULD be served since the request is authenticated.
         # Test event timestamp is 2021-11-01T18:55:59 - 6:01 minutes prior test (fake) time
         resp = await authenticated_hass_client.get(
