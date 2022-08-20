@@ -23,7 +23,7 @@ from custom_components.frigate.const import (
     ATTR_CONFIG,
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
-    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     DOMAIN,
 )
 from homeassistant.components.http import KEY_AUTHENTICATED, HomeAssistantView
@@ -263,12 +263,12 @@ class NotificationsProxyView(ProxyView):
             return True
 
         # If request is not authenticated, check whether it is expired.
-        notification_expiration_mins = int(
-            config_entry.options.get(CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS, 0)
+        notification_expiration_seconds = int(
+            config_entry.options.get(CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS, 0)
         )
 
         # If notification events never expire, immediately permit.
-        if notification_expiration_mins == 0:
+        if notification_expiration_seconds == 0:
             return True
 
         try:
@@ -278,7 +278,7 @@ class NotificationsProxyView(ProxyView):
             )
             now_datetime = datetime.datetime.now(tz=datetime.timezone.utc)
             expiration_datetime = event_datetime + datetime.timedelta(
-                minutes=notification_expiration_mins
+                seconds=notification_expiration_seconds
             )
 
             # Otherwise, permit only if notification event is not expired

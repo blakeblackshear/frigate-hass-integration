@@ -19,7 +19,7 @@ from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
-    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     DOMAIN,
 )
 from homeassistant.components.http.auth import async_setup_auth, async_sign_path
@@ -613,7 +613,7 @@ async def test_notifications_with_no_expiration(
     config_entry = create_mock_frigate_config_entry(
         hass,
         entry_id="private_id",
-        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 0},
+        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS: 0},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
@@ -648,7 +648,7 @@ async def test_expired_notifications_are_forbidden(
         hass,
         entry_id="private_id",
         # for this test, notifications expire after 5 minutes from the event
-        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 5},
+        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS: 5 * 60},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
@@ -696,7 +696,7 @@ async def test_expired_notifications_are_served_when_authenticated(
         hass,
         entry_id="private_id",
         # for this test, notifications expire after 5 minutes from the event
-        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 5},
+        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS: 5 * 60},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
