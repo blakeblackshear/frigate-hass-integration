@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 import logging
 from typing import Any
@@ -18,8 +18,8 @@ from custom_components.frigate import views
 from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_MQTT,
-    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
     CONF_NOTIFICATION_PROXY_ENABLE,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
     DOMAIN,
 )
 from homeassistant.components.http.auth import async_setup_auth, async_sign_path
@@ -102,9 +102,7 @@ def app(hass: HomeAssistant) -> Any:
 
 
 @pytest.fixture
-async def hass_client_local_frigate(
-    hass: HomeAssistant, hass_client: Any, aiohttp_server: Any
-) -> Any:
+async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
     """Point the integration at a local fake Frigate server."""
 
     def _assert_expected_headers(request: web.Request, allow_ws: bool = False) -> None:
@@ -149,11 +147,6 @@ async def hass_client_local_frigate(
         _assert_expected_headers(request)
         return web.json_response({})
 
-    async def qs_handler(request: web.Request) -> web.Response:
-        """Verify the query string."""
-        assert request.query["key"] == "value"
-        return await handler(request)
-
     server = await start_frigate_server(
         aiohttp_server,
         [
@@ -178,15 +171,14 @@ async def hass_client_local_frigate(
         hass, config_entry=config_entry, client=client
     )
 
-    return await hass_client()
-
 
 async def test_vod_manifest_proxy(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test vod manifest."""
-
-    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
+    authenticated_hass_client = await hass_client()
+    resp = await authenticated_hass_client.get("/api/frigate/vod/present/manifest.m3u8")
     assert resp.status == HTTPStatus.OK
 
 
@@ -194,7 +186,8 @@ async def test_vod_segment_proxy(
     hass: HomeAssistant,
     app: Any,
     hass_access_token: Any,
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test vod segment."""
 
@@ -208,7 +201,8 @@ async def test_vod_segment_proxy(
         refresh_token_id=refresh_token.id,
     )
 
-    resp = await hass_client_local_frigate.get(signed_path)
+    authenticated_hass_client = await hass_client()
+    resp = await authenticated_hass_client.get(signed_path)
     assert resp.status == HTTPStatus.OK
 
 
@@ -216,12 +210,15 @@ async def test_vod_segment_proxy_unauthorized(
     hass: HomeAssistant,
     app: Any,
     hass_access_token: Any,
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test vod segment."""
 
+    authenticated_hass_client = await hass_client()
+
     # No secret set
-    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
+    resp = await authenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
     await async_setup_auth(hass, app)
@@ -235,114 +232,139 @@ async def test_vod_segment_proxy_unauthorized(
     )
 
     # No signature
-    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/segment.ts")
+    resp = await authenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
     # Wrong signature
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         "/api/frigate/vod/present/segment.ts?authSig=invalid"
     )
 
     # Modified path
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         signed_path.replace("/api/frigate/", "/api/frigate/mod/")
     )
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
 
 async def test_snapshot_proxy_view_success(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test straightforward snapshot requests."""
-    resp = await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
+
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
     assert resp.status == HTTPStatus.OK
 
-    resp = await hass_client_local_frigate.get("/api/frigate/snapshot/not_present")
+    resp = await authenticated_hass_client.get("/api/frigate/snapshot/not_present")
     assert resp.status == HTTPStatus.NOT_FOUND
 
 
 async def test_snapshot_proxy_view_write_error(
-    caplog: Any, hass_client_local_frigate: Any
+    caplog: Any, local_frigate: Any, hass_client: Any
 ) -> None:
     """Test snapshot request with a write error."""
+
+    authenticated_hass_client = await hass_client()
 
     with patch(
         "custom_components.frigate.views.web.StreamResponse",
         new=ClientErrorStreamResponse,
     ):
-        await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
+        await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
         assert "Stream error" in caplog.text
 
 
 async def test_snapshot_proxy_view_connection_reset(
-    caplog: Any, hass_client_local_frigate: Any
+    caplog: Any, local_frigate: Any, hass_client: Any
 ) -> None:
     """Test snapshot request with a connection reset."""
+
+    authenticated_hass_client = await hass_client()
 
     with patch(
         "custom_components.frigate.views.web.StreamResponse",
         new=ConnectionResetStreamResponse,
     ):
-        await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
+        await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
         assert "Stream error" not in caplog.text
 
 
 async def test_snapshot_proxy_view_read_error(
-    hass: HomeAssistant, caplog: Any, hass_client_local_frigate: Any
+    hass: HomeAssistant,
+    caplog: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test snapshot request with a read error."""
 
     mock_request = MagicMock(FakeAsyncContextManager())
     mock_request.side_effect = aiohttp.ClientError
 
+    authenticated_hass_client = await hass_client()
+
     with patch.object(
         hass.helpers.aiohttp_client.async_get_clientsession(),
         "request",
         new=mock_request,
     ):
-        await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
+        await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
         assert "Reverse proxy error" in caplog.text
 
 
 async def test_notifications_proxy_view_thumbnail(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test notification thumbnail."""
 
-    resp = await hass_client_local_frigate.get(
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg"
     )
     assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_view_snapshot(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test notification snapshot."""
 
-    resp = await hass_client_local_frigate.get(
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_view_clip(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test notification clip."""
 
-    resp = await hass_client_local_frigate.get(
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/camera/clip.mp4"
     )
     assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_other(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test notification clip."""
 
-    resp = await hass_client_local_frigate.get(
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/camera/not_present"
     )
     assert resp.status == HTTPStatus.NOT_FOUND
@@ -351,16 +373,20 @@ async def test_notifications_proxy_other(
 @pytest.mark.allow_proxy
 async def test_headers(
     hass: Any,
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test proxy headers are added and respected."""
-    resp = await hass_client_local_frigate.get(
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg",
         headers={hdrs.CONTENT_ENCODING: "foo"},
     )
     assert resp.status == HTTPStatus.OK
 
-    resp = await hass_client_local_frigate.get(
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/thumbnail.jpg",
         headers={hdrs.X_FORWARDED_FOR: "1.2.3.4"},
     )
@@ -368,7 +394,8 @@ async def test_headers(
 
 
 async def test_snapshots_with_frigate_instance_id(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
     hass: Any,
 ) -> None:
     """Test snapshot with config entry ids."""
@@ -376,26 +403,29 @@ async def test_snapshots_with_frigate_instance_id(
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
 
+    authenticated_hass_client = await hass_client()
+
     # A Frigate instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/snapshot/event_id"
     )
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         "/api/frigate/NOT_A_REAL_ID/snapshot/event_id"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
-    resp = await hass_client_local_frigate.get("/api/frigate/snapshot/event_id")
+    resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_thumbnails_with_frigate_instance_id(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
     hass: Any,
 ) -> None:
     """Test snapshot with config entry ids."""
@@ -403,21 +433,24 @@ async def test_thumbnails_with_frigate_instance_id(
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
 
+    authenticated_hass_client = await hass_client()
+
     # A Frigate instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/thumbnail/event_id"
     )
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         "/api/frigate/NOT_A_REAL_ID/thumbnail/event_id"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_vod_with_frigate_instance_id(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
     hass: Any,
 ) -> None:
     """Test vod with config entry ids."""
@@ -425,21 +458,23 @@ async def test_vod_with_frigate_instance_id(
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
 
+    authenticated_hass_client = await hass_client()
+
     # A Frigate instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/manifest.m3u8"
     )
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await authenticated_hass_client.get(
         "/api/frigate/NOT_A_REAL_ID/vod/present/manifest.m3u8"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
-    resp = await hass_client_local_frigate.get("/api/frigate/vod/present/manifest.m3u8")
+    resp = await authenticated_hass_client.get("/api/frigate/vod/present/manifest.m3u8")
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
@@ -447,7 +482,8 @@ async def test_vod_segment_with_frigate_instance_id(
     hass: HomeAssistant,
     app: Any,
     hass_access_token: Any,
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test vod with config entry ids."""
 
@@ -464,8 +500,10 @@ async def test_vod_segment_with_frigate_instance_id(
         refresh_token_id=refresh_token.id,
     )
 
+    authenticated_hass_client = await hass_client()
+
     # A Frigate instance id is specified.
-    resp = await hass_client_local_frigate.get(signed_path)
+    resp = await authenticated_hass_client.get(signed_path)
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
@@ -475,7 +513,7 @@ async def test_vod_segment_with_frigate_instance_id(
         timedelta(seconds=5),
         refresh_token_id=refresh_token.id,
     )
-    resp = await hass_client_local_frigate.get(signed_path)
+    resp = await authenticated_hass_client.get(signed_path)
     assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
@@ -486,117 +524,127 @@ async def test_vod_segment_with_frigate_instance_id(
         timedelta(seconds=5),
         refresh_token_id=refresh_token.id,
     )
-    resp = await hass_client_local_frigate.get(signed_path)
+    resp = await authenticated_hass_client.get(signed_path)
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_notifications_with_frigate_instance_id(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
     hass: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test notifications with config entry ids."""
 
     frigate_entries = hass.config_entries.async_entries(DOMAIN)
     assert frigate_entries
 
+    unauthenticated_hass_client = await hass_client_no_auth()
+
     # A Frigate instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await unauthenticated_hass_client.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}"
         "/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTPStatus.OK
 
     # An invalid instance id is specified.
-    resp = await hass_client_local_frigate.get(
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/NOT_A_REAL_ID/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
     # No default allowed when there are multiple entries.
     create_mock_frigate_config_entry(hass, entry_id="another_id")
-    resp = await hass_client_local_frigate.get(
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_notifications_with_disabled_option(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
     hass: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test notifications with config entry ids."""
 
     # Make another config entry with the same data but with
     # CONF_NOTIFICATION_PROXY_ENABLE disabled.
-    private_config_entry = create_mock_frigate_config_entry(
+    config_entry = create_mock_frigate_config_entry(
         hass,
         entry_id="private_id",
         options={CONF_NOTIFICATION_PROXY_ENABLE: False},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
-    private_config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    private_config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
-    private_client = create_mock_frigate_client()
-    private_client.async_get_config = AsyncMock(return_value=private_config)
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
 
     await setup_mock_frigate_config_entry(
-        hass, config_entry=private_config_entry, client=private_client
+        hass, config_entry=config_entry, client=client
     )
 
+    unauthenticated_hass_client = await hass_client_no_auth()
+
     # Default Frigate instance should continue serving fine.
-    resp = await hass_client_local_frigate.get(
+    resp = await unauthenticated_hass_client.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTPStatus.OK
 
     # Private instance will not proxy notification data.
-    resp = await hass_client_local_frigate.get(
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/private_id/notifications/event_id/snapshot.jpg"
     )
     assert resp.status == HTTPStatus.FORBIDDEN
 
 
 async def test_notifications_with_no_expiration(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
     hass: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test that notification events are served if they are set to not expire."""
 
     # Make another config entry with the same data but with
     # CONF_NOTIFICATION_PROXY_ENABLE disabled.
-    private_config_entry = create_mock_frigate_config_entry(
+    config_entry = create_mock_frigate_config_entry(
         hass,
         entry_id="private_id",
         options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 0},
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
-    private_config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    private_config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
-    private_client = create_mock_frigate_client()
-    private_client.async_get_config = AsyncMock(return_value=private_config)
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
 
     await setup_mock_frigate_config_entry(
-        hass, config_entry=private_config_entry, client=private_client
+        hass, config_entry=config_entry, client=client
     )
+
+    unauthenticated_hass_client = await hass_client_no_auth()
 
     # Fake time is 2021-11-01T19:02:00
     with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
         # Old event id should be served
         # Test event timestamp is 2020-01-01 00:00:00
-        resp = await hass_client_local_frigate.get(
-            f"/api/frigate/private_id/notifications/1577854800.123456-random/snapshot.jpg"
+        resp = await unauthenticated_hass_client.get(
+            "/api/frigate/private_id/notifications/1577854800.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.OK
 
 
-async def test_expired_notifications_are_not_served(
-    hass_client_local_frigate: Any,
+async def test_expired_notifications_are_forbidden(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
     hass: Any,
 ) -> None:
     """Test that notification events are not served if older than expiration config."""
-    private_config_entry = create_mock_frigate_config_entry(
+    config_entry = create_mock_frigate_config_entry(
         hass,
         entry_id="private_id",
         # for this test, notifications expire after 5 minutes from the event
@@ -604,44 +652,85 @@ async def test_expired_notifications_are_not_served(
         data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
     )
 
-    private_config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    private_config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
-    private_client = create_mock_frigate_client()
-    private_client.async_get_config = AsyncMock(return_value=private_config)
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
 
     await setup_mock_frigate_config_entry(
-        hass, config_entry=private_config_entry, client=private_client
+        hass, config_entry=config_entry, client=client
     )
+
+    unauthenticated_hass_client = await hass_client_no_auth()
 
     # Fake time is 2021-11-01T19:02:00
     with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
         # Well-formed, not expired events should be served
         # Test event timestamp is 2021-11-01T19:00:00 - 2 minutes prior test (fake) time
-        resp = await hass_client_local_frigate.get(
-            f"/api/frigate/private_id/notifications/1635807600.123456-random/snapshot.jpg"
+        resp = await unauthenticated_hass_client.get(
+            "/api/frigate/private_id/notifications/1635807600.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.OK
 
-        # Expired event ids should not be served
+        # Expired event ids should not be served.
         # Test event timestamp is 2021-11-01T18:55:59 - 6:01 minutes prior test (fake) time
-        resp = await hass_client_local_frigate.get(
-            f"/api/frigate/private_id/notifications/1635807359.123456-random/snapshot.jpg"
+        resp = await unauthenticated_hass_client.get(
+            "/api/frigate/private_id/notifications/1635807359.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.FORBIDDEN
 
-        # Invalid event ids should not be served
-        resp = await hass_client_local_frigate.get(
-            f"/api/frigate/private_id/notifications/invalid.123456-random/snapshot.jpg"
+        # Invalid event ids should not be served.
+        resp = await unauthenticated_hass_client.get(
+            "/api/frigate/private_id/notifications/invalid.123456-random/snapshot.jpg"
         )
         assert resp.status == HTTPStatus.FORBIDDEN
+
+
+async def test_expired_notifications_are_served_when_authenticated(
+    local_frigate: Any,
+    hass_client: Any,
+    hass: Any,
+) -> None:
+    """Test that notification events are always served if the request is authenticated."""
+    config_entry = create_mock_frigate_config_entry(
+        hass,
+        entry_id="private_id",
+        # for this test, notifications expire after 5 minutes from the event
+        options={CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS: 5},
+        data=hass.config_entries.async_get_entry(TEST_CONFIG_ENTRY_ID).data,
+    )
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+
+    await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+
+    authenticated_hass_client = await hass_client()
+
+    # Fake time is 2021-11-01T19:02:00
+    with patch("custom_components.frigate.views.datetime.datetime", new=TODAY):
+        # Expired event ids SHOULD be served since the request is authenticated.
+        # Test event timestamp is 2021-11-01T18:55:59 - 6:01 minutes prior test (fake) time
+        resp = await authenticated_hass_client.get(
+            "/api/frigate/private_id/notifications/1635807359.123456-random/snapshot.jpg"
+        )
+        assert resp.status == HTTPStatus.OK
 
 
 async def test_jsmpeg_text_binary(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
     hass: Any,
+    hass_client: Any,
 ) -> None:
     """Test JSMPEG proxying text/binary data."""
-    async with hass_client_local_frigate.ws_connect(
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
     ) as ws:
         # Test sending text data.
@@ -663,11 +752,14 @@ async def test_jsmpeg_text_binary(
 
 
 async def test_jsmpeg_frame_type_ping_pong(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test JSMPEG proxying handles ping-pong."""
 
-    async with hass_client_local_frigate.ws_connect(
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
     ) as ws:
         await ws.ping()
@@ -682,11 +774,14 @@ async def test_jsmpeg_frame_type_ping_pong(
 
 
 async def test_ws_proxy_specify_protocol(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test websocket proxy handles the SEC_WEBSOCKET_PROTOCOL header."""
 
-    ws = await hass_client_local_frigate.ws_connect(
+    authenticated_hass_client = await hass_client()
+
+    ws = await authenticated_hass_client.ws_connect(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door",
         headers={hdrs.SEC_WEBSOCKET_PROTOCOL: "foo,bar"},
     )
@@ -695,11 +790,14 @@ async def test_ws_proxy_specify_protocol(
 
 
 async def test_ws_proxy_query_string(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test websocket proxy passes on the querystring."""
 
-    async with hass_client_local_frigate.ws_connect(
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/querystring?key=value",
     ) as ws:
         result = await asyncio.gather(
@@ -711,7 +809,8 @@ async def test_ws_proxy_query_string(
 
 
 async def test_jsmpeg_connection_reset(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test JSMPEG proxying handles connection resets."""
 
@@ -730,29 +829,35 @@ async def test_jsmpeg_connection_reset(
             called_once = True
             return await real_send_str(*args, **kwargs)
 
+    authenticated_hass_client = await hass_client()
+
     with patch(
         "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.send_str",
         new=send_str,
     ):
-        async with hass_client_local_frigate.ws_connect(
+        async with authenticated_hass_client.ws_connect(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         ) as ws:
             await ws.send_str("data")
 
 
 async def test_ws_proxy_bad_instance_id(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
 ) -> None:
     """Test websocket proxy handles bad instance id."""
 
-    resp = await hass_client_local_frigate.get(
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get(
         "/api/frigate/NOT_A_REAL_ID/jsmpeg/front_door"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_ws_proxy_forbidden(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
     hass: Any,
 ) -> None:
     """Test websocket proxy handles forbidden paths."""
@@ -762,21 +867,26 @@ async def test_ws_proxy_forbidden(
     # proxies. As such, there's no 'genuine' way to test this other than mocking
     # out the call to _permit_request.
 
+    authenticated_hass_client = await hass_client()
+
     with patch(
         "custom_components.frigate.views.WebsocketProxyView._permit_request",
         return_value=False,
     ):
-        resp = await hass_client_local_frigate.get(
+        resp = await authenticated_hass_client.get(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
         assert resp.status == HTTPStatus.FORBIDDEN
 
 
 async def test_ws_proxy_missing_path(
-    hass_client_local_frigate: Any,
+    local_frigate: Any,
+    hass_client: Any,
     hass: Any,
 ) -> None:
     """Test websocket proxy handles missing/invalid paths."""
+
+    authenticated_hass_client = await hass_client()
 
     # Note: With current uses of the WebsocketProxy it's not possible to have a
     # bad/missing path. Since that may not be the case in future for other views
@@ -785,7 +895,7 @@ async def test_ws_proxy_missing_path(
         "custom_components.frigate.views.JSMPEGProxyView._create_path",
         return_value=None,
     ):
-        resp = await hass_client_local_frigate.get(
+        resp = await authenticated_hass_client.get(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
         assert resp.status == HTTPStatus.NOT_FOUND

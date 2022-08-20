@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
 from collections.abc import Mapping
+import datetime
 from http import HTTPStatus
 from ipaddress import ip_address
 import logging
@@ -22,11 +22,11 @@ from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_CONFIG,
     ATTR_MQTT,
-    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
     CONF_NOTIFICATION_PROXY_ENABLE,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS,
     DOMAIN,
 )
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http import KEY_AUTHENTICATED, HomeAssistantView
 from homeassistant.components.http.auth import DATA_SIGN_SECRET, SIGN_QUERY_PARAM
 from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
@@ -258,12 +258,16 @@ class NotificationsProxyView(ProxyView):
         if not is_notification_proxy_enabled:
             return False
 
-        # If request is not authenticated, check whether it is expired
+        # Authenticated requests are always allowed.
+        if request[KEY_AUTHENTICATED]:
+            return True
+
+        # If request is not authenticated, check whether it is expired.
         notification_expiration_mins = int(
             config_entry.options.get(CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_MINS, 0)
         )
 
-        # If notification events never expire, immediately permit
+        # If notification events never expire, immediately permit.
         if notification_expiration_mins == 0:
             return True
 
