@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Mapping
+import datetime
 from http import HTTPStatus
 from ipaddress import ip_address
 import logging
@@ -22,9 +23,10 @@ from custom_components.frigate.const import (
     ATTR_CONFIG,
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
+    CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     DOMAIN,
 )
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http import KEY_AUTHENTICATED, HomeAssistantView
 from homeassistant.components.http.auth import DATA_SIGN_SECRET, SIGN_QUERY_PARAM
 from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
@@ -121,7 +123,9 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         """Create path."""
         raise NotImplementedError  # pragma: no cover
 
-    def _permit_request(self, request: web.Request, config_entry: ConfigEntry) -> bool:
+    def _permit_request(
+        self, request: web.Request, config_entry: ConfigEntry, **kwargs: Any
+    ) -> bool:
         """Determine whether to permit a request."""
         return True
 
@@ -155,7 +159,7 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
         if not config_entry:
             return web.Response(status=HTTPStatus.BAD_REQUEST)
 
-        if not self._permit_request(request, config_entry):
+        if not self._permit_request(request, config_entry, **kwargs):
             return web.Response(status=HTTPStatus.FORBIDDEN)
 
         full_path = self._create_path(**kwargs)
@@ -241,9 +245,49 @@ class NotificationsProxyView(ProxyView):
             return f"api/events/{event_id}/clip.mp4"
         return None
 
-    def _permit_request(self, request: web.Request, config_entry: ConfigEntry) -> bool:
+    def _permit_request(
+        self, request: web.Request, config_entry: ConfigEntry, **kwargs: Any
+    ) -> bool:
         """Determine whether to permit a request."""
-        return bool(config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True))
+
+        is_notification_proxy_enabled = bool(
+            config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True)
+        )
+
+        # If proxy is disabled, immediately reject
+        if not is_notification_proxy_enabled:
+            return False
+
+        # Authenticated requests are always allowed.
+        if request[KEY_AUTHENTICATED]:
+            return True
+
+        # If request is not authenticated, check whether it is expired.
+        notification_expiration_seconds = int(
+            config_entry.options.get(CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS, 0)
+        )
+
+        # If notification events never expire, immediately permit.
+        if notification_expiration_seconds == 0:
+            return True
+
+        try:
+            event_id_timestamp = int(kwargs["event_id"].partition(".")[0])
+            event_datetime = datetime.datetime.fromtimestamp(
+                event_id_timestamp, tz=datetime.timezone.utc
+            )
+            now_datetime = datetime.datetime.now(tz=datetime.timezone.utc)
+            expiration_datetime = event_datetime + datetime.timedelta(
+                seconds=notification_expiration_seconds
+            )
+
+            # Otherwise, permit only if notification event is not expired
+            return now_datetime.timestamp() <= expiration_datetime.timestamp()
+        except ValueError:
+            _LOGGER.warning(
+                "The event id %s does not have a valid format.", kwargs["event_id"]
+            )
+            return False
 
 
 class VodProxyView(ProxyView):
@@ -350,7 +394,7 @@ class WebsocketProxyView(ProxyView):
         if not config_entry:
             return web.Response(status=HTTPStatus.BAD_REQUEST)
 
-        if not self._permit_request(request, config_entry):
+        if not self._permit_request(request, config_entry, **kwargs):
             return web.Response(status=HTTPStatus.FORBIDDEN)
 
         full_path = self._create_path(**kwargs)
