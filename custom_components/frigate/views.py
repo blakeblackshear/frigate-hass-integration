@@ -267,15 +267,15 @@ class VodProxyView(ProxyView):
 class VodSegmentProxyView(ProxyView):
     """A proxy for vod segments."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{segment:.+}.ts"
-    extra_urls = ["/api/frigate/vod/{path:.+}/{segment:.+}.ts"]
+    url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{segment:.+}.{extension:(ts|m4s|mp4)}"
+    extra_urls = ["/api/frigate/vod/{path:.+}/{segment:.+}.{extension:(ts|m4s|mp4)}"]
 
     name = "api:frigate:vod:segment"
     requires_auth = False
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
-        return f"vod/{kwargs['path']}/{kwargs['segment']}.ts"
+        return f"vod/{kwargs['path']}/{kwargs['segment']}.{kwargs['extension']}"
 
     async def _async_validate_signed_manifest(self, request: web.Request) -> bool:
         """Validate the signature for the manifest of this segment."""
