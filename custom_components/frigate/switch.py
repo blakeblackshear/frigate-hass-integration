@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from custom_components.frigate.icons import get_icon_from_switch
 
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.switch import SwitchEntity
@@ -22,10 +23,6 @@ from . import (
 from .const import (
     ATTR_CONFIG,
     DOMAIN,
-    ICON_CONTRAST,
-    ICON_FILM_MULTIPLE,
-    ICON_IMAGE_MULTIPLE,
-    ICON_MOTION_SENSOR,
     NAME,
 )
 
@@ -76,17 +73,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
-
-        if self._switch_name == "snapshots":
-            self._icon = ICON_IMAGE_MULTIPLE
-        elif self._switch_name == "recordings":
-            self._icon = ICON_FILM_MULTIPLE
-        elif self._switch_name == "improve_contrast":
-            self._icon = ICON_CONTRAST
-        else:
-            self._icon = ICON_MOTION_SENSOR
-
-        super().__init__(
+        self._icon = get_icon_from_switch(self._switch_name)uper().__init__(
             config_entry,
             frigate_config,
             {

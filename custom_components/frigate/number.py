@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from custom_components.frigate.icons import ICON_SPEEDOMETER
 
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.number import NumberEntity
@@ -23,7 +24,6 @@ from . import (
 from .const import (
     ATTR_CONFIG,
     DOMAIN,
-    ICON_SPEEDOMETER,
     MAX_CONTOUR_AREA,
     MAX_THRESHOLD,
     MIN_CONTOUR_AREA,
