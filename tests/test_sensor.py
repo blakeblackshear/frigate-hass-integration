@@ -14,9 +14,8 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import (
-    DOMAIN,
-    FPS,
+from custom_components.frigate.const import DOMAIN, FPS, MS, NAME
+from custom_components.frigate.icons import (
     ICON_BICYCLE,
     ICON_CAR,
     ICON_CAT,
@@ -29,8 +28,6 @@ from custom_components.frigate.const import (
     ICON_PERSON,
     ICON_SERVER,
     ICON_SPEEDOMETER,
-    MS,
-    NAME,
 )
 from homeassistant.const import TEMP_CELSIUS
 from homeassistant.core import HomeAssistant

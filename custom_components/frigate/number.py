@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from custom_components.frigate.icons import ICON_SPEEDOMETER
 
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.number import NumberEntity
@@ -30,6 +29,7 @@ from .const import (
     MIN_THRESHOLD,
     NAME,
 )
+from .icons import ICON_SPEEDOMETER
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 

@@ -2,7 +2,6 @@
 
 from xmlrpc.client import Boolean
 
-
 ICON_BICYCLE = "mdi:bicycle"
 ICON_CAR = "mdi:car"
 ICON_CAT = "mdi:cat"
@@ -13,7 +12,7 @@ ICON_DOG = "mdi:dog-side"
 ICON_FILM_MULTIPLE = "mdi:filmstrip-box-multiple"
 ICON_HORSE = "mdi:horse"
 ICON_IMAGE_MULTIPLE = "mdi:image-multiple"
-ICON_MOTION_SENSOR = "hass:motion-sensor"
+ICON_MOTION_SENSOR = "mdi:motion-sensor"
 ICON_MOTORCYCLE = "mdi:motorbike"
 ICON_OTHER = "mdi:shield-alert"
 ICON_PERSON = "mdi:human"
@@ -54,7 +53,7 @@ def get_icon_from_switch(switch_type: str) -> str:
         return ICON_FILM_MULTIPLE
     if switch_type == "improve_contrast":
         return ICON_CONTRAST
-    
+
     return ICON_MOTION_SENSOR
 
 

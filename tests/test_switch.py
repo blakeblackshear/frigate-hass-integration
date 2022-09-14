@@ -147,7 +147,7 @@ async def test_switch_icon(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass)
 
     expected_results = {
-        TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID: "hass:motion-sensor",
+        TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID: "mdi:motion-sensor",
         TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID: "mdi:filmstrip-box-multiple",
         TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID: "mdi:image-multiple",
     }

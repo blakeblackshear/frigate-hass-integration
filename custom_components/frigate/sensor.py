@@ -15,7 +15,6 @@ from . import (
     FrigateDataUpdateCoordinator,
     FrigateEntity,
     FrigateMQTTEntity,
-    SensorIcons,
     ReceiveMessage,
     get_cameras_zones_and_objects,
     get_friendly_name,
@@ -23,20 +22,8 @@ from . import (
     get_frigate_entity_unique_id,
     get_zones,
 )
-from .const import (
-    ATTR_CONFIG,
-    ATTR_COORDINATOR,
-    DOMAIN,
-    FPS,
-    MS,
-    NAME,
-)
-from .icons import (
-    ICON_CORAL,
-    ICON_SERVER,
-    ICON_SPEEDOMETER,
-    get_icon_from_type,
-)
+from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
+from .icons import ICON_CORAL, ICON_SERVER, ICON_SPEEDOMETER, get_icon_from_type
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 

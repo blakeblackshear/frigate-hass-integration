@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from custom_components.frigate.icons import get_icon_from_switch
 
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components.switch import SwitchEntity
@@ -20,11 +19,8 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import (
-    ATTR_CONFIG,
-    DOMAIN,
-    NAME,
-)
+from .const import ATTR_CONFIG, DOMAIN, NAME
+from .icons import get_icon_from_switch
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -73,7 +69,8 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
-        self._icon = get_icon_from_switch(self._switch_name)uper().__init__(
+        self._icon = get_icon_from_switch(self._switch_name)
+        super().__init__(
             config_entry,
             frigate_config,
             {
