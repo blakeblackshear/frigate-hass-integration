@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, cast
+from custom_components.frigate.icons import get_dynamic_icon_from_type
 
 from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_MOTION,
@@ -134,6 +135,12 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
     def device_class(self) -> str:
         """Return the device class."""
         return cast(str, DEVICE_CLASS_OCCUPANCY)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return get_dynamic_icon_from_type(self._obj_name, self._is_on)
+
 
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
