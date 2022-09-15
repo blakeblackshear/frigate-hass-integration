@@ -1,7 +1,5 @@
 """Handles icons for different entity types."""
 
-from xmlrpc.client import Boolean
-
 ICON_BICYCLE = "mdi:bicycle"
 ICON_CAR = "mdi:car"
 ICON_CAT = "mdi:cat"
@@ -26,7 +24,7 @@ ICON_DEFAULT_OFF = "mdi:home-outline"
 ICON_DOG_OFF = "mdi:dog-side-off"
 
 
-def get_dynamic_icon_from_type(obj_type: str, is_on: Boolean) -> str:
+def get_dynamic_icon_from_type(obj_type: str, is_on: bool) -> str:
     """Get icon for a specific object type and current state."""
 
     if obj_type == "car":
