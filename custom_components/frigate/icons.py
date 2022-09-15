@@ -30,10 +30,7 @@ def get_dynamic_icon_from_type(obj_type: str, is_on: Boolean) -> str:
     """Get icon for a specific object type and current state."""
 
     if obj_type == "car":
-        if is_on:
-            return ICON_CAR
-
-        return ICON_CAR_OFF
+        return ICON_CAR if is_on else ICON_CAR_OFF
     if obj_type == "dog":
         if is_on:
             return ICON_DOG
