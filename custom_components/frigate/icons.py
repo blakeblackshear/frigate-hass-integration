@@ -36,10 +36,7 @@ def get_dynamic_icon_from_type(obj_type: str, is_on: Boolean) -> str:
             return ICON_DOG
 
         return ICON_DOG_OFF
-    if is_on:
-        return ICON_DEFAULT_ON
-
-    return ICON_DEFAULT_OFF
+        return ICON_DEFAULT_ON if is_on else ICON_DEFAULT_OFF
 
 
 def get_icon_from_switch(switch_type: str) -> str:
