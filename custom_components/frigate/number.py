@@ -23,13 +23,13 @@ from . import (
 from .const import (
     ATTR_CONFIG,
     DOMAIN,
-    ICON_SPEEDOMETER,
     MAX_CONTOUR_AREA,
     MAX_THRESHOLD,
     MIN_CONTOUR_AREA,
     MIN_THRESHOLD,
     NAME,
 )
+from .icons import ICON_SPEEDOMETER
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 

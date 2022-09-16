@@ -25,6 +25,7 @@ from . import (
     get_zones,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
+from .icons import get_dynamic_icon_from_type
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -134,6 +135,11 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
     def device_class(self) -> str:
         """Return the device class."""
         return cast(str, DEVICE_CLASS_OCCUPANCY)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return get_dynamic_icon_from_type(self._obj_name, self._is_on)
 
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]

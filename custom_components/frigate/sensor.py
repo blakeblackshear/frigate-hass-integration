@@ -22,26 +22,8 @@ from . import (
     get_frigate_entity_unique_id,
     get_zones,
 )
-from .const import (
-    ATTR_CONFIG,
-    ATTR_COORDINATOR,
-    DOMAIN,
-    FPS,
-    ICON_BICYCLE,
-    ICON_CAR,
-    ICON_CAT,
-    ICON_CORAL,
-    ICON_COW,
-    ICON_DOG,
-    ICON_HORSE,
-    ICON_MOTORCYCLE,
-    ICON_OTHER,
-    ICON_PERSON,
-    ICON_SERVER,
-    ICON_SPEEDOMETER,
-    MS,
-    NAME,
-)
+from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
+from .icons import ICON_CORAL, ICON_SERVER, ICON_SPEEDOMETER, get_icon_from_type
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -334,25 +316,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         self._obj_name = obj_name
         self._state = 0
         self._frigate_config = frigate_config
-
-        if self._obj_name == "person":
-            self._icon = ICON_PERSON
-        elif self._obj_name == "car":
-            self._icon = ICON_CAR
-        elif self._obj_name == "dog":
-            self._icon = ICON_DOG
-        elif self._obj_name == "cat":
-            self._icon = ICON_CAT
-        elif self._obj_name == "motorcycle":
-            self._icon = ICON_MOTORCYCLE
-        elif self._obj_name == "bicycle":
-            self._icon = ICON_BICYCLE
-        elif self._obj_name == "cow":
-            self._icon = ICON_COW
-        elif self._obj_name == "horse":
-            self._icon = ICON_HORSE
-        else:
-            self._icon = ICON_OTHER
+        self._icon = get_icon_from_type(self._obj_name)
 
         super().__init__(
             config_entry,

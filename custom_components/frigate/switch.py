@@ -19,15 +19,8 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import (
-    ATTR_CONFIG,
-    DOMAIN,
-    ICON_CONTRAST,
-    ICON_FILM_MULTIPLE,
-    ICON_IMAGE_MULTIPLE,
-    ICON_MOTION_SENSOR,
-    NAME,
-)
+from .const import ATTR_CONFIG, DOMAIN, NAME
+from .icons import get_icon_from_switch
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -76,16 +69,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         )
 
         self._attr_entity_registry_enabled_default = default_enabled
-
-        if self._switch_name == "snapshots":
-            self._icon = ICON_IMAGE_MULTIPLE
-        elif self._switch_name == "recordings":
-            self._icon = ICON_FILM_MULTIPLE
-        elif self._switch_name == "improve_contrast":
-            self._icon = ICON_CONTRAST
-        else:
-            self._icon = ICON_MOTION_SENSOR
-
+        self._icon = get_icon_from_switch(self._switch_name)
         super().__init__(
             config_entry,
             frigate_config,
