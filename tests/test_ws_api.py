@@ -18,6 +18,8 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 TEST_CAMERA = "front_door"
 TEST_EVENT_ID = "1656282822.206673-bovnfg"
+TEST_LABEL = "person"
+TEST_ZONE = "steps"
 
 
 async def test_retain_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
@@ -235,6 +237,154 @@ async def test_get_recordings_api_error(
             "type": "frigate/recordings/get",
         }
     )
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+
+async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving events successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    events_json = {
+        "id": 1,
+        "type": "frigate/events/get",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": TEST_CAMERA,
+        "label": TEST_LABEL,
+        "zone": TEST_ZONE,
+        "after": 1,
+        "before": 2,
+        "limit": 3,
+        "has_clip": True,
+        "has_snapshot": True,
+    }
+
+    events_success = {"events": "summary"}
+    mock_client.async_get_events = AsyncMock(return_value=events_success)
+    await ws_client.send_json(events_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_events.assert_called_with(
+        TEST_CAMERA, TEST_LABEL, TEST_ZONE, 1, 2, 3, True, True, decode_json=False
+    )
+    assert response["success"]
+    assert response["result"] == events_success
+
+
+async def test_get_events_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving events from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    events_json = {
+        "id": 1,
+        "type": "frigate/events/get",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+        "camera": TEST_CAMERA,
+    }
+
+    await ws_client.send_json(events_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_get_events_api_error(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving events when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    recording_json = {
+        "id": 1,
+        "type": "frigate/events/get",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": TEST_CAMERA,
+    }
+
+    mock_client.async_get_events = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(recording_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+
+async def test_get_events_summary_success(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving events summary successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    events_summary_json = {
+        "id": 1,
+        "type": "frigate/events/summary",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "has_clip": True,
+        "has_snapshot": True,
+    }
+
+    events_summary_success = {"events": "summary"}
+    mock_client.async_get_event_summary = AsyncMock(return_value=events_summary_success)
+    await ws_client.send_json(events_summary_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_event_summary.assert_called_with(
+        True, True, decode_json=False
+    )
+    assert response["success"]
+    assert response["result"] == events_summary_success
+
+
+async def test_get_events_summary_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving events summary from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    events_summary_json = {
+        "id": 1,
+        "type": "frigate/events/summary",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+    }
+
+    await ws_client.send_json(events_summary_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_get_events_summary_api_error(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving events summary when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    events_summary_json = {
+        "id": 1,
+        "type": "frigate/events/summary",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+    }
+
+    mock_client.async_get_event_summary = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(events_summary_json)
     response = await ws_client.receive_json()
     assert not response["success"]
     assert response["error"]["code"] == "frigate_error"

@@ -18,6 +18,8 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_retain_event)
     websocket_api.async_register_command(hass, ws_get_recordings)
     websocket_api.async_register_command(hass, ws_get_recordings_summary)
+    websocket_api.async_register_command(hass, ws_get_events)
+    websocket_api.async_register_command(hass, ws_get_events_summary)
 
 
 def _get_client_or_send_error(
@@ -135,4 +137,90 @@ async def ws_get_recordings_summary(
             "frigate_error",
             f"API error whilst retrieving recordings summary for camera "
             f"{msg['camera']} for Frigate instance {msg['instance_id']}",
+        )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "frigate/events/get",
+        vol.Required("instance_id"): str,
+        vol.Optional("camera"): str,
+        vol.Optional("label"): str,
+        vol.Optional("zone"): str,
+        vol.Optional("after"): int,
+        vol.Optional("before"): int,
+        vol.Optional("limit"): int,
+        vol.Optional("has_clip"): bool,
+        vol.Optional("has_snapshot"): bool,
+    }
+)  # type: ignore[misc]
+@websocket_api.async_response  # type: ignore[misc]
+async def ws_get_events(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Get events."""
+    client = _get_client_or_send_error(hass, msg["instance_id"], msg["id"], connection)
+    if not client:
+        return
+
+    try:
+        connection.send_result(
+            msg["id"],
+            await client.async_get_events(
+                msg.get("camera"),
+                msg.get("label"),
+                msg.get("zone"),
+                msg.get("after"),
+                msg.get("before"),
+                msg.get("limit"),
+                msg.get("has_clip"),
+                msg.get("has_snapshot"),
+                decode_json=False,
+            ),
+        )
+    except FrigateApiClientError:
+        connection.send_error(
+            msg["id"],
+            "frigate_error",
+            f"API error whilst retrieving events for camera "
+            f"{msg['camera']} for Frigate instance {msg['instance_id']}",
+        )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "frigate/events/summary",
+        vol.Required("instance_id"): str,
+        vol.Optional("has_clip"): bool,
+        vol.Optional("has_snapshot"): bool,
+    }
+)  # type: ignore[misc]
+@websocket_api.async_response  # type: ignore[misc]
+async def ws_get_events_summary(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Get events."""
+    client = _get_client_or_send_error(hass, msg["instance_id"], msg["id"], connection)
+    if not client:
+        return
+
+    try:
+        connection.send_result(
+            msg["id"],
+            await client.async_get_event_summary(
+                msg.get("has_clip"),
+                msg.get("has_snapshot"),
+                decode_json=False,
+            ),
+        )
+    except FrigateApiClientError:
+        connection.send_error(
+            msg["id"],
+            "frigate_error",
+            f"API error whilst retrieving events summary for Frigate instance "
+            f"{msg['instance_id']}",
         )

@@ -61,6 +61,7 @@ class FrigateApiClient:
         limit: int | None = None,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
@@ -84,6 +85,7 @@ class FrigateApiClient:
                     / "api/events"
                     % {k: v for k, v in params.items() if v is not None}
                 ),
+                decode_json=decode_json,
             ),
         )
 
@@ -91,6 +93,7 @@ class FrigateApiClient:
         self,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
@@ -107,6 +110,7 @@ class FrigateApiClient:
                     / "api/events/summary"
                     % {k: v for k, v in params.items() if v is not None}
                 ),
+                decode_json=decode_json,
             ),
         )
 
