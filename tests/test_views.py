@@ -160,6 +160,10 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/api/events/1635807359.123456-random/snapshot.jpg", handler),
             web.get("/live/front_door", ws_echo_handler),
             web.get("/live/querystring", ws_qs_echo_handler),
+            web.get(
+                "/api/front_door/start/1664067600.02/end/1664068200.03/clip.mp4",
+                handler,
+            ),
         ],
     )
 
@@ -312,6 +316,20 @@ async def test_snapshot_proxy_view_read_error(
     ):
         await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
         assert "Reverse proxy error" in caplog.text
+
+
+async def test_recordings_proxy_view(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test recordings proxy."""
+
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/recording/front_door/start/1664067600.02/end/1664068200.03"
+    )
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_notifications_proxy_view_thumbnail(
