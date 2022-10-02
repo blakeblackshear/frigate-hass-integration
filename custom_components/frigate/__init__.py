@@ -48,14 +48,7 @@ from .const import (
     STATUS_RUNNING,
     STATUS_STARTING,
 )
-from .views import (
-    JSMPEGProxyView,
-    NotificationsProxyView,
-    SnapshotsProxyView,
-    ThumbnailsProxyView,
-    VodProxyView,
-    VodSegmentProxyView,
-)
+from .views import async_setup as views_async_setup
 from .ws_api import async_setup as ws_api_async_setup
 
 SCAN_INTERVAL = timedelta(seconds=5)
@@ -171,14 +164,7 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     ws_api_async_setup(hass)
-
-    session = async_get_clientsession(hass)
-    hass.http.register_view(JSMPEGProxyView(session))
-    hass.http.register_view(NotificationsProxyView(session))
-    hass.http.register_view(SnapshotsProxyView(session))
-    hass.http.register_view(ThumbnailsProxyView(session))
-    hass.http.register_view(VodProxyView(session))
-    hass.http.register_view(VodSegmentProxyView(session))
+    views_async_setup(hass)
     return True
 
 
