@@ -130,7 +130,9 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         # The device_class is used to filter out regular camera entities
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
-        self._attr_is_streaming = self._camera_config.get("restream", {}).get("enabled") or self._camera_config.get("rtmp", {}).get("enabled")
+        self._attr_is_streaming = self._camera_config.get("restream", {}).get(
+            "enabled"
+        ) or self._camera_config.get("rtmp", {}).get("enabled")
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
@@ -155,7 +157,9 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
                     **self._camera_config
                 )
             else:
-                self._stream_source = f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
+                self._stream_source = (
+                    f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
+                )
 
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
