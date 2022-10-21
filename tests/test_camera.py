@@ -321,8 +321,10 @@ async def test_camera_option_stream_url_template(
     config_entry = create_mock_frigate_config_entry(
         hass, options={CONF_RTMP_URL_TEMPLATE: ("rtmp://localhost/{{ name }}")}
     )
-    
-    await setup_mock_frigate_config_entry(hass, client=client, config_entry=config_entry)
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
