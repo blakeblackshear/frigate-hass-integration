@@ -310,7 +310,28 @@ async def test_camera_unique_id(
     assert registry_entry.unique_id == unique_id
 
 
-async def test_camera_option_stream_url_template(
+async def test_camera_option_rtsp_stream_url_template(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify camera with the RTSP URL template option."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["cameras"]["front_door"]["restream"]["enabled"] = True
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_RTMP_URL_TEMPLATE: ("rtsp://localhost/{{ name }}")}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert source
+    assert source == "rtsp://localhost/front_door"
+
+
+async def test_camera_option_rtmp_stream_url_template(
     aiohttp_server: Any, hass: HomeAssistant
 ) -> None:
     """Verify camera with the RTMP URL template option."""
