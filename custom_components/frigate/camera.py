@@ -36,6 +36,7 @@ from .const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     CONF_RTMP_URL_TEMPLATE,
+    CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
@@ -142,7 +143,23 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         )
 
         if self._camera_config.get("restream", {}).get("enabled"):
-            self._stream_source = f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
+            streaming_template = config_entry.options.get(
+                CONF_RTSP_URL_TEMPLATE, ""
+            ).strip()
+
+            if streaming_template:
+                # Can't use homeassistant.helpers.template as it requires hass which
+                # is not available in the constructor, so use direct jinja2
+                # template instead. This means templates cannot access HomeAssistant
+                # state, but rather only the camera config.
+                self._stream_source = Template(streaming_template).render(
+                    **self._camera_config
+                )
+            else:
+                self._stream_source = (
+                    f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
+                )
+
         else:
             streaming_template = config_entry.options.get(
                 CONF_RTMP_URL_TEMPLATE, ""
