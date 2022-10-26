@@ -13,6 +13,7 @@ from custom_components.frigate.const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     CONF_RTMP_URL_TEMPLATE,
+    CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
     NAME,
     SERVICE_FAVORITE_EVENT,
@@ -319,7 +320,7 @@ async def test_camera_option_rtsp_stream_url_template(
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     config_entry = create_mock_frigate_config_entry(
-        hass, options={CONF_RTMP_URL_TEMPLATE: ("rtsp://localhost/{{ name }}")}
+        hass, options={CONF_RTSP_URL_TEMPLATE: ("rtsp://localhost/{{ name }}")}
     )
 
     await setup_mock_frigate_config_entry(
