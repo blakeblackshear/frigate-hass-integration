@@ -484,49 +484,6 @@ class JSMPEGProxyView(WebsocketProxyView):
         return f"live/jsmpeg/{kwargs['path']}"
 
 
-def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
-    """Create initial header."""
-    headers = {}
-
-    # filter flags
-    for name, value in request.headers.items():
-        if name in (
-            hdrs.CONTENT_LENGTH,
-            hdrs.CONTENT_ENCODING,
-            hdrs.SEC_WEBSOCKET_EXTENSIONS,
-            hdrs.SEC_WEBSOCKET_PROTOCOL,
-            hdrs.SEC_WEBSOCKET_VERSION,
-            hdrs.SEC_WEBSOCKET_KEY,
-            hdrs.HOST,
-        ):
-            continue
-        headers[name] = value
-
-    # Set X-Forwarded-For
-    forward_for = request.headers.get(hdrs.X_FORWARDED_FOR)
-    assert request.transport
-    connected_ip = ip_address(request.transport.get_extra_info("peername")[0])
-    if forward_for:
-        forward_for = f"{forward_for}, {connected_ip!s}"
-    else:
-        forward_for = f"{connected_ip!s}"
-    headers[hdrs.X_FORWARDED_FOR] = forward_for
-
-    # Set X-Forwarded-Host
-    forward_host = request.headers.get(hdrs.X_FORWARDED_HOST)
-    if not forward_host:
-        forward_host = request.host
-    headers[hdrs.X_FORWARDED_HOST] = forward_host
-
-    # Set X-Forwarded-Proto
-    forward_proto = request.headers.get(hdrs.X_FORWARDED_PROTO)
-    if not forward_proto:
-        forward_proto = request.url.scheme
-    headers[hdrs.X_FORWARDED_PROTO] = forward_proto
-
-    return headers
-
-
 class MSEProxyView(WebsocketProxyView):
     """A proxy for MSE websocket."""
 
@@ -538,49 +495,6 @@ class MSEProxyView(WebsocketProxyView):
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
         return f"live/mse/{kwargs['path']}"
-
-
-def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
-    """Create initial header."""
-    headers = {}
-
-    # filter flags
-    for name, value in request.headers.items():
-        if name in (
-            hdrs.CONTENT_LENGTH,
-            hdrs.CONTENT_ENCODING,
-            hdrs.SEC_WEBSOCKET_EXTENSIONS,
-            hdrs.SEC_WEBSOCKET_PROTOCOL,
-            hdrs.SEC_WEBSOCKET_VERSION,
-            hdrs.SEC_WEBSOCKET_KEY,
-            hdrs.HOST,
-        ):
-            continue
-        headers[name] = value
-
-    # Set X-Forwarded-For
-    forward_for = request.headers.get(hdrs.X_FORWARDED_FOR)
-    assert request.transport
-    connected_ip = ip_address(request.transport.get_extra_info("peername")[0])
-    if forward_for:
-        forward_for = f"{forward_for}, {connected_ip!s}"
-    else:
-        forward_for = f"{connected_ip!s}"
-    headers[hdrs.X_FORWARDED_FOR] = forward_for
-
-    # Set X-Forwarded-Host
-    forward_host = request.headers.get(hdrs.X_FORWARDED_HOST)
-    if not forward_host:
-        forward_host = request.host
-    headers[hdrs.X_FORWARDED_HOST] = forward_host
-
-    # Set X-Forwarded-Proto
-    forward_proto = request.headers.get(hdrs.X_FORWARDED_PROTO)
-    if not forward_proto:
-        forward_proto = request.url.scheme
-    headers[hdrs.X_FORWARDED_PROTO] = forward_proto
-
-    return headers
 
 
 class WebRTCProxyView(WebsocketProxyView):
