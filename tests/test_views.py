@@ -755,7 +755,7 @@ async def test_jsmpeg_text_binary(
     authenticated_hass_client = await hass_client()
 
     async with authenticated_hass_client.ws_connect(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/front_door"
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
     ) as ws:
         # Test sending text data.
         result = await asyncio.gather(
@@ -784,7 +784,7 @@ async def test_jsmpeg_frame_type_ping_pong(
     authenticated_hass_client = await hass_client()
 
     async with authenticated_hass_client.ws_connect(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/front_door"
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
     ) as ws:
         await ws.ping()
 
@@ -806,7 +806,7 @@ async def test_ws_proxy_specify_protocol(
     authenticated_hass_client = await hass_client()
 
     ws = await authenticated_hass_client.ws_connect(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/front_door",
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door",
         headers={hdrs.SEC_WEBSOCKET_PROTOCOL: "foo,bar"},
     )
     assert ws
@@ -822,7 +822,7 @@ async def test_ws_proxy_query_string(
     authenticated_hass_client = await hass_client()
 
     async with authenticated_hass_client.ws_connect(
-        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/querystring?key=value",
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/querystring?key=value",
     ) as ws:
         result = await asyncio.gather(
             ws.send_str("hello!"),
@@ -860,7 +860,7 @@ async def test_jsmpeg_connection_reset(
         new=send_str,
     ):
         async with authenticated_hass_client.ws_connect(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/front_door"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         ) as ws:
             await ws.send_str("data")
 
@@ -874,7 +874,7 @@ async def test_ws_proxy_bad_instance_id(
     authenticated_hass_client = await hass_client()
 
     resp = await authenticated_hass_client.get(
-        "/api/frigate/NOT_A_REAL_ID/live/jsmpeg/front_door"
+        "/api/frigate/NOT_A_REAL_ID/jsmpeg/front_door"
     )
     assert resp.status == HTTPStatus.BAD_REQUEST
 
@@ -898,7 +898,7 @@ async def test_ws_proxy_forbidden(
         return_value=False,
     ):
         resp = await authenticated_hass_client.get(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/front_door"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
         assert resp.status == HTTPStatus.FORBIDDEN
 
@@ -920,6 +920,6 @@ async def test_ws_proxy_missing_path(
         return_value=None,
     ):
         resp = await authenticated_hass_client.get(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/live/jsmpeg/front_door"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
         )
         assert resp.status == HTTPStatus.NOT_FOUND
