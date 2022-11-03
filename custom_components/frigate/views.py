@@ -101,6 +101,8 @@ def async_setup(hass: HomeAssistant) -> None:
     """Set up the views."""
     session = async_get_clientsession(hass)
     hass.http.register_view(JSMPEGProxyView(session))
+    hass.http.register_view(MSEProxyView(session))
+    hass.http.register_view(WebRTCProxyView(session))
     hass.http.register_view(NotificationsProxyView(session))
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(RecordingProxyView(session))
@@ -479,7 +481,7 @@ class JSMPEGProxyView(WebsocketProxyView):
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
-        return f"jsmpeg/{kwargs['path']}"
+        return f"live/jsmpeg/{kwargs['path']}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
@@ -535,7 +537,7 @@ class MSEProxyView(WebsocketProxyView):
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
-        return f"mse/{kwargs['path']}"
+        return f"live/mse/{kwargs['path']}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
@@ -591,7 +593,7 @@ class WebRTCProxyView(WebsocketProxyView):
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
-        return f"webrtc/{kwargs['path']}"
+        return f"live/webrtc/{kwargs['path']}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
