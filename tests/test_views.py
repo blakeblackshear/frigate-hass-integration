@@ -918,6 +918,7 @@ async def test_mse_connection_reset(
         ) as ws:
             await ws.send_str("data")
 
+
 async def test_webrtc_text_binary(
     local_frigate: Any,
     hass: Any,
