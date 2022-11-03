@@ -474,8 +474,8 @@ class WebsocketProxyView(ProxyView):
 class JSMPEGProxyView(WebsocketProxyView):
     """A proxy for JSMPEG websocket."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/live/jsmpeg/{path:.+}"
-    extra_urls = ["/api/frigate/live/jsmpeg/{path:.+}"]
+    url = "/api/frigate/{frigate_instance_id:.+}/jsmpeg/{path:.+}"
+    extra_urls = ["/api/frigate/jsmpeg/{path:.+}"]
 
     name = "api:frigate:jsmpeg"
 
@@ -530,8 +530,8 @@ def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
 class MSEProxyView(WebsocketProxyView):
     """A proxy for MSE websocket."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/live/mse/{path:.+}"
-    extra_urls = ["/api/frigate/live/mse/{path:.+}"]
+    url = "/api/frigate/{frigate_instance_id:.+}/mse/{path:.+}"
+    extra_urls = ["/api/frigate/mse/{path:.+}"]
 
     name = "api:frigate:mse"
 
@@ -586,8 +586,8 @@ def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
 class WebRTCProxyView(WebsocketProxyView):
     """A proxy for WebRTC websocket."""
 
-    url = "/api/frigate/{frigate_instance_id:.+}/live/webrtc/{path:.+}"
-    extra_urls = ["/api/frigate/live/webrtc/{path:.+}"]
+    url = "/api/frigate/{frigate_instance_id:.+}/webrtc/{path:.+}"
+    extra_urls = ["/api/frigate/webrtc/{path:.+}"]
 
     name = "api:frigate:webrtc"
 
