@@ -101,6 +101,8 @@ def async_setup(hass: HomeAssistant) -> None:
     """Set up the views."""
     session = async_get_clientsession(hass)
     hass.http.register_view(JSMPEGProxyView(session))
+    hass.http.register_view(MSEProxyView(session))
+    hass.http.register_view(WebRTCProxyView(session))
     hass.http.register_view(NotificationsProxyView(session))
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(RecordingProxyView(session))
@@ -479,7 +481,33 @@ class JSMPEGProxyView(WebsocketProxyView):
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
-        return f"live/{kwargs['path']}"
+        return f"live/jsmpeg/{kwargs['path']}"
+
+
+class MSEProxyView(WebsocketProxyView):
+    """A proxy for MSE websocket."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/mse/{path:.+}"
+    extra_urls = ["/api/frigate/mse/{path:.+}"]
+
+    name = "api:frigate:mse"
+
+    def _create_path(self, **kwargs: Any) -> str | None:
+        """Create path."""
+        return f"live/mse/{kwargs['path']}"
+
+
+class WebRTCProxyView(WebsocketProxyView):
+    """A proxy for WebRTC websocket."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/webrtc/{path:.+}"
+    extra_urls = ["/api/frigate/webrtc/{path:.+}"]
+
+    name = "api:frigate:webrtc"
+
+    def _create_path(self, **kwargs: Any) -> str | None:
+        """Create path."""
+        return f"live/webrtc/{kwargs['path']}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
