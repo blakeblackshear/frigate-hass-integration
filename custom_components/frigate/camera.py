@@ -143,6 +143,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         )
 
         if self._camera_config.get("restream", {}).get("enabled"):
+            self._restream_type = "rtsp"
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -160,7 +161,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
                     f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
                 )
 
-        else:
+        elif self._camera_config.get("rtmp", {}).get("enabled"):
+            self._restream_type = "rtmp"
             streaming_template = config_entry.options.get(
                 CONF_RTMP_URL_TEMPLATE, ""
             ).strip()
@@ -177,6 +179,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
                 self._stream_source = (
                     f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
                 )
+        else:
+            self._restream_type = "none"
 
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
@@ -211,6 +215,13 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             "model": self._get_model(),
             "configuration_url": f"{self._url}/cameras/{self._cam_name}",
             "manufacturer": NAME,
+        }
+
+    @property
+    def extra_state_attributes(self):
+        """Return entity specific state attributes."""
+        return {
+            "restream_type": self._restream_type,
         }
 
     @property
