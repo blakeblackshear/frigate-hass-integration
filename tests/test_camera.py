@@ -56,6 +56,7 @@ async def test_frigate_camera_setup_rtsp(
     assert entity_state
     assert entity_state.state == "streaming"
     assert entity_state.attributes["supported_features"] == 2
+    assert entity_state.attributes["restream_type"] == "rtsp"
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
@@ -87,6 +88,7 @@ async def test_frigate_camera_setup_rtmp(
     assert entity_state
     assert entity_state.state == "streaming"
     assert entity_state.attributes["supported_features"] == 2
+    assert entity_state.attributes["restream_type"] == "rtmp"
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
@@ -145,6 +147,7 @@ async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "idle"
     assert not entity_state.attributes["supported_features"]
+    assert entity_state.attributes["restream_type"] == "none"
 
     assert not await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
 
