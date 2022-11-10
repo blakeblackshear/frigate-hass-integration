@@ -218,7 +218,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         }
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, str]:
         """Return entity specific state attributes."""
         return {
             "restream_type": self._restream_type,
