@@ -522,7 +522,7 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
             )
             pid = str(self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1"))
             data = (
-                self.coordinator.data.get("cpu_usages", {}).get(pid, {}).get("cpu", -2)
+                self.coordinator.data.get("cpu_usages", {}).get(pid, {}).get("cpu", None)
             )
 
             try:
