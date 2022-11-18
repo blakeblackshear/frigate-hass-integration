@@ -16,6 +16,7 @@ from . import (
     FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
+    get_cameras,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -47,6 +48,11 @@ async def async_setup_entry(
             # Temperature is only supported on PCIe Coral.
             for name in value.get("temperatures", {}):
                 entities.append(DeviceTempSensor(coordinator, entry, name))
+        elif key == "cpu_usages":
+            for camera in get_cameras(entry):
+                entities.append(CameraProcessCpuSensor(coordinator, entry, camera, 'capture'))
+                entities.append(CameraProcessCpuSensor(coordinator, entry, camera, 'detect'))
+                entities.append(CameraProcessCpuSensor(coordinator, entry, camera, 'ffmpeg'))
         else:
             entities.extend(
                 [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
@@ -446,6 +452,78 @@ class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
         return TEMP_CELSIUS
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_CORAL
+
+
+class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+    """Cpu usage for camera processes class."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: FrigateDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        cam_name: str,
+        process_type: str,
+    ) -> None:
+        """Construct a CoralTempSensor."""
+        self._cam_name = cam_name
+        self._process_type = process_type
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._attr_entity_registry_enabled_default = False
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, f"${self._process_type}_cpu_usage", self._cam_name
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{get_friendly_name(self._cam_name)} ${self._process_type} cpu usage"
+
+    @property
+    def state(self) -> float | None:
+        """Return the state of the sensor."""
+        if self.coordinator.data:
+            
+            data = (
+                self.coordinator.data.get("cpu_usages", {})
+                .get(self.coordinator.data.get(self._cam_name, {})
+                .get(f"${self._process_type}_pid", -1), -1)
+            )
+            try:
+                return float(data)
+            except (TypeError, ValueError):
+                pass
+        return None
+
+    @property
+    def unit_of_measurement(self) -> Any:
+        """Return the unit of measurement of the sensor."""
+        return '%'
 
     @property
     def icon(self) -> str:
