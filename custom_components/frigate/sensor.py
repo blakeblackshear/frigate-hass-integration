@@ -35,6 +35,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Sensor entry setup."""
+    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
     entities = []
@@ -49,7 +50,7 @@ async def async_setup_entry(
             for name in value.get("temperatures", {}):
                 entities.append(DeviceTempSensor(coordinator, entry, name))
         elif key == "cpu_usages":
-            for camera in get_cameras(entry):
+            for camera in get_cameras(frigate_config):
                 entities.append(
                     CameraProcessCpuSensor(coordinator, entry, camera, "capture")
                 )
@@ -489,7 +490,7 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
             self._config_entry.entry_id,
-            f"${self._process_type}_cpu_usage",
+            f"{self._process_type}_cpu_usage",
             self._cam_name,
         )
 
@@ -510,19 +511,16 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._cam_name)} ${self._process_type} cpu usage"
+        return f"{self._process_type} cpu usage"
 
     @property
     def state(self) -> float | None:
         """Return the state of the sensor."""
         if self.coordinator.data:
+            pid_key = 'pid' if self._process_type == 'detect' else f"{self._process_type}_pid"
+            pid = str(self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1"))
+            data = self.coordinator.data.get("cpu_usages", {}).get(pid, {}).get('cpu', -2)
 
-            data = self.coordinator.data.get("cpu_usages", {}).get(
-                self.coordinator.data.get(self._cam_name, {}).get(
-                    f"${self._process_type}_pid", -1
-                ),
-                -1,
-            )
             try:
                 return float(data)
             except (TypeError, ValueError):
