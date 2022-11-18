@@ -50,7 +50,10 @@ TEST_SENSOR_DETECTION_FPS_ENTITY_ID = "sensor.frigate_detection_fps"
 TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID = "sensor.frigate_cpu1_inference_speed"
 TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID = "sensor.frigate_cpu2_inference_speed"
 TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID = "sensor.front_door_camera_fps"
+TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE = "sensor.front_door_capture_cpu_usage"
+TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE = "sensor.front_door_detect_cpu_usage"
 TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID = "sensor.front_door_detection_fps"
+TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE = "sensor.front_door_ffmpeg_cpu_usage"
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
@@ -161,6 +164,7 @@ TEST_STATS = {
         "capture_pid": 53,
         "detection_fps": 6.0,
         "pid": 52,
+        "ffmpeg_pid": 54,
         "process_fps": 4.0,
         "skipped_fps": 0.0,
     },
@@ -195,6 +199,11 @@ TEST_STATS = {
         "version": "0.8.4-09a4d6d",
         "latest_version": "0.10.1",
         "temperatures": {"apex_0": 50.0},
+        "cpu_usages": {
+            "52": {"cpu": 5.0, "mem": 1.0},
+            "53": {"cpu": 3.0, "mem": 2.0},
+            "54": {"cpu": 15.0, "mem": 4.0},
+        },
     },
 }
 TEST_EVENT_SUMMARY = [

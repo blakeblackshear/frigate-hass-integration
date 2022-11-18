@@ -517,9 +517,13 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
     def state(self) -> float | None:
         """Return the state of the sensor."""
         if self.coordinator.data:
-            pid_key = 'pid' if self._process_type == 'detect' else f"{self._process_type}_pid"
+            pid_key = (
+                "pid" if self._process_type == "detect" else f"{self._process_type}_pid"
+            )
             pid = str(self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1"))
-            data = self.coordinator.data.get("cpu_usages", {}).get(pid, {}).get('cpu', -2)
+            data = (
+                self.coordinator.data.get("cpu_usages", {}).get(pid, {}).get("cpu", -2)
+            )
 
             try:
                 return float(data)
