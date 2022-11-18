@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL, TEMP_CELSIUS
+from homeassistant.const import CONF_URL, TEMP_CELSIUS, PERCENTAGE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -534,7 +534,7 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
     @property
     def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
-        return "%"
+        return PERCENTAGE
 
     @property
     def icon(self) -> str:
