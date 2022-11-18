@@ -435,6 +435,27 @@ async def test_camera_cpu_usage_sensor(hass: HomeAssistant) -> None:
     assert entity_state.attributes["icon"] == ICON_CORAL
     assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
 
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["cpu_usages"]["52"] = {"cpu": None, "mem": None}
+    stats["cpu_usages"]["53"] = {"cpu": None, "mem": None}
+    stats["cpu_usages"]["54"] = {"cpu": None, "mem": None}
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
 
 @pytest.mark.parametrize(
     "entityid_to_uniqueid",
