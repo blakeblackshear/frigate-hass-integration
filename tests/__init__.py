@@ -199,11 +199,11 @@ TEST_STATS = {
         "version": "0.8.4-09a4d6d",
         "latest_version": "0.10.1",
         "temperatures": {"apex_0": 50.0},
-        "cpu_usages": {
-            "52": {"cpu": 5.0, "mem": 1.0},
-            "53": {"cpu": 3.0, "mem": 2.0},
-            "54": {"cpu": 15.0, "mem": 4.0},
-        },
+    },
+    "cpu_usages": {
+        "52": {"cpu": 5.0, "mem": 1.0},
+        "53": {"cpu": 3.0, "mem": 2.0},
+        "54": {"cpu": 15.0, "mem": 4.0},
     },
 }
 TEST_EVENT_SUMMARY = [
