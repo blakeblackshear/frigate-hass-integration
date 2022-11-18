@@ -50,9 +50,15 @@ async def async_setup_entry(
                 entities.append(DeviceTempSensor(coordinator, entry, name))
         elif key == "cpu_usages":
             for camera in get_cameras(entry):
-                entities.append(CameraProcessCpuSensor(coordinator, entry, camera, 'capture'))
-                entities.append(CameraProcessCpuSensor(coordinator, entry, camera, 'detect'))
-                entities.append(CameraProcessCpuSensor(coordinator, entry, camera, 'ffmpeg'))
+                entities.append(
+                    CameraProcessCpuSensor(coordinator, entry, camera, "capture")
+                )
+                entities.append(
+                    CameraProcessCpuSensor(coordinator, entry, camera, "detect")
+                )
+                entities.append(
+                    CameraProcessCpuSensor(coordinator, entry, camera, "ffmpeg")
+                )
         else:
             entities.extend(
                 [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
@@ -482,7 +488,9 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
-            self._config_entry.entry_id, f"${self._process_type}_cpu_usage", self._cam_name
+            self._config_entry.entry_id,
+            f"${self._process_type}_cpu_usage",
+            self._cam_name,
         )
 
     @property
@@ -508,11 +516,12 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
     def state(self) -> float | None:
         """Return the state of the sensor."""
         if self.coordinator.data:
-            
-            data = (
-                self.coordinator.data.get("cpu_usages", {})
-                .get(self.coordinator.data.get(self._cam_name, {})
-                .get(f"${self._process_type}_pid", -1), -1)
+
+            data = self.coordinator.data.get("cpu_usages", {}).get(
+                self.coordinator.data.get(self._cam_name, {}).get(
+                    f"${self._process_type}_pid", -1
+                ),
+                -1,
             )
             try:
                 return float(data)
@@ -523,7 +532,7 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
     @property
     def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
-        return '%'
+        return "%"
 
     @property
     def icon(self) -> str:
