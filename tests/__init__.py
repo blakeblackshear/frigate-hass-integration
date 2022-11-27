@@ -76,7 +76,7 @@ TEST_CONFIG = {
             "ffmpeg_cmds": [
                 {
                     "cmd": "ffmpeg -hide_banner -loglevel warning -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -stimeout 5000000 -use_wallclock_as_timestamps 1 -i rtsp://rtsp:password@cam-front-door/live -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy -an /tmp/cache/front_door-%Y%m%d%H%M%S.mp4 -c copy -f flv rtmp://127.0.0.1/live/front_door -r 4 -f rawvideo -pix_fmt yuv420p pipe:",
-                    "roles": ["detect", "rtmp", "clips"],
+                    "roles": ["detect", "rtmp", "restream", "clips"],
                 }
             ],
             "fps": 4,
@@ -114,6 +114,7 @@ TEST_CONFIG = {
             },
             "record": {"enabled": False, "retain_days": 30},
             "rtmp": {"enabled": True},
+            "restream": {"enabled": True},
             "snapshots": {
                 "bounding_box": False,
                 "crop": False,
