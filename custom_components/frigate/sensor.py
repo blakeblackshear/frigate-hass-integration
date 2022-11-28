@@ -45,7 +45,7 @@ async def async_setup_entry(
         elif key == "detectors":
             for name in value.keys():
                 entities.append(DetectorSpeedSensor(coordinator, entry, name))
-        elif key == "gpus":
+        elif key == "gpu_usages":
             for name in value.keys():
                 entities.append(GpuLoadSensor(coordinator, entry, name))
         elif key == "service":
@@ -256,16 +256,17 @@ class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         gpu_name: str,
     ) -> None:
         """Construct a GpuLoadSensor."""
+        self._gpu_name = gpu_name
+        self._attr_name = f"{get_friendly_name(self._gpu_name)} gpu load"
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
-        self._gpu_name = gpu_name
         self._attr_entity_registry_enabled_default = False
 
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
-            self._config_entry.entry_id, "sensor_gpu_load", self._detector_name
+            self._config_entry.entry_id, "gpu_load", self._gpu_name
         )
 
     @property
@@ -280,16 +281,11 @@ class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._detector_name)} gpu load"
-
-    @property
     def state(self) -> float | None:
         """Return the state of the sensor."""
         if self.coordinator.data:
             data = (
-                self.coordinator.data.get("gpus", {})
+                self.coordinator.data.get("gpu_usages", {})
                 .get(self._gpu_name, {})
                 .get("gpu_usage")
             )
