@@ -481,6 +481,7 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
         """Construct a CoralTempSensor."""
         self._cam_name = cam_name
         self._process_type = process_type
+        self._attr_name = f"{self._process_type} cpu usage"
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
@@ -507,11 +508,6 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
             "manufacturer": NAME,
         }
-
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{self._process_type} cpu usage"
 
     @property
     def state(self) -> float | None:
