@@ -29,7 +29,7 @@ from custom_components.frigate.icons import (
     ICON_SERVER,
     ICON_SPEEDOMETER,
 )
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
@@ -44,7 +44,10 @@ from . import (
     TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
+    TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
@@ -405,6 +408,55 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state.state == "unknown"
 
 
+async def test_camera_cpu_usage_sensor(hass: HomeAssistant) -> None:
+    """Test CameraProcessCpuSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "3.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "5.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "15.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["cpu_usages"]["52"] = {"cpu": None, "mem": None}
+    stats["cpu_usages"]["53"] = {"cpu": None, "mem": None}
+    stats["cpu_usages"]["54"] = {"cpu": None, "mem": None}
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
 @pytest.mark.parametrize(
     "entityid_to_uniqueid",
     [
@@ -468,7 +520,10 @@ async def test_sensors_setup_correctly_in_registry(
         entities_disabled={
             TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
+            TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
             TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
             TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
             TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
