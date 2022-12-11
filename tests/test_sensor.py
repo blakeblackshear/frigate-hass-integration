@@ -29,7 +29,7 @@ from custom_components.frigate.icons import (
     ICON_SERVER,
     ICON_SPEEDOMETER,
 )
-from homeassistant.const import TEMP_CELSIUS, PERCENTAGE
+from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
@@ -43,9 +43,9 @@ from . import (
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
-    TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
