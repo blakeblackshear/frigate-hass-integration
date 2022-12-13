@@ -474,7 +474,7 @@ async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
-    stats["gpu_usages"]["Nvidia GeForce RTX 3050"] = {"gpu": None, "mem": None}
+    stats["gpu_usages"]["Nvidia GeForce RTX 3050"] = {"gpu": "-", "mem": "-"}
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
