@@ -287,11 +287,11 @@ class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
             data = (
                 self.coordinator.data.get("gpu_usages", {})
                 .get(self._gpu_name, {})
-                .get("gpu_usage")
+                .get("gpu")
             )
             if data is not None:
                 try:
-                    return float(data.replace("%", ""))
+                    return float(data.replace("%", "").strip())
                 except ValueError:
                     pass
         return None
