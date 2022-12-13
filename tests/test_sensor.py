@@ -467,7 +467,7 @@ async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_SENSOR_GPU_LOAD_ENTITY_ID)
     assert entity_state
-    assert entity_state.state == "19"
+    assert entity_state.state == "19.0"
     assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
     assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
 
