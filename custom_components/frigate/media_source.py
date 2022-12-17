@@ -449,10 +449,16 @@ class RecordingIdentifier(Identifier):
                     hour=cls._get_index(parts, 4),
                     camera=cls._get_index(parts, 5),
                 )
-            
+
             ymd_parts = str(cls._get_index(parts, 2)).split("-")
             hour = cls._get_index(parts, 3)
-            time = dt.datetime(int(ymd_parts[0]), int(ymd_parts[1]), int(ymd_parts[2]), int(hour), tzinfo=dt.timezone.utc).astimezone()
+            time = dt.datetime(
+                int(ymd_parts[0]),
+                int(ymd_parts[1]),
+                int(ymd_parts[2]),
+                int(hour),
+                tzinfo=dt.timezone.utc,
+            ).astimezone()
             return cls(
                 frigate_instance_id=parts[0],
                 year_month=f"{time.year}_{time.month}",
