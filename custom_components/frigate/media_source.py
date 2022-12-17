@@ -437,7 +437,8 @@ class RecordingIdentifier(Identifier):
         if len(parts) < 2 or parts[1] != cls.get_identifier_type():
             return None
 
-        tz = "LOCAL" if len(parts) == 6 else "UTC"
+        print(f"The parts are {parts}")
+        tz = "UTC" if (len(parts) == 6 and str(parts[2]).count("-") == 2) else "LOCAL"
 
         # TODO probably a better way to do this using Frigate APIs with recordings info
         try:
@@ -461,7 +462,7 @@ class RecordingIdentifier(Identifier):
             ).astimezone()
             return cls(
                 frigate_instance_id=parts[0],
-                year_month=f"{time.year}_{time.month}",
+                year_month=f"{time.year}-{time.month}",
                 day=time.day,
                 hour=time.hour,
                 camera=cls._get_index(parts, 4),
