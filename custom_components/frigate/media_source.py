@@ -462,7 +462,7 @@ class RecordingIdentifier(Identifier):
             ).astimezone()
             return cls(
                 frigate_instance_id=parts[0],
-                year_month=f"{time.year}-{time.month}",
+                year_month=time.strftime("%yyyy-%mm"),
                 day=time.day,
                 hour=time.hour,
                 camera=cls._get_index(parts, 4),
