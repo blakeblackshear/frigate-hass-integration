@@ -463,8 +463,8 @@ class RecordingIdentifier(Identifier):
             return cls(
                 frigate_instance_id=parts[0],
                 year_month=time.strftime("%Y-%m"),
-                day=time.day,
-                hour=time.hour,
+                day=str(time.day),
+                hour=str(time.hour),
                 camera=cls._get_index(parts, 4),
             )
         except ValueError:
