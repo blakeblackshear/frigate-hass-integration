@@ -42,6 +42,7 @@ TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID = "switch.front_door_recordings"
 TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID = "switch.front_door_improve_contrast"
 
 TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID = "sensor.frigate_apex_0_temperature"
+TEST_SENSOR_GPU_LOAD_ENTITY_ID = "sensor.frigate_nvidia_geforce_rtx_3050_gpu_load"
 TEST_SENSOR_STEPS_ALL_ENTITY_ID = "sensor.steps_all_count"
 TEST_SENSOR_STEPS_PERSON_ENTITY_ID = "sensor.steps_person_count"
 TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID = "sensor.front_door_all_count"
@@ -204,6 +205,12 @@ TEST_STATS = {
         "52": {"cpu": 5.0, "mem": 1.0},
         "53": {"cpu": 3.0, "mem": 2.0},
         "54": {"cpu": 15.0, "mem": 4.0},
+    },
+    "gpu_usages": {
+        "Nvidia GeForce RTX 3050": {
+            "gpu": "19 %",
+            "mem": "57.0 %",
+        }
     },
 }
 TEST_EVENT_SUMMARY = [
