@@ -444,7 +444,7 @@ class RecordingIdentifier(Identifier):
         # and both need to be handled for backwards compatibility.
         # TODO probably a better way to do this using Frigate APIs with recordings info
 
-        tz = "UTC" 
+        tz = "UTC"
         try:
             ymd_parts = dt.datetime.strptime(parts[2], "%Y-%m-%d")
         except (IndexError, ValueError):
