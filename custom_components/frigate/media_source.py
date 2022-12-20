@@ -442,7 +442,6 @@ class RecordingIdentifier(Identifier):
         # 0.12+ the recordings are now stored in UTC time. In order to avoid a
         # breaking change the folder format converted to /recordings/%Y-%m-%d/%h
         # and both need to be handled for backwards compatibility.
-        # TODO probably a better way to do this using Frigate APIs with recordings info
 
         tz = "UTC"
         try:
