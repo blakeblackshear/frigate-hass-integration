@@ -447,7 +447,7 @@ class RecordingIdentifier(Identifier):
         tz = "UTC" 
         try:
             ymd_parts = dt.datetime.strptime(parts[2], "%Y-%m-%d")
-        except (IndexError, ValueError) as error:
+        except (IndexError, ValueError):
             tz = "LOCAL"
 
         try:
