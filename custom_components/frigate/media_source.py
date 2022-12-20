@@ -437,10 +437,19 @@ class RecordingIdentifier(Identifier):
         if len(parts) < 2 or parts[1] != cls.get_identifier_type():
             return None
 
-        print(f"The parts are {parts}")
-        tz = "UTC" if (len(parts) == 6 and str(parts[2]).count("-") == 2) else "LOCAL"
-
+        # NOTE: In Frigate 0.11.1 and previous versions, recordings were stored in
+        # a folder format /recordings/%Y-%m/%d/%h in local server time. In frigate
+        # 0.12+ the recordings are now stored in UTC time. In order to avoid a
+        # breaking change the folder format converted to /recordings/%Y-%m-%d/%h
+        # and both need to be handled for backwards compatibility.
         # TODO probably a better way to do this using Frigate APIs with recordings info
+
+        tz = "UTC" 
+        try:
+            dt.datetime.strptime(parts[2], "%Y-%m-%d")
+        except ValueError:
+            tz = "LOCAL"
+
         try:
             if tz == "LOCAL":
                 return cls(
