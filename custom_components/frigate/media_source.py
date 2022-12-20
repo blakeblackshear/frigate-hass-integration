@@ -446,8 +446,8 @@ class RecordingIdentifier(Identifier):
 
         tz = "UTC" 
         try:
-            dt.datetime.strptime(parts[2], "%Y-%m-%d")
-        except ValueError:
+            ymd_parts = dt.datetime.strptime(parts[2], "%Y-%m-%d")
+        except (IndexError, ValueError) as error:
             tz = "LOCAL"
 
         try:
@@ -460,20 +460,19 @@ class RecordingIdentifier(Identifier):
                     camera=cls._get_index(parts, 5),
                 )
 
-            ymd_parts = str(cls._get_index(parts, 2)).split("-")
             hour = cls._get_index(parts, 3)
-            time = dt.datetime(
-                int(ymd_parts[0]),
-                int(ymd_parts[1]),
-                int(ymd_parts[2]),
+            parts_as_utc = dt.datetime(
+                ymd_parts.year,
+                ymd_parts.month,
+                ymd_parts.day,
                 int(hour),
                 tzinfo=dt.timezone.utc,
             ).astimezone()
             return cls(
                 frigate_instance_id=parts[0],
-                year_month=time.strftime("%Y-%m"),
-                day=str(time.day),
-                hour=str(time.hour),
+                year_month=parts_as_utc.strftime("%Y-%m"),
+                day=str(parts_as_utc.day),
+                hour=str(parts_as_utc.hour),
                 camera=cls._get_index(parts, 4),
             )
         except ValueError:
