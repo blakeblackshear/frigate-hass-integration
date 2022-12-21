@@ -67,9 +67,9 @@ async def async_setup_entry(
             FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
             for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
         ]
-        + [BirdseyeCamera(entry, frigate_client)]
+        + ([BirdseyeCamera(entry, frigate_client)]
         if frigate_config.get("restream", {}).get("birdseye", False)
-        else []
+        else [])
     )
 
     # setup services
