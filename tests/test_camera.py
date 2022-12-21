@@ -86,7 +86,7 @@ async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "streaming"
 
-    source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    source = await async_get_stream_source(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
     assert source
     assert source == "rtsp://example.com:8554/birdseye"
 
