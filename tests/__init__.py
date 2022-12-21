@@ -29,6 +29,7 @@ TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.steps_person_occupancy"
 )
 TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID = "binary_sensor.steps_all_occupancy"
+TEST_CAMERA_BIRDSEYE_ENTITY_ID = "camera.birdseye"
 TEST_CAMERA_FRONT_DOOR_ENTITY_ID = "camera.front_door"
 TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
 

@@ -30,6 +30,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
+    TEST_CAMERA_BIRDSEYE_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
@@ -70,6 +71,24 @@ async def test_frigate_camera_setup_rtsp(
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
     assert image
     assert image.content == b"data-277"
+
+
+async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
+    """Set up birdseye camera."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["restream"]["birdseye"] = True
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert source
+    assert source == "rtsp://example.com:8554/birdseye"
 
 
 async def test_frigate_camera_setup_rtmp(
