@@ -77,7 +77,7 @@ async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
     """Set up birdseye camera."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["restream"]["birdseye"] = True
+    config["restream"] = {"birdseye": True}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)
