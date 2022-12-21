@@ -66,7 +66,10 @@ async def async_setup_entry(
         + [
             FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
             for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
-        ] + [BirdseyeCamera(entry, frigate_client)] if frigate_config.get("restream", {}).get("birdseye", False) else []
+        ]
+        + [BirdseyeCamera(entry, frigate_client)]
+        if frigate_config.get("restream", {}).get("birdseye", False)
+        else []
     )
 
     # setup services
@@ -301,9 +304,7 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._attr_is_streaming = True
         self._attr_is_recording = False
-        self._stream_source = (
-            f"rtsp://{URL(self._url).host}:8554/birdseye"
-        )
+        self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
 
     @property
     def unique_id(self) -> str:
