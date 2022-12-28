@@ -179,7 +179,7 @@ async def test_frigate_camera_birdseye_image_height(
         content=b"data-no-height",
     )
 
-    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    image = await async_get_image(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
     assert image
     assert image.content == b"data-no-height"
 
