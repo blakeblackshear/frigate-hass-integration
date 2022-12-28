@@ -152,6 +152,38 @@ async def test_frigate_camera_image_height(
     assert image.content == b"data-no-height"
 
 
+async def test_frigate_camera_birdseye_image_height(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+) -> None:
+    """Ensure async_camera_image respects height parameter."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["restream"] = {"birdseye": True}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    aioclient_mock.get(
+        "http://example.com/api/birdseye/latest.jpg?h=1000",
+        content=b"data-1000",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID, height=1000)
+    assert image
+    assert image.content == b"data-1000"
+
+    # Don't specify the height (no argument should be passed).
+    aioclient_mock.get(
+        "http://example.com/api/birdseye/latest.jpg",
+        content=b"data-no-height",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert image
+    assert image.content == b"data-no-height"
+
+
 async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
     """Set up a camera without streaming."""
 
