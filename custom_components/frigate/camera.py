@@ -336,6 +336,22 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         """Return supported features of this camera."""
         return cast(int, CameraEntityFeature.STREAM)
 
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Return bytes of camera image."""
+        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+
+        image_url = str(
+            URL(self._url)
+            / "api/birdseye/latest.jpg"
+            % ({"h": height} if height is not None and height > 0 else {})
+        )
+
+        with async_timeout.timeout(10):
+            response = await websession.get(image_url)
+            return await response.read()
+
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
