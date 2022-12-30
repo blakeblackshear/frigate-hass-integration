@@ -1304,7 +1304,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
             if folder is None:
                 return "Recordings"
-            return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
+
+            try:
+                return dt.datetime.strptime(f"{folder['name']}", "%Y-%m-%d").strftime("%B %d, %Y")
+            except ValueError:
+                return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
         except ValueError:
             return None
 
