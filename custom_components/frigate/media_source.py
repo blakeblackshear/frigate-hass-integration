@@ -701,14 +701,14 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     return self._get_camera_recording_identifiers(identifier, config)
 
                 if not identifier.year_month_day:
-                    days = await self._get_client(
+                    days: list[dict[str, Any]] = await self._get_client(
                         identifier
                     ).async_get_recordings_summary(camera=identifier.camera)
                     return self._get_recording_folders(identifier, days)
 
-                hours = await self._get_client(identifier).async_get_recordings_summary(
-                    camera=identifier.camera
-                )
+                hours: list[dict[str, Any]] = await self._get_client(
+                    identifier
+                ).async_get_recordings_summary(camera=identifier.camera)
                 return self._get_recording_hours(identifier, hours)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc

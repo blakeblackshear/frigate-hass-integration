@@ -1075,6 +1075,7 @@ async def test_recordings_identifier() -> None:
     with pytest.raises(MediaSourceError):
         identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
         identifier = RecordingIdentifier.from_str(identifier_in)
+        assert identifier is not None
         identifier.get_integration_proxy_path()
 
     # Verify a zero hour:
