@@ -888,13 +888,14 @@ async def test_async_browse_media_recordings_root(
             },
         ]
     )
-    await media_source.async_browse_media(
+    media = await media_source.async_browse_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
             "/recordings/front_door//"
         ),
     )
+    assert media is None
 
 
 async def test_async_browse_media_async_get_event_summary_error(
