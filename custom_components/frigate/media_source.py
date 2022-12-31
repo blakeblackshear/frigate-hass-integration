@@ -1247,11 +1247,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
             if identifier.year_month_day is not None and next_part is not None:
                 return dt.datetime.strptime(next_part, "%H").strftime("%I:00 %p")
-
-            if next_part is None:
-                return "Recordings"
-
-            return None
+                
+            return "Recordings"
         except ValueError:
             return None
 
