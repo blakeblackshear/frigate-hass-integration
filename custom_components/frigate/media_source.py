@@ -1341,9 +1341,6 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             if hours["day"] == identifier.year_month_day
         ]
 
-        if not hour_items:
-            return base
-
         for hour_data in hour_items[0]:
             title = self._generate_recording_title(identifier, hour_data["hour"])
 
