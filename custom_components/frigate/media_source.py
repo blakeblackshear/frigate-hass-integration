@@ -466,7 +466,7 @@ class RecordingIdentifier(Identifier):
         # so the path returned is either complete or up until the first "hole" /
         # missing attribute.
 
-        if self.year_month_day and self.hour:
+        if self.year_month_day is not None and self.hour is not None:
             year, month, day = self.year_month_day.split("-")
 
             in_parts = [
@@ -477,8 +477,6 @@ class RecordingIdentifier(Identifier):
                 self.camera,
                 "index.m3u8",
             ]
-        else:
-            in_parts = []
 
         out_parts = []
         for val in in_parts:
