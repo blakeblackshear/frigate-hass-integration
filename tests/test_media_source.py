@@ -871,31 +871,30 @@ async def test_async_browse_media_recordings_root(
 
     # Ensure a syntactically correct, but semantically incorrect path will
     # result in a MediaSourceError (there is no 29th February in 2022).
-    with pytest.raises(MediaSourceError):
-        frigate_client.async_get_recordings_summary = AsyncMock(
-            return_value=[
-                {
-                    "day": "2022-2-29",
-                    "events": 11,
-                    "hours": [
-                        {
-                            "duration": 3582,
-                            "events": 2,
-                            "hour": "01",
-                            "motion": 133116366,
-                            "objects": 832,
-                        },
-                    ],
-                },
-            ]
-        )
-        await media_source.async_browse_media(
-            hass,
-            (
-                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-                "/recordings/front_door//"
-            ),
-        )
+    frigate_client.async_get_recordings_summary = AsyncMock(
+        return_value=[
+            {
+                "day": "2022-2-29",
+                "events": 11,
+                "hours": [
+                    {
+                        "duration": 3582,
+                        "events": 2,
+                        "hour": "01",
+                        "motion": 133116366,
+                        "objects": 832,
+                    },
+                ],
+            },
+        ]
+    )
+    await media_source.async_browse_media(
+        hass,
+        (
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+            "/recordings/front_door//"
+        ),
+    )
 
 
 async def test_async_browse_media_async_get_event_summary_error(
