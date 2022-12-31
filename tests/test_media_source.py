@@ -640,22 +640,7 @@ async def test_async_resolve_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-05/30/15/front_door/46.08.mp4"
-        ),
-    )
-    assert media == PlayMedia(
-        url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/15/front_door/index.m3u8"
-        ),
-        mime_type="application/x-mpegURL",
-    )
-
-    # Test resolving a UTC recording.
-    media = await media_source.async_resolve_media(
-        hass,
-        (
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-05-30/15/front_door/46.08.mp4"
+            "/recordings/front-door/2021-05-30/15/46.08.mp4"
         ),
     )
     assert media == PlayMedia(
