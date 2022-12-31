@@ -10,7 +10,6 @@ import os
 from typing import Any
 from unittest.mock import AsyncMock, Mock, call, patch
 
-import attr
 import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
