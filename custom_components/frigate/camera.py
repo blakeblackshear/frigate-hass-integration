@@ -306,7 +306,21 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._attr_is_streaming = True
         self._attr_is_recording = False
-        self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
+
+        streaming_template = config_entry.options.get(
+            CONF_RTSP_URL_TEMPLATE, ""
+        ).strip()
+
+        if streaming_template:
+            # Can't use homeassistant.helpers.template as it requires hass which
+            # is not available in the constructor, so use direct jinja2
+            # template instead. This means templates cannot access HomeAssistant
+            # state, but rather only the camera config.
+            self._stream_source = Template(streaming_template).render(
+                {"name": "birdseye"}
+            )
+        else:
+            self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
 
     @property
     def unique_id(self) -> str:
