@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime as dt
 import enum
 import logging
-from typing import Any
+from typing import Any, cast
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -701,14 +701,20 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     return self._get_camera_recording_identifiers(identifier, config)
 
                 if not identifier.year_month_day:
-                    days: list[dict[str, Any]] = await self._get_client(
-                        identifier
-                    ).async_get_recordings_summary(camera=identifier.camera)
+                    days = cast(
+                        list[dict[str, Any]],
+                        await self._get_client(identifier).async_get_recordings_summary(
+                            camera=identifier.camera
+                        ),
+                    )
                     return self._get_recording_folders(identifier, days)
 
-                hours: list[dict[str, Any]] = await self._get_client(
-                    identifier
-                ).async_get_recordings_summary(camera=identifier.camera)
+                hours = cast(
+                    list[dict[str, Any]],
+                    await self._get_client(identifier).async_get_recordings_summary(
+                        camera=identifier.camera
+                    ),
+                )
                 return self._get_recording_hours(identifier, hours)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
