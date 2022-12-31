@@ -1308,8 +1308,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             title = self._generate_recording_title(identifier, day_item["day"])
 
             if not title:
-                _LOGGER.warning("Ignoring due to bad folder: %s", day_item["day"])
-                continue
+                raise MediaSourceError("Media source is not valid for %s %s" % identifier, day_item["day"])
 
             base.children.append(
                 BrowseMediaSource(
@@ -1345,8 +1344,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             title = self._generate_recording_title(identifier, hour_data["hour"])
 
             if not title:
-                _LOGGER.warning("Ignoring due to bad folder: %s", hour_data["hour"])
-                continue
+                raise MediaSourceError("Media source is not valid for %s %s" % identifier, hour_data["hour"])
 
             base.children.append(
                 BrowseMediaSource(
