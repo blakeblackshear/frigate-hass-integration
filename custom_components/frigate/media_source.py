@@ -706,9 +706,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     ).async_get_recordings_summary(camera=identifier.camera)
                     return self._get_recording_folders(identifier, days)
 
-                hours = await self._get_client(
-                    identifier
-                ).async_get_recordings_summary(camera=identifier.camera)
+                hours = await self._get_client(identifier).async_get_recordings_summary(
+                    camera=identifier.camera
+                )
                 return self._get_recording_hours(identifier, hours)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
@@ -1247,7 +1247,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
             if identifier.year_month_day is not None and next_part is not None:
                 return dt.datetime.strptime(next_part, "%H").strftime("%I:00 %p")
-                
+
             return "Recordings"
         except ValueError:
             return None
