@@ -1308,7 +1308,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             title = self._generate_recording_title(identifier, day_item["day"])
 
             if not title:
-                raise MediaSourceError("Media source is not valid for %s %s" % identifier, day_item["day"])
+                raise MediaSourceError("Media source is not valid for %s %s" % (identifier, day_item["day"]))
 
             base.children.append(
                 BrowseMediaSource(
@@ -1344,7 +1344,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             title = self._generate_recording_title(identifier, hour_data["hour"])
 
             if not title:
-                raise MediaSourceError("Media source is not valid for %s %s" % identifier, hour_data["hour"])
+                raise MediaSourceError("Media source is not valid for %s %s" % (identifier, hour_data["hour"]))
 
             base.children.append(
                 BrowseMediaSource(
