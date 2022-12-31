@@ -992,7 +992,7 @@ async def test_event_search_identifier() -> None:
 
 async def test_recordings_identifier() -> None:
     """Test recordings identifier."""
-    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/15/front_door"
+    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door/2021-06-04/15"
     identifier = Identifier.from_str(identifier_in)
 
     assert identifier
