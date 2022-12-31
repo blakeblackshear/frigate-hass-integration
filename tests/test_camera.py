@@ -391,7 +391,7 @@ async def test_birdseye_option_rtsp_stream_url_template(
 ) -> None:
     """Verify birdseye cam with the RTSP URL template option."""
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["restream"] = {"birdseye": True }
+    config["restream"] = {"birdseye": True}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     config_entry = create_mock_frigate_config_entry(
