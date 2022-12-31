@@ -386,6 +386,27 @@ async def test_camera_option_rtsp_stream_url_template(
     assert source == "rtsp://localhost/front_door"
 
 
+async def test_birdseye_option_rtsp_stream_url_template(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify birdseye cam with the RTSP URL template option."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["restream"]["birdseye"] = True
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_RTSP_URL_TEMPLATE: ("rtsp://localhost/{{ name }}")}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert source
+    assert source == "rtsp://localhost/birdseye"
+
+
 async def test_camera_option_rtmp_stream_url_template(
     aiohttp_server: Any, hass: HomeAssistant
 ) -> None:
