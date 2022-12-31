@@ -437,42 +437,13 @@ class RecordingIdentifier(Identifier):
         if len(parts) < 2 or parts[1] != cls.get_identifier_type():
             return None
 
-        # NOTE: In Frigate 0.11.1 and previous versions, recordings were stored in
-        # a folder format /recordings/%Y-%m/%d/%h in local server time. In frigate
-        # 0.12+ the recordings are now stored in UTC time. In order to avoid a
-        # breaking change the folder format converted to /recordings/%Y-%m-%d/%h
-        # and both need to be handled for backwards compatibility.
-
-        tz = "UTC"
         try:
-            ymd_parts = dt.datetime.strptime(parts[2], "%Y-%m-%d")
-        except (IndexError, ValueError):
-            tz = "LOCAL"
-
-        try:
-            if tz == "LOCAL":
-                return cls(
-                    frigate_instance_id=parts[0],
-                    year_month=cls._get_index(parts, 2),
-                    day=cls._get_index(parts, 3),
-                    hour=cls._get_index(parts, 4),
-                    camera=cls._get_index(parts, 5),
-                )
-
-            hour = cls._get_index(parts, 3)
-            parts_as_utc = dt.datetime(
-                ymd_parts.year,
-                ymd_parts.month,
-                ymd_parts.day,
-                int(hour),
-                tzinfo=dt.timezone.utc,
-            ).astimezone()
             return cls(
                 frigate_instance_id=parts[0],
-                year_month=parts_as_utc.strftime("%Y-%m"),
-                day=str(parts_as_utc.day),
-                hour=str(parts_as_utc.hour),
-                camera=cls._get_index(parts, 4),
+                year_month=cls._get_index(parts, 2),
+                day=cls._get_index(parts, 3),
+                hour=cls._get_index(parts, 4),
+                camera=cls._get_index(parts, 5),
             )
         except ValueError:
             return None
@@ -1304,11 +1275,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
             if folder is None:
                 return "Recordings"
-
-            try:
-                return dt.datetime.strptime(f"{folder['name']}", "%Y-%m-%d").strftime("%B %d, %Y")
-            except ValueError:
-                return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
+            return dt.datetime.strptime(f"{folder['name']}", "%Y-%m").strftime("%B %Y")
         except ValueError:
             return None
 
