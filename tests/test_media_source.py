@@ -919,29 +919,6 @@ async def test_async_browse_media_async_get_events_error(
         )
 
 
-async def test_async_browse_media_async_get_path_error(
-    caplog: Any, frigate_client: AsyncMock, hass: HomeAssistant
-) -> None:
-    """Test API error behavior."""
-    frigate_client.async_get_path = AsyncMock(side_effect=FrigateApiClientError)
-
-    await setup_mock_frigate_config_entry(hass, client=frigate_client)
-
-    with pytest.raises(MediaSourceError):
-        await media_source.async_browse_media(
-            hass, f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings"
-        )
-
-    with pytest.raises(MediaSourceError):
-        await media_source.async_browse_media(
-            hass,
-            (
-                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-                "/recordings/2021-06/04/15/front_door"
-            ),
-        )
-
-
 async def test_identifier() -> None:
     """Test base identifier."""
     identifier = Identifier("foo")
