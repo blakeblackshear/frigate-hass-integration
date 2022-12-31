@@ -169,7 +169,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
                 "media_content_type": "video",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings////"
+                    "/recordings///"
                 ),
                 "can_play": False,
                 "can_expand": True,
@@ -206,7 +206,7 @@ async def test_async_browse_media_root(hass: HomeAssistant) -> None:
                 "media_class": "directory",
                 "media_content_type": "video",
                 "media_content_id": (
-                    "media-source://frigate/another_client_id/recordings////"
+                    "media-source://frigate/another_client_id/recordings///"
                 ),
                 "can_play": False,
                 "can_expand": True,
