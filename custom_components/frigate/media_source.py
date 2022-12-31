@@ -697,19 +697,19 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         if isinstance(identifier, RecordingIdentifier):
             try:
                 if not identifier.camera:
-                    section = await self._get_client(identifier).async_get_config()
-                    return self._get_camera_recording_identifiers(identifier, section)
+                    config = await self._get_client(identifier).async_get_config()
+                    return self._get_camera_recording_identifiers(identifier, config)
 
                 if not identifier.year_month_day:
-                    section = await self._get_client(
+                    days = await self._get_client(
                         identifier
                     ).async_get_recordings_summary(camera=identifier.camera)
-                    return self._get_recording_folders(identifier, section)
+                    return self._get_recording_folders(identifier, days)
 
-                section = await self._get_client(
+                hours = await self._get_client(
                     identifier
                 ).async_get_recordings_summary(camera=identifier.camera)
-                return self._get_recording_hours(identifier, section)
+                return self._get_recording_hours(identifier, hours)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 

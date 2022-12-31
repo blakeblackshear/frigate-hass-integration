@@ -300,7 +300,7 @@ async def test_async_get_recordings_summary(
 ) -> None:
     """Test async_recordings_summary."""
 
-    summary_success = {"summary": "goes_here"}
+    summary_success = [{"summary": "goes_here"}]
     summary_handler = Mock(return_value=web.json_response(summary_success))
     camera = "front_door"
 
