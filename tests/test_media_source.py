@@ -1057,10 +1057,9 @@ async def test_recordings_identifier() -> None:
 
     # A missing element (no year-month-day) in the identifier, so no path will be possible
     # beyond the path to the day.
-    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
-    identifier = RecordingIdentifier.from_str(identifier_in)
-    assert identifier
-    assert identifier.get_integration_proxy_path() == "vod/2021-06/04"
+    with pytest.raises(MediaSourceError):
+        identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
+        identifier = RecordingIdentifier.from_str(identifier_in)
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126

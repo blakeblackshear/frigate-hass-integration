@@ -477,6 +477,8 @@ class RecordingIdentifier(Identifier):
                 self.camera,
                 "index.m3u8",
             ]
+        else:
+            raise MediaSourceError("Can not get proxy-path without year_month_day and hour.")
 
         out_parts = []
         for val in in_parts:
