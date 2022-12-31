@@ -691,22 +691,6 @@ async def test_async_browse_media_recordings_root(
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
-    frigate_client.async_get_path = AsyncMock(
-        return_value=[
-            {
-                "name": "2021-06",
-                "type": "directory",
-                "mtime": "Sun, 30 June 2021 22:47:14 GMT",
-            },
-            {
-                "name": "49.06.mp4",
-                "type": "file",
-                "mtime": "Sun, 30 June 2021 22:50:06 GMT",
-                "size": 5168517,
-            },
-        ]
-    )
-
     media = await media_source.async_browse_media(
         hass,
         f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings",
@@ -717,7 +701,7 @@ async def test_async_browse_media_recordings_root(
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings////"
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings//"
         ),
         "can_play": False,
         "can_expand": True,
@@ -732,33 +716,43 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06///"
+                    "/recordings/front-door///"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "June 2021",
+                "title": "Front Door",
             }
         ],
     }
 
-    frigate_client.async_get_path = AsyncMock(
+    frigate_client.async_get_recordings_summary = AsyncMock(
         return_value=[
             {
-                "name": "04",
-                "type": "directory",
-                "mtime": "Mon, 07 Jun 2021 02:33:16 GMT",
-            },
-            {
-                "name": "NOT_AN_HOUR",
-                "type": "directory",
-                "mtime": "Mon, 07 Jun 2021 02:33:17 GMT",
+                "day": "2022-12-31",
+                "events": 11,
+                "hours": [
+                    {
+                        "duration": 3582,
+                        "events": 2,
+                        "hour": "01",
+                        "motion": 133116366,
+                        "objects": 832,
+                    },
+                    {
+                        "duration": 3537,
+                        "events": 3,
+                        "hour": "00",
+                        "motion": 146836625,
+                        "objects": 1118,
+                    },
+                ],
             },
         ]
     )
 
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06///",
+        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings/front-door//",
     )
 
     assert media.as_dict() == {
@@ -766,7 +760,7 @@ async def test_async_browse_media_recordings_root(
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06///"
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/front-door//"
         ),
         "can_play": False,
         "can_expand": True,
@@ -781,7 +775,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04//"
+                    "/recordings/front-door/2022-12-31//"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -789,74 +783,12 @@ async def test_async_browse_media_recordings_root(
             }
         ],
     }
-    # There's a bogus value for an hour, that should be skipped.
-    assert "Skipping non-standard folder" in caplog.text
-
-    frigate_client.async_get_path = AsyncMock(
-        return_value=[
-            {
-                "name": "15",
-                "type": "directory",
-                "mtime": "Sun, 04 June 2021 22:47:14 GMT",
-            },
-        ]
-    )
-
-    media = await media_source.async_browse_media(
-        hass,
-        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04//",
-    )
-
-    assert media.as_dict() == {
-        "title": "June 04",
-        "media_class": "directory",
-        "media_content_type": "video",
-        "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04//"
-        ),
-        "can_play": False,
-        "can_expand": True,
-        "children_media_class": "directory",
-        "thumbnail": None,
-        "not_shown": 0,
-        "children": [
-            {
-                "can_expand": True,
-                "can_play": False,
-                "children_media_class": "directory",
-                "media_class": "directory",
-                "media_content_id": (
-                    f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/"
-                ),
-                "media_content_type": "video",
-                "thumbnail": None,
-                "title": "15:00:00",
-            }
-        ],
-    }
-
-    frigate_client.async_get_path = AsyncMock(
-        return_value=[
-            {
-                "name": "front_door",
-                "type": "directory",
-                "mtime": "Sun, 30 June 2021 23:00:50 GMT",
-            },
-            {
-                "name": "sitting_room",
-                "type": "directory",
-                "mtime": "Sun, 04 June 2021 23:00:40 GMT",
-            },
-        ]
-    )
 
     media = await media_source.async_browse_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/15/"
+            "/recordings/front-door/2022-12-31/00"
         ),
     )
 
@@ -866,7 +798,7 @@ async def test_async_browse_media_recordings_root(
         "media_content_type": "video",
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/15/"
+            "/recordings/front-door/2022--12-31/00"
         ),
         "can_play": False,
         "can_expand": True,
@@ -944,7 +876,7 @@ async def test_async_browse_media_recordings_root(
         "title": "00:00:00",
         "media_class": "directory",
         "media_content_type": "video",
-        "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06/04/00/",
+        "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06-04/00/",
         "can_play": False,
         "can_expand": True,
         "children_media_class": "directory",
