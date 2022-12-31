@@ -152,7 +152,7 @@ class FrigateApiClient:
             ),
             decode_json=decode_json,
         )
-        return cast(dict[str, Any], result) if decode_json else result
+        return cast(list[dict[str, Any]], result) if decode_json else result
 
     async def async_get_recordings(
         self,
