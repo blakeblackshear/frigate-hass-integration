@@ -5,10 +5,10 @@ import asyncio
 import logging
 import socket
 from typing import Any, cast
-from tzlocal import get_localzone_name
 
 import aiohttp
 import async_timeout
+from tzlocal import get_localzone_name
 from yarl import URL
 
 TIMEOUT = 10
