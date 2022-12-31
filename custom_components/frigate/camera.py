@@ -67,6 +67,11 @@ async def async_setup_entry(
             FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
             for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
         ]
+        + (
+            [BirdseyeCamera(entry, frigate_client)]
+            if frigate_config.get("restream", {}).get("birdseye", False)
+            else []
+        )
     )
 
     # setup services
@@ -82,7 +87,7 @@ async def async_setup_entry(
 
 
 class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
-    """Representation a Frigate camera."""
+    """Representation of a Frigate camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
     _attr_name = None
@@ -277,6 +282,93 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     async def favorite_event(self, event_id: str, favorite: bool) -> None:
         """Favorite an event."""
         await self._client.async_retain(event_id, favorite)
+
+
+class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
+    """Representation of the Frigate birdseye camera."""
+
+    # sets the entity name to same as device name ex: camera.front_doorbell
+    _attr_name = None
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_client: FrigateApiClient,
+    ) -> None:
+        """Initialize the birdseye camera."""
+        self._client = frigate_client
+        FrigateEntity.__init__(self, config_entry)
+        Camera.__init__(self)
+        self._url = config_entry.data[CONF_URL]
+        self._attr_is_on = True
+        # The device_class is used to filter out regular camera entities
+        # from motion camera entities on selectors
+        self._attr_device_class = DEVICE_CLASS_CAMERA
+        self._attr_is_streaming = True
+        self._attr_is_recording = False
+
+        streaming_template = config_entry.options.get(
+            CONF_RTSP_URL_TEMPLATE, ""
+        ).strip()
+
+        if streaming_template:
+            # Can't use homeassistant.helpers.template as it requires hass which
+            # is not available in the constructor, so use direct jinja2
+            # template instead. This means templates cannot access HomeAssistant
+            # state, but rather only the camera config.
+            self._stream_source = Template(streaming_template).render(
+                {"name": "birdseye"}
+            )
+        else:
+            self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "camera",
+            "birdseye",
+        )
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return the device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, "birdseye")
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": "Birdseye",
+            "model": self._get_model(),
+            "configuration_url": f"{self._url}/cameras/birdseye",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def supported_features(self) -> int:
+        """Return supported features of this camera."""
+        return cast(int, CameraEntityFeature.STREAM)
+
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Return bytes of camera image."""
+        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+
+        image_url = str(
+            URL(self._url)
+            / "api/birdseye/latest.jpg"
+            % ({"h": height} if height is not None and height > 0 else {})
+        )
+
+        with async_timeout.timeout(10):
+            response = await websession.get(image_url)
+            return await response.read()
+
+    async def stream_source(self) -> str | None:
+        """Return the source of the stream."""
+        return self._stream_source
 
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]

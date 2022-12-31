@@ -30,6 +30,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import (
+    TEST_CAMERA_BIRDSEYE_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
@@ -70,6 +71,24 @@ async def test_frigate_camera_setup_rtsp(
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
     assert image
     assert image.content == b"data-277"
+
+
+async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
+    """Set up birdseye camera."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["restream"] = {"birdseye": True}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert source
+    assert source == "rtsp://example.com:8554/birdseye"
 
 
 async def test_frigate_camera_setup_rtmp(
@@ -129,6 +148,38 @@ async def test_frigate_camera_image_height(
     )
 
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert image
+    assert image.content == b"data-no-height"
+
+
+async def test_frigate_camera_birdseye_image_height(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+) -> None:
+    """Ensure async_camera_image respects height parameter."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["restream"] = {"birdseye": True}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    aioclient_mock.get(
+        "http://example.com/api/birdseye/latest.jpg?h=1000",
+        content=b"data-1000",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID, height=1000)
+    assert image
+    assert image.content == b"data-1000"
+
+    # Don't specify the height (no argument should be passed).
+    aioclient_mock.get(
+        "http://example.com/api/birdseye/latest.jpg",
+        content=b"data-no-height",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
     assert image
     assert image.content == b"data-no-height"
 
@@ -333,6 +384,27 @@ async def test_camera_option_rtsp_stream_url_template(
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
     assert source == "rtsp://localhost/front_door"
+
+
+async def test_birdseye_option_rtsp_stream_url_template(
+    aiohttp_server: Any, hass: HomeAssistant
+) -> None:
+    """Verify birdseye cam with the RTSP URL template option."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["restream"] = {"birdseye": True}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_RTSP_URL_TEMPLATE: ("rtsp://localhost/{{ name }}")}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert source
+    assert source == "rtsp://localhost/birdseye"
 
 
 async def test_camera_option_rtmp_stream_url_template(
