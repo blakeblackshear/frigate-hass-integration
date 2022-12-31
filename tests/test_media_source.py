@@ -685,7 +685,7 @@ async def test_async_browse_media_recordings_root(
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings//"
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings///"
         ),
         "can_play": False,
         "can_expand": True,
@@ -740,7 +740,7 @@ async def test_async_browse_media_recordings_root(
     )
 
     assert media.as_dict() == {
-        "title": "June 2021",
+        "title": "Recordings",
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
@@ -763,7 +763,7 @@ async def test_async_browse_media_recordings_root(
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "June 04",
+                "title": "December, 31 2022",
             }
         ],
     }
@@ -777,12 +777,12 @@ async def test_async_browse_media_recordings_root(
     )
 
     assert media.as_dict() == {
-        "title": "15:00:00",
+        "title": "Recordings",
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/front_door/2022--12-31/00"
+            "/recordings/front_door/2022-12-31/00"
         ),
         "can_play": False,
         "can_expand": True,
@@ -797,11 +797,11 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "movie",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/front_door/2021-06-04/15"
+                    "/recordings/front_door/2022-12-31/01"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "Front Door",
+                "title": "01:00 AM",
             },
             {
                 "can_expand": False,
@@ -810,11 +810,11 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "movie",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/sitting_room/2021-06-04/15"
+                    "/recordings/front_door/2022-12-31/00"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "Sitting Room",
+                "title": "12:00 AM",
             },
         ],
     }
@@ -829,59 +829,73 @@ async def test_async_browse_media_recordings_root(
             ),
         )
 
-    # Ensure a syntactically correct, but semantically incorrect path will
-    # result in a MediaSourceError (there is no 29th February in 2021).
+    # Ensure API error results in MediaSourceError
+    frigate_client.async_get_recordings_summary = AsyncMock(
+        side_effect=FrigateApiClientError()
+    )
     with pytest.raises(MediaSourceError):
         await media_source.async_browse_media(
             hass,
-            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-02/29",
+            (
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+                "/recordings/front_door/2022-12-31/00"
+            ),
         )
 
-    # Fetch a recording on the zeroth hour:
-    # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
-    frigate_client.async_get_path = AsyncMock(
+    # Ensure a syntactically correct, but semantically incorrect path will
+    # result in a MediaSourceError (there is no 24th hour).
+    frigate_client.async_get_recordings_summary = AsyncMock(
         return_value=[
             {
-                "name": "front_door",
-                "type": "directory",
-                "mtime": "Sun, 30 June 2021 23:00:50 GMT",
+                "day": "2022-12-31",
+                "events": 11,
+                "hours": [
+                    {
+                        "duration": 3582,
+                        "events": 2,
+                        "hour": "24",
+                        "motion": 133116366,
+                        "objects": 832,
+                    },
+                ],
             },
         ]
     )
-    media = await media_source.async_browse_media(
+    await media_source.async_browse_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/2021-06/04/00/"
+            "/recordings/front_door/2022-12-31/"
         ),
     )
-    assert media.as_dict() == {
-        "title": "00:00:00",
-        "media_class": "directory",
-        "media_content_type": "video",
-        "media_content_id": "media-source://frigate/frigate_client_id/recordings/2021-06-04/00/",
-        "can_play": False,
-        "can_expand": True,
-        "children_media_class": "directory",
-        "thumbnail": None,
-        "not_shown": 0,
-        "children": [
-            {
-                "can_expand": False,
-                "can_play": True,
-                "children_media_class": None,
-                "media_class": "movie",
-                "media_content_id": (
-                    f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/00/front_door"
-                ),
-                "media_content_type": "video",
-                "thumbnail": None,
-                "title": "Front Door",
-            },
-        ],
-    }
+
+    # Ensure a syntactically correct, but semantically incorrect path will
+    # result in a MediaSourceError (there is no 29th February in 2022).
+    with pytest.raises(MediaSourceError):
+        frigate_client.async_get_recordings_summary = AsyncMock(
+            return_value=[
+                {
+                    "day": "2022-2-29",
+                    "events": 11,
+                    "hours": [
+                        {
+                            "duration": 3582,
+                            "events": 2,
+                            "hour": "01",
+                            "motion": 133116366,
+                            "objects": 832,
+                        },
+                    ],
+                },
+            ]
+        )
+        await media_source.async_browse_media(
+            hass,
+            (
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+                "/recordings/front_door//"
+            ),
+        )
 
 
 async def test_async_browse_media_async_get_event_summary_error(
@@ -1060,6 +1074,7 @@ async def test_recordings_identifier() -> None:
     with pytest.raises(MediaSourceError):
         identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
         identifier = RecordingIdentifier.from_str(identifier_in)
+        identifier.get_integration_proxy_path()
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126

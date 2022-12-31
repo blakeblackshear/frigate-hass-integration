@@ -139,7 +139,7 @@ class FrigateApiClient:
 
     async def async_get_recordings_summary(
         self, camera: str, decode_json: bool = True
-    ) -> dict[str, Any] | str:
+    ) -> list[dict[str, Any]] | str:
         """Get recordings summary."""
         params = {"timezone": get_localzone_name()}
 

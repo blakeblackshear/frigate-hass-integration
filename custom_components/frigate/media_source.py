@@ -365,7 +365,7 @@ class EventSearchIdentifier(Identifier):
         return self.frigate_media_type.media_class
 
 
-def _validate_year_month(
+def _validate_year_month_day(
     inst: RecordingIdentifier, attribute: attr.Attribute, data: str | None
 ) -> None:
     """Validate input."""
@@ -401,7 +401,7 @@ class RecordingIdentifier(Identifier):
         default=None,
         validator=[
             attr.validators.instance_of((str, type(None))),
-            _validate_year_month,
+            _validate_year_month_day,
         ],
     )
 
@@ -460,33 +460,27 @@ class RecordingIdentifier(Identifier):
     def get_integration_proxy_path(self) -> str:
         """Get the integration path that will proxy this identifier."""
 
-        # The attributes of this class represent a path that the recording can
-        # be retrieved from the Frigate server. If there are holes in the path
-        # (i.e. missing attributes) the path won't work on the Frigate server,
-        # so the path returned is either complete or up until the first "hole" /
-        # missing attribute.
-
-        if self.year_month_day is not None and self.hour is not None:
+        if (
+            self.camera is not None
+            and self.year_month_day is not None
+            and self.hour is not None
+        ):
             year, month, day = self.year_month_day.split("-")
 
-            in_parts = [
+            parts = [
                 "vod",
                 f"{year}-{month}",
                 str(day),
-                f"{self.hour:02}" if self.hour is not None else None,
+                f"{self.hour:02}",
                 self.camera,
                 "index.m3u8",
             ]
-        else:
-            raise MediaSourceError("Can not get proxy-path without year_month_day and hour.")
 
-        out_parts = []
-        for val in in_parts:
-            if val is None:
-                break
-            out_parts.append(str(val))
+            return "/".join(parts)
 
-        return "/".join(out_parts)
+        raise MediaSourceError(
+            "Can not get proxy-path without year_month_day and hour."
+        )
 
     def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
         """Get the changes that would set the next attribute in the hierarchy."""
@@ -704,24 +698,20 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             try:
                 if not identifier.camera:
                     section = await self._get_client(identifier).async_get_config()
-                elif not identifier.year_month_day:
+                    return self._get_camera_recording_identifiers(identifier, section)
+
+                if not identifier.year_month_day:
                     section = await self._get_client(
                         identifier
                     ).async_get_recordings_summary(camera=identifier.camera)
-                else:
-                    section = await self._get_client(
-                        identifier
-                    ).async_get_recordings_summary(camera=identifier.camera)
+                    return self._get_recording_folders(identifier, section)
+
+                section = await self._get_client(
+                    identifier
+                ).async_get_recordings_summary(camera=identifier.camera)
+                return self._get_recording_hours(identifier, section)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
-
-            if not identifier.camera:
-                return self._get_camera_recording_identifiers(identifier, section)
-
-            if not identifier.year_month_day:
-                return self._get_recording_folders(identifier, section)
-
-            return self._get_recording_hours(identifier, section)
 
         raise MediaSourceError("Invalid media source identifier: %s" % item.identifier)
 
@@ -1269,10 +1259,6 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         """Get the base BrowseMediaSource object for a recording identifier."""
         title = self._generate_recording_title(identifier)
 
-        # Must be able to generate a title for the source folder.
-        if not title:
-            raise MediaSourceError
-
         return BrowseMediaSource(
             domain=DOMAIN,
             identifier=identifier,
@@ -1320,6 +1306,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
         for day_item in recording_days:
             title = self._generate_recording_title(identifier, day_item["day"])
+
+            if not title:
+                _LOGGER.warning("Ignoring due to bad folder: %s", day_item["day"])
+                continue
+
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
@@ -1350,8 +1341,16 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             if hours["day"] == identifier.year_month_day
         ]
 
+        if not hour_items:
+            return base
+
         for hour_data in hour_items[0]:
             title = self._generate_recording_title(identifier, hour_data["hour"])
+
+            if not title:
+                _LOGGER.warning("Ignoring due to bad folder: %s", hour_data["hour"])
+                continue
+
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
