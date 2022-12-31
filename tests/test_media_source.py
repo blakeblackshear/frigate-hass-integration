@@ -640,7 +640,7 @@ async def test_async_resolve_media(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/front-door/2021-05-30/15/46.08.mp4"
+            "/recordings/front_door/2021-05-30/15/46.08.mp4"
         ),
     )
     assert media == PlayMedia(
@@ -701,7 +701,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/front-door///"
+                    "/recordings/front_door///"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -737,7 +737,7 @@ async def test_async_browse_media_recordings_root(
 
     media = await media_source.async_browse_media(
         hass,
-        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings/front-door//",
+        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//",
     )
 
     assert media.as_dict() == {
@@ -745,7 +745,7 @@ async def test_async_browse_media_recordings_root(
         "media_class": "directory",
         "media_content_type": "video",
         "media_content_id": (
-            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/front-door//"
+            f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//"
         ),
         "can_play": False,
         "can_expand": True,
@@ -760,7 +760,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/front-door/2022-12-31//"
+                    "/recordings/front_door/2022-12-31//"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -773,7 +773,7 @@ async def test_async_browse_media_recordings_root(
         hass,
         (
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/front-door/2022-12-31/00"
+            "/recordings/front_door/2022-12-31/00"
         ),
     )
 
@@ -783,7 +783,7 @@ async def test_async_browse_media_recordings_root(
         "media_content_type": "video",
         "media_content_id": (
             f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-            "/recordings/front-door/2022--12-31/00"
+            "/recordings/front_door/2022--12-31/00"
         ),
         "can_play": False,
         "can_expand": True,
@@ -1021,10 +1021,9 @@ async def test_recordings_identifier() -> None:
     assert identifier
     assert isinstance(identifier, RecordingIdentifier)
     assert identifier.frigate_instance_id == TEST_FRIGATE_INSTANCE_ID
-    assert identifier.year_month == "2021-06"
-    assert identifier.day == 4
-    assert identifier.hour == 15
     assert identifier.camera == "front_door"
+    assert identifier.year_month_day == "2021-06-04"
+    assert identifier.hour == 15
     assert str(identifier) == identifier_in
 
     with pytest.raises(ValueError):
@@ -1043,7 +1042,7 @@ async def test_recordings_identifier() -> None:
     # Year is not an int.
     assert (
         RecordingIdentifier.from_str(
-            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/NOT_AN_INT-06/04/15/front_door"
+            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door/NOT_AN_INT-06-04/15"
         )
         is None
     )
@@ -1051,7 +1050,7 @@ async def test_recordings_identifier() -> None:
     # No 13th month.
     assert (
         RecordingIdentifier.from_str(
-            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-13/04/15/front_door"
+            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door/2021-13-04/15"
         )
         is None
     )
@@ -1059,7 +1058,7 @@ async def test_recordings_identifier() -> None:
     # No 32nd day.
     assert (
         RecordingIdentifier.from_str(
-            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-12/32/15/front_door"
+            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door/2021-12-32/15"
         )
         is None
     )
@@ -1067,7 +1066,7 @@ async def test_recordings_identifier() -> None:
     # No 25th hour.
     assert (
         RecordingIdentifier.from_str(
-            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-12/28/25/front_door"
+            f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door/2021-12-28/25"
         )
         is None
     )
@@ -1080,9 +1079,9 @@ async def test_recordings_identifier() -> None:
         is None
     )
 
-    # A missing element (no hour) in the identifier, so no path will be possible
+    # A missing element (no year-month-day) in the identifier, so no path will be possible
     # beyond the path to the day.
-    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04//front_door"
+    identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
     identifier = RecordingIdentifier.from_str(identifier_in)
     assert identifier
     assert identifier.get_integration_proxy_path() == "vod/2021-06/04"
@@ -1090,16 +1089,9 @@ async def test_recordings_identifier() -> None:
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
     identifier = RecordingIdentifier.from_str(
-        f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/00//"
+        f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door/2021-06-4/00"
     )
     assert identifier
-    identifier_out = attr.evolve(
-        identifier, **identifier.get_changes_to_set_next_empty("front_door")
-    )
-    assert (
-        str(identifier_out)
-        == f"{TEST_FRIGATE_INSTANCE_ID}/recordings/2021-06/04/00/front_door"
-    )
 
 
 async def test_event_identifier() -> None:
