@@ -701,7 +701,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/front_door///"
+                    "/recordings/front_door//"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -760,7 +760,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "directory",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/front_door/2022-12-31//"
+                    "/recordings/front_door/2022-12-31/"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -798,7 +798,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "movie",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/front_door"
+                    "/recordings/front_door/2021-06-04/15"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
@@ -811,7 +811,7 @@ async def test_async_browse_media_recordings_root(
                 "media_class": "movie",
                 "media_content_id": (
                     f"media-source://frigate/{TEST_FRIGATE_INSTANCE_ID}"
-                    "/recordings/2021-06/04/15/sitting_room"
+                    "/recordings/sitting_room/2021-06-04/15"
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
