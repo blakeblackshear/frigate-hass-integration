@@ -1007,10 +1007,10 @@ async def test_recordings_identifier() -> None:
         identifier.get_changes_to_set_next_empty("value")
 
     # Test acceptable boundary conditions.
-    for path in ("0-1/1/0/0", "9000-12/31/23/59"):
+    for path in ("0-1-1/0", "9000-12-31/23"):
         assert (
             Identifier.from_str(
-                f"{TEST_FRIGATE_INSTANCE_ID}/recordings/{path}/cam/media"
+                f"{TEST_FRIGATE_INSTANCE_ID}/recordings/cam/{path}/media"
             )
             is not None
         )
