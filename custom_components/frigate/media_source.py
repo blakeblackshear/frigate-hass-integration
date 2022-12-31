@@ -1250,6 +1250,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
             if next_part is None:
                 return "Recordings"
+
+            return None
         except ValueError:
             return None
 
@@ -1333,7 +1335,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         return base
 
     def _get_recording_hours(
-        self, identifier: RecordingIdentifier, recording_days: list[dict[str, dict]]
+        self, identifier: RecordingIdentifier, recording_days: list[dict[str, Any]]
     ) -> BrowseMediaSource:
         """Browse Frigate recordings."""
         base = self._get_recording_base_media_source(identifier)
