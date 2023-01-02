@@ -1275,6 +1275,14 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         base = self._get_recording_base_media_source(identifier)
 
         for day_item in recording_days:
+            try:
+                dt.datetime.strptime(day_item["day"], "%Y-%m-%d")
+            except ValueError as exc:
+                raise MediaSourceError(
+                    "Media source is not valid for %s %s"
+                    % (identifier, day_item["day"])
+                ) from exc
+
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
