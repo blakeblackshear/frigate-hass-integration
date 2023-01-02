@@ -370,15 +370,10 @@ def _validate_year_month_day(
 ) -> None:
     """Validate input."""
     if data:
-        year, month, day = data.split("-")
-        if (
-            int(year) < 0
-            or int(month) <= 0
-            or int(month) > 12
-            or int(day) <= 0
-            or int(day) > 31
-        ):
-            raise ValueError("Invalid year-month in identifier: %s" % data)
+        try:
+            dt.datetime.strptime(data, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError("Invalid date in identifier: %s" % data) from exc
 
 
 def _validate_hour(
@@ -481,13 +476,6 @@ class RecordingIdentifier(Identifier):
         raise MediaSourceError(
             "Can not get proxy-path without year_month_day and hour."
         )
-
-    def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
-        """Get the changes that would set the next attribute in the hierarchy."""
-        for attribute in self.__attrs_attrs__:  # type: ignore[attr-defined]
-            if getattr(self, attribute.name) is None:
-                return {attribute.name: data}
-        raise ValueError("No empty attribute available")
 
     @property
     def mime_type(self) -> str:
@@ -698,24 +686,19 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             try:
                 if not identifier.camera:
                     config = await self._get_client(identifier).async_get_config()
-                    return self._get_camera_recording_identifiers(identifier, config)
+                    return self._get_camera_recording_folders(identifier, config)
 
-                if not identifier.year_month_day:
-                    days = cast(
-                        list[dict[str, Any]],
-                        await self._get_client(identifier).async_get_recordings_summary(
-                            camera=identifier.camera
-                        ),
-                    )
-                    return self._get_recording_folders(identifier, days)
-
-                hours = cast(
+                recording_summary = cast(
                     list[dict[str, Any]],
                     await self._get_client(identifier).async_get_recordings_summary(
                         camera=identifier.camera
                     ),
                 )
-                return self._get_recording_hours(identifier, hours)
+
+                if not identifier.year_month_day:
+                    return self._get_recording_days(identifier, recording_summary)
+
+                return self._get_recording_hours(identifier, recording_summary)
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
@@ -1242,42 +1225,24 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             ]
         )
 
-    @classmethod
-    def _generate_recording_title(
-        cls, identifier: RecordingIdentifier, next_part: str | None = None
-    ) -> str | None:
-        """Generate recording title."""
-        try:
-            if identifier.year_month_day is None and next_part is not None:
-                return dt.datetime.strptime(next_part, "%Y-%m-%d").strftime("%B, %d %Y")
-
-            if identifier.year_month_day is not None and next_part is not None:
-                return dt.datetime.strptime(next_part, "%H").strftime("%I:00 %p")
-
-            return "Recordings"
-        except ValueError:
-            return None
-
     def _get_recording_base_media_source(
         self, identifier: RecordingIdentifier
     ) -> BrowseMediaSource:
         """Get the base BrowseMediaSource object for a recording identifier."""
-        title = self._generate_recording_title(identifier)
-
         return BrowseMediaSource(
             domain=DOMAIN,
             identifier=identifier,
             media_class=MEDIA_CLASS_DIRECTORY,
             children_media_class=MEDIA_CLASS_DIRECTORY,
             media_content_type=identifier.media_type,
-            title=title,
+            title="Recordings",
             can_play=False,
             can_expand=True,
             thumbnail=None,
             children=[],
         )
 
-    def _get_camera_recording_identifiers(
+    def _get_camera_recording_folders(
         self, identifier: RecordingIdentifier, config: dict[str, dict]
     ) -> BrowseMediaSource:
         """List cameras for recordings."""
@@ -1289,7 +1254,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     domain=DOMAIN,
                     identifier=attr.evolve(
                         identifier,
-                        **identifier.get_changes_to_set_next_empty(camera),
+                        camera=camera,
                     ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_DIRECTORY,
@@ -1303,27 +1268,29 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
 
         return base
 
-    def _get_recording_folders(
+    def _get_recording_days(
         self, identifier: RecordingIdentifier, recording_days: list[dict[str, Any]]
     ) -> BrowseMediaSource:
         """List year-month-day options for camera."""
         base = self._get_recording_base_media_source(identifier)
 
         for day_item in recording_days:
-            title = self._generate_recording_title(identifier, day_item["day"])
-
-            if not title:
+            try:
+                title = dt.datetime.strptime(day_item["day"], "%Y-%m-%d").strftime(
+                    "%B, %d %Y"
+                )
+            except ValueError as exc:
                 raise MediaSourceError(
                     "Media source is not valid for %s %s"
                     % (identifier, day_item["day"])
-                )
+                ) from exc
 
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
                     identifier=attr.evolve(
                         identifier,
-                        **identifier.get_changes_to_set_next_empty(day_item["day"]),
+                        year_month_day=day_item["day"],
                     ),
                     media_class=MEDIA_CLASS_DIRECTORY,
                     children_media_class=MEDIA_CLASS_DIRECTORY,
@@ -1342,20 +1309,25 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> BrowseMediaSource:
         """Browse Frigate recordings."""
         base = self._get_recording_base_media_source(identifier)
-        hour_items = [
-            hours["hours"]
-            for hours in recording_days
-            if hours["day"] == identifier.year_month_day
-        ]
+        hour_items = next(
+            (
+                hours["hours"]
+                for hours in recording_days
+                if hours["day"] == identifier.year_month_day
+            ),
+            [],
+        )
 
-        for hour_data in hour_items[0]:
-            title = self._generate_recording_title(identifier, hour_data["hour"])
-
-            if not title:
+        for hour_data in hour_items:
+            try:
+                title = dt.datetime.strptime(hour_data["hour"], "%H").strftime(
+                    "%I:00 %p"
+                )
+            except ValueError as exc:
                 raise MediaSourceError(
                     "Media source is not valid for %s %s"
                     % (identifier, hour_data["hour"])
-                )
+                ) from exc
 
             base.children.append(
                 BrowseMediaSource(
