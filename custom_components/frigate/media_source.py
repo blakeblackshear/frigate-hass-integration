@@ -1309,7 +1309,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> BrowseMediaSource:
         """Browse Frigate recordings."""
         base = self._get_recording_base_media_source(identifier)
-        hour_items = next(
+        hour_items: list[dict[str, Any]] = next(
             (
                 hours["hours"]
                 for hours in recording_days
