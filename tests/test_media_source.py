@@ -1018,7 +1018,7 @@ async def test_recordings_identifier() -> None:
     assert str(identifier) == identifier_in
 
     # Test acceptable boundary conditions.
-    for path in ("0-1-1/0", "9000-12-31/23"):
+    for path in ("0001-1-1/0", "9000-12-31/23"):
         assert (
             Identifier.from_str(
                 f"{TEST_FRIGATE_INSTANCE_ID}/recordings/cam/{path}/media"
