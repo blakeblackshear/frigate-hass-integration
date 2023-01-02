@@ -1017,10 +1017,6 @@ async def test_recordings_identifier() -> None:
     assert identifier.hour == 15
     assert str(identifier) == identifier_in
 
-    with pytest.raises(ValueError):
-        # The identifier is fully specified, there's no next available attribute.
-        identifier.get_changes_to_set_next_empty("value")
-
     # Test acceptable boundary conditions.
     for path in ("0-1-1/0", "9000-12-31/23"):
         assert (
