@@ -465,7 +465,7 @@ class RecordingIdentifier(Identifier):
             parts = [
                 "vod",
                 f"{year}-{month}",
-                str(day),
+                day,
                 f"{self.hour:02}",
                 self.camera,
                 "index.m3u8",
