@@ -763,7 +763,7 @@ async def test_async_browse_media_recordings_root(
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "December, 31 2022",
+                "title": "2022-12-31",
             }
         ],
     }
@@ -801,7 +801,7 @@ async def test_async_browse_media_recordings_root(
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "01:00 AM",
+                "title": "01:00",
             },
             {
                 "can_expand": False,
@@ -814,7 +814,7 @@ async def test_async_browse_media_recordings_root(
                 ),
                 "media_content_type": "video",
                 "thumbnail": None,
-                "title": "12:00 AM",
+                "title": "00:00",
             },
         ],
     }
