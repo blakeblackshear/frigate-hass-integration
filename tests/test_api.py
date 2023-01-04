@@ -50,7 +50,7 @@ async def test_async_get_stats(
         aiohttp_server, [web.get("/api/stats", stats_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert stats_in == await frigate_client.async_get_stats()
 
 
@@ -94,7 +94,7 @@ async def test_async_get_events(
         aiohttp_server, [web.get("/api/events", events_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert events_in == await frigate_client.async_get_events(
         camera="test_camera",
         label="test_label",
@@ -133,7 +133,7 @@ async def test_async_get_event_summary_clips(
         aiohttp_server, [web.get("/api/events/summary", events_summary_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
 
     assert events_summary_in == await frigate_client.async_get_event_summary(
         has_clip=True,
@@ -154,7 +154,7 @@ async def test_async_get_config(
         aiohttp_server, [web.get("/api/config", config_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert config_in == await frigate_client.async_get_config()
 
 
@@ -176,7 +176,7 @@ async def test_async_get_path(
         aiohttp_server, [web.get("/recordings/moo/", recordings_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert recordings_in == await frigate_client.async_get_path("recordings/moo")
 
 
@@ -200,7 +200,7 @@ async def test_api_wrapper_methods(
         ],
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
 
     assert await frigate_client.api_wrapper(
         method="get", url=server.make_url("/get")
@@ -228,7 +228,7 @@ async def test_api_wrapper_exceptions(
             web.get("/get", Mock(return_value=web.json_response({}))),
         ],
     )
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
 
     with patch.object(aiohttp_session, "get", side_effect=asyncio.TimeoutError):
         with pytest.raises(FrigateApiClientError):
@@ -262,7 +262,7 @@ async def test_async_get_version(
         aiohttp_server, [web.get("/api/version", version_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert await frigate_client.async_get_version() == TEST_SERVER_VERSION
 
 
@@ -286,7 +286,7 @@ async def test_async_retain(
         ],
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert await frigate_client.async_retain(event_id, True) == post_success
     assert post_handler.called
     assert not delete_handler.called
@@ -308,7 +308,7 @@ async def test_async_get_recordings_summary(
         aiohttp_server, [web.get(f"/api/{camera}/recordings/summary", summary_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert await frigate_client.async_get_recordings_summary(camera) == summary_success
     assert summary_handler.called
 
@@ -338,7 +338,7 @@ async def test_async_get_recordings(
         aiohttp_server, [web.get(f"/api/{camera}/recordings", recordings_handler)]
     )
 
-    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    frigate_client = FrigateApiClient(str(server.make_url("/")), "utc", aiohttp_session)
     assert (
         await frigate_client.async_get_recordings(camera, after, before)
         == recordings_success

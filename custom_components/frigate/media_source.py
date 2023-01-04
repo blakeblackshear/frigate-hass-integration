@@ -469,7 +469,7 @@ class RecordingIdentifier(Identifier):
                 day,
                 f"{self.hour:02}",
                 self.camera,
-                timezone,
+                timezone.replace("/", ","),
                 "index.m3u8",
             ]
 
