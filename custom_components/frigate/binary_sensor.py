@@ -5,8 +5,7 @@ import logging
 from typing import Any, cast
 
 from homeassistant.components.binary_sensor import (
-    DEVICE_CLASS_MOTION,
-    DEVICE_CLASS_OCCUPANCY,
+    BinarySensorDeviceClass,
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -134,7 +133,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
     @property
     def device_class(self) -> str:
         """Return the device class."""
-        return cast(str, DEVICE_CLASS_OCCUPANCY)
+        return cast(str, BinarySensorDeviceClass.OCCUPANCY)
 
     @property
     def icon(self) -> str:
@@ -210,4 +209,4 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
     @property
     def device_class(self) -> str:
         """Return the device class."""
-        return cast(str, DEVICE_CLASS_MOTION)
+        return cast(str, BinarySensorDeviceClass.MOTION)
