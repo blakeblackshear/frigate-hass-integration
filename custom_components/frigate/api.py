@@ -8,7 +8,6 @@ from typing import Any, cast
 
 import aiohttp
 import async_timeout
-from tzlocal import get_localzone_name
 from yarl import URL
 
 TIMEOUT = 10
@@ -31,9 +30,12 @@ class FrigateApiClientError(Exception):
 class FrigateApiClient:
     """Frigate API client."""
 
-    def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
+    def __init__(
+        self, host: str, timezone: str, session: aiohttp.ClientSession
+    ) -> None:
         """Construct API Client."""
         self._host = host
+        self._timezone = timezone
         self._session = session
 
     async def async_get_version(self) -> str:
@@ -141,7 +143,7 @@ class FrigateApiClient:
         self, camera: str, decode_json: bool = True
     ) -> list[dict[str, Any]] | str:
         """Get recordings summary."""
-        params = {"timezone": get_localzone_name()}
+        params = {"timezone": self._timezone}
 
         result = await self.api_wrapper(
             "get",

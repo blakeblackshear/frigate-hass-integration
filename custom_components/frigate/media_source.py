@@ -26,6 +26,7 @@ from homeassistant.components.media_source.models import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import system_info
 from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
@@ -123,7 +124,7 @@ class Identifier:
         """Get the identifier type."""
         raise NotImplementedError
 
-    def get_integration_proxy_path(self) -> str:
+    def get_integration_proxy_path(self, timezone: str) -> str:
         """Get the proxy (Home Assistant view) path for this identifier."""
         raise NotImplementedError
 
@@ -249,7 +250,7 @@ class EventIdentifier(Identifier):
         """Get the identifier type."""
         return "event"
 
-    def get_integration_proxy_path(self) -> str:
+    def get_integration_proxy_path(self, timezone: str) -> str:
         """Get the equivalent Frigate server path."""
         if self.frigate_media_type == FrigateMediaType.CLIPS:
             return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
@@ -452,7 +453,7 @@ class RecordingIdentifier(Identifier):
         """Get the identifier type."""
         return "recordings"
 
-    def get_integration_proxy_path(self) -> str:
+    def get_integration_proxy_path(self, timezone: str) -> str:
         """Get the integration path that will proxy this identifier."""
 
         if (
@@ -468,6 +469,7 @@ class RecordingIdentifier(Identifier):
                 day,
                 f"{self.hour:02}",
                 self.camera,
+                timezone,
                 "index.m3u8",
             ]
 
@@ -564,7 +566,10 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         if identifier and self._is_allowed_as_media_source(
             identifier.frigate_instance_id
         ):
-            server_path = identifier.get_integration_proxy_path()
+            info = await system_info.async_get_system_info(self.hass)
+            server_path = identifier.get_integration_proxy_path(
+                info.get("timezone", "utc")
+            )
             return PlayMedia(
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,
