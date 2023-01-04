@@ -979,7 +979,7 @@ async def test_event_search_identifier() -> None:
     # Event searches have no equivalent Frigate server path (searches result in
     # EventIdentifiers, that do have a Frigate server path).
     with pytest.raises(NotImplementedError):
-        identifier.get_integration_proxy_path()
+        identifier.get_integration_proxy_path("utc")
 
     # Invalid "after" time.
     assert (
@@ -1072,7 +1072,7 @@ async def test_recordings_identifier() -> None:
         identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
         identifier = RecordingIdentifier.from_str(identifier_in)
         assert identifier is not None
-        identifier.get_integration_proxy_path()
+        identifier.get_integration_proxy_path("utc")
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
