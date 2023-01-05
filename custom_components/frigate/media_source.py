@@ -716,10 +716,12 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         """Get event summary data."""
 
         try:
+            info = await system_info.async_get_system_info(self.hass)
+
             if identifier.frigate_media_type == FrigateMediaType.CLIPS:
-                kwargs = {"has_clip": True}
+                kwargs = {"has_clip": True, "timezone": info.get("timezone", "utc")}
             else:
-                kwargs = {"has_snapshot": True}
+                kwargs = {"has_snapshot": True, "timezone": info.get("timezone", "utc")}
             summary_data = await self._get_client(identifier).async_get_event_summary(
                 **kwargs
             )
