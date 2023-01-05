@@ -471,7 +471,7 @@ class RecordingIdentifier(Identifier):
                 / 60
             )
             start_date = dt.datetime(
-                int(year), int(month), int(day), int(self.hour), tzinfo=timezone.utc
+                int(year), int(month), int(day), int(self.hour), tzinfo=dt.timezone.utc
             ) - dt.timedelta(hours=tz_offset)
 
             parts = [
