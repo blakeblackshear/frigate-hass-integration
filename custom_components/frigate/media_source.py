@@ -464,9 +464,12 @@ class RecordingIdentifier(Identifier):
         ):
             year, month, day = self.year_month_day.split("-")
             tz_offset = int(
-                dt.datetime.now(pytz.timezone(timezone.replace(",", "/")))
-                .utcoffset()
-                .total_seconds()
+                (
+                    dt.datetime.now(
+                        pytz.timezone(timezone.replace(",", "/"))
+                    ).utcoffset()
+                    or dt.timedelta()
+                ).total_seconds()
                 / 60
                 / 60
             )
