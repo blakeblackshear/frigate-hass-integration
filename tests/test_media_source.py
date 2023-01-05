@@ -1247,7 +1247,9 @@ async def test_snapshots(hass: HomeAssistant) -> None:
         ],
     }
 
-    assert client.async_get_event_summary.call_args == call(has_snapshot=True)
+    assert client.async_get_event_summary.call_args == call(
+        has_snapshot=True, timezone="US/Pacific"
+    )
     assert client.async_get_events.call_args == call(
         after=1622764800,
         before=1622851200,
