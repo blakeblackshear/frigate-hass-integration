@@ -644,7 +644,7 @@ async def test_async_resolve_media(
     )
     assert media == PlayMedia(
         url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/15/front_door/US,Pacific/index.m3u8"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/15/front_door/utc/index.m3u8"
         ),
         mime_type="application/x-mpegURL",
     )
