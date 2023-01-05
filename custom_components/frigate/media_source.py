@@ -8,6 +8,7 @@ from typing import Any, cast
 
 import attr
 from dateutil.relativedelta import relativedelta
+import pytz
 
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
@@ -462,14 +463,24 @@ class RecordingIdentifier(Identifier):
             and self.hour is not None
         ):
             year, month, day = self.year_month_day.split("-")
+            tz_offset = int(
+                dt.datetime.now(pytz.timezone(timezone.replace(",", "/")))
+                .utcoffset()
+                .total_seconds()
+                / 60
+                / 60
+            )
+            start_date = dt.datetime(
+                int(year), int(month), int(day), int(self.hour), tzinfo=timezone.utc
+            ) - dt.timedelta(hours=tz_offset)
 
             parts = [
                 "vod",
-                f"{year}-{month}",
-                day,
-                f"{self.hour:02}",
+                f"{start_date.year}-{start_date.month}",
+                start_date.day,
+                f"{start_date.hour:02}",
                 self.camera,
-                timezone.replace("/", ","),
+                "utc",
                 "index.m3u8",
             ]
 
