@@ -129,7 +129,9 @@ async def ws_get_recordings_summary(
     try:
         connection.send_result(
             msg["id"],
-            await client.async_get_recordings_summary(msg["camera"], decode_json=False),
+            await client.async_get_recordings_summary(
+                msg["camera"], msg.get("timezone", "utc"), decode_json=False
+            ),
         )
     except FrigateApiClientError:
         connection.send_error(
