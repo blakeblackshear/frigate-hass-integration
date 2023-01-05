@@ -11,7 +11,7 @@ from yarl import URL
 from homeassistant import config_entries
 from homeassistant.const import CONF_URL
 from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv, system_info
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
@@ -60,10 +60,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
 
         try:
             session = async_create_clientsession(self.hass)
-            info = await system_info.async_get_system_info(self.hass)
-            client = FrigateApiClient(
-                user_input[CONF_URL], info.get("timezone", "utc"), session
-            )
+            client = FrigateApiClient(user_input[CONF_URL], session)
             await client.async_get_stats()
         except FrigateApiClientError:
             return self._show_config_form(user_input, errors={"base": "cannot_connect"})

@@ -30,12 +30,9 @@ class FrigateApiClientError(Exception):
 class FrigateApiClient:
     """Frigate API client."""
 
-    def __init__(
-        self, host: str, timezone: str, session: aiohttp.ClientSession
-    ) -> None:
+    def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
         """Construct API Client."""
         self._host = host
-        self._timezone = timezone
         self._session = session
 
     async def async_get_version(self) -> str:
@@ -140,10 +137,10 @@ class FrigateApiClient:
         return cast(dict[str, Any], result) if decode_json else result
 
     async def async_get_recordings_summary(
-        self, camera: str, decode_json: bool = True
+        self, camera: str, timezone: str, decode_json: bool = True
     ) -> list[dict[str, Any]] | str:
         """Get recordings summary."""
-        params = {"timezone": self._timezone}
+        params = {"timezone": timezone}
 
         result = await self.api_wrapper(
             "get",

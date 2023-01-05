@@ -693,10 +693,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     config = await self._get_client(identifier).async_get_config()
                     return self._get_camera_recording_folders(identifier, config)
 
+                info = await system_info.async_get_system_info(self.hass)
                 recording_summary = cast(
                     list[dict[str, Any]],
                     await self._get_client(identifier).async_get_recordings_summary(
-                        camera=identifier.camera
+                        camera=identifier.camera, timezone=info.get("timezone", "utc")
                     ),
                 )
 
