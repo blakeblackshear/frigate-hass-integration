@@ -733,11 +733,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             info = await system_info.async_get_system_info(self.hass)
 
             if identifier.frigate_media_type == FrigateMediaType.CLIPS:
-                kwargs = {"has_clip": True, "timezone": info.get("timezone", "utc")}
+                kwargs = {"has_clip": True}
             else:
-                kwargs = {"has_snapshot": True, "timezone": info.get("timezone", "utc")}
+                kwargs = {"has_snapshot": True}
             summary_data = await self._get_client(identifier).async_get_event_summary(
-                **kwargs
+                timezone=info.get("timezone", "utc"), **kwargs
             )
         except FrigateApiClientError as exc:
             raise MediaSourceError from exc

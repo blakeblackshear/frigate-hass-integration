@@ -93,12 +93,14 @@ class FrigateApiClient:
         self,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        timezone: str | None = None,
         decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
             "has_clip": int(has_clip) if has_clip is not None else None,
             "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
+            "timezone": str(timezone) if timezone is not None else None,
         }
 
         return cast(
