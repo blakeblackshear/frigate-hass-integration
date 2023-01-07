@@ -466,16 +466,13 @@ class RecordingIdentifier(Identifier):
             # Take the selected time in users local time
             # and find the offset to utc, convert to UTC
             # then request the vod for that time.
-            start_date: dt.datetime = (
-                dt.datetime(
-                    int(year),
-                    int(month),
-                    int(day),
-                    int(self.hour),
-                    tzinfo=dt.timezone.utc,
-                )
-                - dt.datetime.now(pytz.timezone(timezone)).utcoffset()
-            )
+            start_date: dt.datetime = dt.datetime(
+                int(year),
+                int(month),
+                int(day),
+                int(self.hour),
+                tzinfo=dt.timezone.utc,
+            ) - (dt.datetime.now(pytz.timezone(timezone)).utcoffset() or dt.timedelta())
 
             parts = [
                 "vod",
