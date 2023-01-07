@@ -466,7 +466,7 @@ class RecordingIdentifier(Identifier):
             # Take the selected time in users local time
             # and find the offset to utc, convert to UTC
             # then request the vod for that time.
-            start_date = (
+            start_date: dt.datetime = (
                 dt.datetime(
                     int(year),
                     int(month),
