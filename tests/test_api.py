@@ -309,7 +309,10 @@ async def test_async_get_recordings_summary(
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
-    assert await frigate_client.async_get_recordings_summary(camera) == summary_success
+    assert (
+        await frigate_client.async_get_recordings_summary(camera, "utc")
+        == summary_success
+    )
     assert summary_handler.called
 
 

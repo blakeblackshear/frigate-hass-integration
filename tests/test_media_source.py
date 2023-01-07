@@ -644,7 +644,7 @@ async def test_async_resolve_media(
     )
     assert media == PlayMedia(
         url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/15/front_door/index.m3u8"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/23/front_door/utc/index.m3u8"
         ),
         mime_type="application/x-mpegURL",
     )
@@ -979,7 +979,7 @@ async def test_event_search_identifier() -> None:
     # Event searches have no equivalent Frigate server path (searches result in
     # EventIdentifiers, that do have a Frigate server path).
     with pytest.raises(NotImplementedError):
-        identifier.get_integration_proxy_path()
+        identifier.get_integration_proxy_path("utc")
 
     # Invalid "after" time.
     assert (
@@ -1072,7 +1072,7 @@ async def test_recordings_identifier() -> None:
         identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
         identifier = RecordingIdentifier.from_str(identifier_in)
         assert identifier is not None
-        identifier.get_integration_proxy_path()
+        identifier.get_integration_proxy_path("utc")
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
@@ -1247,7 +1247,9 @@ async def test_snapshots(hass: HomeAssistant) -> None:
         ],
     }
 
-    assert client.async_get_event_summary.call_args == call(has_snapshot=True)
+    assert client.async_get_event_summary.call_args == call(
+        has_snapshot=True, timezone="US/Pacific"
+    )
     assert client.async_get_events.call_args == call(
         after=1622764800,
         before=1622851200,

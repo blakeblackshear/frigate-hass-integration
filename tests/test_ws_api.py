@@ -144,7 +144,7 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
 
     response = await ws_client.receive_json()
     mock_client.async_get_recordings_summary.assert_called_with(
-        TEST_CAMERA, decode_json=False
+        TEST_CAMERA, "utc", decode_json=False
     )
     assert response["success"]
     assert response["result"] == recording_success

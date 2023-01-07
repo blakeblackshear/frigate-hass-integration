@@ -170,8 +170,10 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
-
-    client = FrigateApiClient(entry.data.get(CONF_URL), async_get_clientsession(hass))
+    client = FrigateApiClient(
+        entry.data.get(CONF_URL),
+        async_get_clientsession(hass),
+    )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
 

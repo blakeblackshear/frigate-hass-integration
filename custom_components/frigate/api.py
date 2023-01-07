@@ -8,7 +8,6 @@ from typing import Any, cast
 
 import aiohttp
 import async_timeout
-from tzlocal import get_localzone_name
 from yarl import URL
 
 TIMEOUT = 10
@@ -94,12 +93,14 @@ class FrigateApiClient:
         self,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        timezone: str | None = None,
         decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
             "has_clip": int(has_clip) if has_clip is not None else None,
             "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
+            "timezone": str(timezone) if timezone is not None else None,
         }
 
         return cast(
@@ -138,10 +139,10 @@ class FrigateApiClient:
         return cast(dict[str, Any], result) if decode_json else result
 
     async def async_get_recordings_summary(
-        self, camera: str, decode_json: bool = True
+        self, camera: str, timezone: str, decode_json: bool = True
     ) -> list[dict[str, Any]] | str:
         """Get recordings summary."""
-        params = {"timezone": get_localzone_name()}
+        params = {"timezone": timezone}
 
         result = await self.api_wrapper(
             "get",

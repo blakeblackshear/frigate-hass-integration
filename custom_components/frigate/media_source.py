@@ -8,6 +8,7 @@ from typing import Any, cast
 
 import attr
 from dateutil.relativedelta import relativedelta
+import pytz
 
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
@@ -26,6 +27,7 @@ from homeassistant.components.media_source.models import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import system_info
 from homeassistant.helpers.template import DATE_STR_FORMAT
 from homeassistant.util.dt import DEFAULT_TIME_ZONE
 
@@ -123,7 +125,7 @@ class Identifier:
         """Get the identifier type."""
         raise NotImplementedError
 
-    def get_integration_proxy_path(self) -> str:
+    def get_integration_proxy_path(self, timezone: str) -> str:
         """Get the proxy (Home Assistant view) path for this identifier."""
         raise NotImplementedError
 
@@ -249,7 +251,7 @@ class EventIdentifier(Identifier):
         """Get the identifier type."""
         return "event"
 
-    def get_integration_proxy_path(self) -> str:
+    def get_integration_proxy_path(self, timezone: str) -> str:
         """Get the equivalent Frigate server path."""
         if self.frigate_media_type == FrigateMediaType.CLIPS:
             return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
@@ -452,7 +454,7 @@ class RecordingIdentifier(Identifier):
         """Get the identifier type."""
         return "recordings"
 
-    def get_integration_proxy_path(self) -> str:
+    def get_integration_proxy_path(self, timezone: str) -> str:
         """Get the integration path that will proxy this identifier."""
 
         if (
@@ -461,13 +463,24 @@ class RecordingIdentifier(Identifier):
             and self.hour is not None
         ):
             year, month, day = self.year_month_day.split("-")
+            # Take the selected time in users local time
+            # and find the offset to utc, convert to UTC
+            # then request the vod for that time.
+            start_date: dt.datetime = dt.datetime(
+                int(year),
+                int(month),
+                int(day),
+                int(self.hour),
+                tzinfo=dt.timezone.utc,
+            ) - (dt.datetime.now(pytz.timezone(timezone)).utcoffset() or dt.timedelta())
 
             parts = [
                 "vod",
-                f"{year}-{month}",
-                day,
-                f"{self.hour:02}",
+                f"{start_date.year}-{start_date.month:02}",
+                f"{start_date.day:02}",
+                f"{start_date.hour:02}",
                 self.camera,
+                "utc",
                 "index.m3u8",
             ]
 
@@ -564,7 +577,10 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         if identifier and self._is_allowed_as_media_source(
             identifier.frigate_instance_id
         ):
-            server_path = identifier.get_integration_proxy_path()
+            info = await system_info.async_get_system_info(self.hass)
+            server_path = identifier.get_integration_proxy_path(
+                info.get("timezone", "utc")
+            )
             return PlayMedia(
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,
@@ -688,10 +704,11 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     config = await self._get_client(identifier).async_get_config()
                     return self._get_camera_recording_folders(identifier, config)
 
+                info = await system_info.async_get_system_info(self.hass)
                 recording_summary = cast(
                     list[dict[str, Any]],
                     await self._get_client(identifier).async_get_recordings_summary(
-                        camera=identifier.camera
+                        camera=identifier.camera, timezone=info.get("timezone", "utc")
                     ),
                 )
 
@@ -710,12 +727,14 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
         """Get event summary data."""
 
         try:
+            info = await system_info.async_get_system_info(self.hass)
+
             if identifier.frigate_media_type == FrigateMediaType.CLIPS:
                 kwargs = {"has_clip": True}
             else:
                 kwargs = {"has_snapshot": True}
             summary_data = await self._get_client(identifier).async_get_event_summary(
-                **kwargs
+                timezone=info.get("timezone", "utc"), **kwargs
             )
         except FrigateApiClientError as exc:
             raise MediaSourceError from exc
