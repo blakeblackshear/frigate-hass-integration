@@ -114,6 +114,7 @@ async def ws_get_recordings(
         vol.Required("type"): "frigate/recordings/summary",
         vol.Required("instance_id"): str,
         vol.Required("camera"): str,
+        vol.Optional("timezone"): str,
     }
 )  # type: ignore[misc]
 @websocket_api.async_response  # type: ignore[misc]
@@ -197,6 +198,7 @@ async def ws_get_events(
         vol.Required("instance_id"): str,
         vol.Optional("has_clip"): bool,
         vol.Optional("has_snapshot"): bool,
+        vol.Optional("timezone"): str,
     }
 )  # type: ignore[misc]
 @websocket_api.async_response  # type: ignore[misc]
@@ -216,6 +218,7 @@ async def ws_get_events_summary(
             await client.async_get_event_summary(
                 msg.get("has_clip"),
                 msg.get("has_snapshot"),
+                msg.get("timezone", "utc"),
                 decode_json=False,
             ),
         )
