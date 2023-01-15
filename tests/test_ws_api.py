@@ -131,7 +131,7 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
     await setup_mock_frigate_config_entry(hass, client=mock_client)
 
     ws_client = await hass_ws_client()
-    recording_json = {
+    recording_json: dict[str, Any] = {
         "id": 1,
         "type": "frigate/recordings/summary",
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
@@ -140,11 +140,11 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
 
     recording_success = {"recording": "summary"}
     mock_client.async_get_recordings_summary = AsyncMock(return_value=recording_success)
-    await ws_client.send_json(recording_json)
+    await ws_client.send_json({**recording_json, "timezone": "Europe/Dublin"})
 
     response = await ws_client.receive_json()
     mock_client.async_get_recordings_summary.assert_called_with(
-        TEST_CAMERA, "utc", decode_json=False
+        TEST_CAMERA, "Europe/Dublin", decode_json=False
     )
     assert response["success"]
     assert response["result"] == recording_success
@@ -333,6 +333,7 @@ async def test_get_events_summary_success(
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
         "has_clip": True,
         "has_snapshot": True,
+        "timezone": "US/Pacific",
     }
 
     events_summary_success = {"events": "summary"}
@@ -341,7 +342,7 @@ async def test_get_events_summary_success(
 
     response = await ws_client.receive_json()
     mock_client.async_get_event_summary.assert_called_with(
-        True, True, decode_json=False
+        True, True, "US/Pacific", decode_json=False
     )
     assert response["success"]
     assert response["result"] == events_summary_success
