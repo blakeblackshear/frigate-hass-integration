@@ -147,7 +147,10 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
         )
 
-        if self._cam_name in self._frigate_config.get("go2rtc", {}).get("streams", {}):
+        if (
+            self._cam_name
+            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
+        ):
             self._restream_type = "rtsp"
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
