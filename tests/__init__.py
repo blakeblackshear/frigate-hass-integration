@@ -119,7 +119,9 @@ TEST_CONFIG = {
             },
             "record": {"enabled": False, "retain_days": 30},
             "rtmp": {"enabled": True},
-            "restream": {"enabled": True},
+            "restream": {
+                "streams": {"front_door": "rtsp://rtsp:password@cam-front-door/live"}
+            },
             "snapshots": {
                 "bounding_box": False,
                 "crop": False,
