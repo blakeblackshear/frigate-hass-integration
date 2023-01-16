@@ -77,7 +77,7 @@ async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
     """Set up birdseye camera."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["restream"] = {"birdseye": True}
+    config["birdseye"] = {"restream": True}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)
@@ -98,7 +98,7 @@ async def test_frigate_camera_setup_rtmp(
     """Set up a camera."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["cameras"]["front_door"]["restream"]["enabled"] = False
+    config["go2rtc"] = {}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)
@@ -159,7 +159,7 @@ async def test_frigate_camera_birdseye_image_height(
     """Ensure async_camera_image respects height parameter."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["restream"] = {"birdseye": True}
+    config["birdseye"] = {"restream": True}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)
@@ -188,7 +188,7 @@ async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
     """Set up a camera without streaming."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["cameras"]["front_door"]["restream"]["enabled"] = False
+    config["go2rtc"] = {}
     config["cameras"]["front_door"]["rtmp"]["enabled"] = False
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -210,7 +210,7 @@ async def test_frigate_camera_recording_camera_state(
     """Set up an mqtt camera."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["cameras"]["front_door"]["restream"]["enabled"] = False
+    config["go2rtc"] = {}
     config["cameras"]["front_door"]["rtmp"]["enabled"] = False
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -370,7 +370,6 @@ async def test_camera_option_rtsp_stream_url_template(
 ) -> None:
     """Verify camera with the RTSP URL template option."""
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["cameras"]["front_door"]["restream"]["enabled"] = True
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     config_entry = create_mock_frigate_config_entry(
@@ -391,7 +390,7 @@ async def test_birdseye_option_rtsp_stream_url_template(
 ) -> None:
     """Verify birdseye cam with the RTSP URL template option."""
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["restream"] = {"birdseye": True}
+    config["birdseye"] = {"restream": True}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     config_entry = create_mock_frigate_config_entry(
@@ -412,7 +411,7 @@ async def test_camera_option_rtmp_stream_url_template(
 ) -> None:
     """Verify camera with the RTMP URL template option."""
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["cameras"]["front_door"]["restream"]["enabled"] = False
+    config["go2rtc"] = {}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     config_entry = create_mock_frigate_config_entry(

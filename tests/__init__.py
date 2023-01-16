@@ -119,7 +119,6 @@ TEST_CONFIG = {
             },
             "record": {"enabled": False, "retain_days": 30},
             "rtmp": {"enabled": True},
-            "restream": {"enabled": True},
             "snapshots": {
                 "bounding_box": False,
                 "crop": False,
@@ -154,6 +153,7 @@ TEST_CONFIG = {
         "user": None,
     },
     "snapshots": {"retain": {"default": 10, "objects": {}}},
+    "go2rtc": {"streams": {"front_door": "rtsp://rtsp:password@cam-front-door/live"}},
 }
 TEST_STATS = {
     "detection_fps": 13.7,

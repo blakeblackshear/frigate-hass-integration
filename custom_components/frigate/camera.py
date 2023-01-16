@@ -69,7 +69,7 @@ async def async_setup_entry(
         ]
         + (
             [BirdseyeCamera(entry, frigate_client)]
-            if frigate_config.get("restream", {}).get("birdseye", False)
+            if frigate_config.get("birdseye", {}).get("restream", False)
             else []
         )
     )
@@ -147,7 +147,10 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
         )
 
-        if self._camera_config.get("restream", {}).get("enabled"):
+        if (
+            self._cam_name
+            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
+        ):
             self._restream_type = "rtsp"
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
