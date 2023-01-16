@@ -370,7 +370,6 @@ async def test_camera_option_rtsp_stream_url_template(
 ) -> None:
     """Verify camera with the RTSP URL template option."""
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["go2rtc"] = {}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     config_entry = create_mock_frigate_config_entry(
