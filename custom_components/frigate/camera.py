@@ -138,7 +138,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._attr_is_streaming = self._camera_config.get("restream", {}).get(
             "enabled"
-        ) or self._camera_config.get("rtmp", {}).get("enabled")
+        ) or self._camera_config.get("rtmp", {}).get("enabled"
+        ) or self._cam_name in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
@@ -152,7 +153,6 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
         ):
             self._restream_type = "rtsp"
-            self._attr_is_streaming = True
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
