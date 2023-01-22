@@ -53,9 +53,9 @@ class FrigateApiClient:
 
     async def async_get_events(
         self,
-        camera: str | None = None,
-        label: str | None = None,
-        zone: str | None = None,
+        cameras: list[str] | None = None,
+        labels: list[str] | None = None,
+        zones: list[str] | None = None,
         after: int | None = None,
         before: int | None = None,
         limit: int | None = None,
@@ -65,9 +65,9 @@ class FrigateApiClient:
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
-            "camera": camera,
-            "label": label,
-            "zone": zone,
+            "cameras": ",".join(cameras) if cameras else None,
+            "labels": ",".join(labels) if labels else None,
+            "zones": ",".join(zones) if zones else None,
             "after": after,
             "before": before,
             "limit": limit,

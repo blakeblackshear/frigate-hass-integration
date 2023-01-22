@@ -685,9 +685,9 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 events = await self._get_client(identifier).async_get_events(
                     after=identifier.after,
                     before=identifier.before,
-                    camera=identifier.camera,
-                    label=identifier.label,
-                    zone=identifier.zone,
+                    cameras=[identifier.camera] if identifier.camera else None,
+                    labels=[identifier.label] if identifier.label else None,
+                    zones=[identifier.zone] if identifier.zone else None,
                     limit=10000 if identifier.name.endswith(".all") else ITEM_LIMIT,
                     **media_kwargs,
                 )
