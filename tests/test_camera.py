@@ -61,7 +61,7 @@ async def test_frigate_camera_setup_rtsp(
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
-    assert source == "rtsp://example.com:8554/front_door"
+    assert source == "rtsp://example.com:8554/front_door?video=copy&audio=aac"
 
     aioclient_mock.get(
         "http://example.com/api/front_door/latest.jpg?h=277",
