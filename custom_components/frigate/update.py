@@ -85,7 +85,7 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
 
         version = self.coordinator.data.get("service", {}).get("latest_version")
 
-        if not version or version == "unknown":
+        if not version or version == "unknown" or version == "disabled":
             return None
 
         return str(version)
