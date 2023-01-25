@@ -261,6 +261,7 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
         "limit": 3,
         "has_clip": True,
         "has_snapshot": True,
+        "favorites": True,
     }
 
     events_success = {"events": "summary"}
@@ -269,7 +270,16 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
 
     response = await ws_client.receive_json()
     mock_client.async_get_events.assert_called_with(
-        [TEST_CAMERA], [TEST_LABEL], [TEST_ZONE], 1, 2, 3, True, True, decode_json=False
+        [TEST_CAMERA],
+        [TEST_LABEL],
+        [TEST_ZONE],
+        1,
+        2,
+        3,
+        True,
+        True,
+        True,
+        decode_json=False,
     )
     assert response["success"]
     assert response["result"] == events_success

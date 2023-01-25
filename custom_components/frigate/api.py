@@ -61,6 +61,7 @@ class FrigateApiClient:
         limit: int | None = None,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        favorites: bool | None = None,
         decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
@@ -74,6 +75,7 @@ class FrigateApiClient:
             "has_clip": int(has_clip) if has_clip is not None else None,
             "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
             "include_thumbnails": 0,
+            "favorites": int(favorites) if favorites is not None else None,
         }
 
         return cast(
