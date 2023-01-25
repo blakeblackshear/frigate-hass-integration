@@ -1253,9 +1253,9 @@ async def test_snapshots(hass: HomeAssistant) -> None:
     assert client.async_get_events.call_args == call(
         after=1622764800,
         before=1622851200,
-        camera="front_door",
-        label="person",
-        zone=None,
+        cameras=["front_door"],
+        labels=["person"],
+        zones=None,
         limit=50,
         has_snapshot=True,
     )

@@ -253,9 +253,9 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
         "id": 1,
         "type": "frigate/events/get",
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
-        "camera": TEST_CAMERA,
-        "label": TEST_LABEL,
-        "zone": TEST_ZONE,
+        "cameras": [TEST_CAMERA],
+        "labels": [TEST_LABEL],
+        "zones": [TEST_ZONE],
         "after": 1,
         "before": 2,
         "limit": 3,
@@ -269,7 +269,7 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
 
     response = await ws_client.receive_json()
     mock_client.async_get_events.assert_called_with(
-        TEST_CAMERA, TEST_LABEL, TEST_ZONE, 1, 2, 3, True, True, decode_json=False
+        [TEST_CAMERA], [TEST_LABEL], [TEST_ZONE], 1, 2, 3, True, True, decode_json=False
     )
     assert response["success"]
     assert response["result"] == events_success
@@ -287,7 +287,7 @@ async def test_get_events_instance_not_found(
         "id": 1,
         "type": "frigate/events/get",
         "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
-        "camera": TEST_CAMERA,
+        "cameras": [TEST_CAMERA],
     }
 
     await ws_client.send_json(events_json)
@@ -307,7 +307,7 @@ async def test_get_events_api_error(hass: HomeAssistant, hass_ws_client: Any) ->
         "id": 1,
         "type": "frigate/events/get",
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
-        "camera": TEST_CAMERA,
+        "cameras": [TEST_CAMERA],
     }
 
     mock_client.async_get_events = AsyncMock(side_effect=FrigateApiClientError)

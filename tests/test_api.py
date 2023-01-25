@@ -79,9 +79,9 @@ async def test_async_get_events(
         _assert_request_params(
             request,
             {
-                "camera": "test_camera",
-                "label": "test_label",
-                "zone": "test_zone",
+                "cameras": "test_camera1,test_camera2",
+                "labels": "test_label1,test_label2",
+                "zones": "test_zone1,test_zone2",
                 "after": "1",
                 "before": "2",
                 "limit": "3",
@@ -96,9 +96,9 @@ async def test_async_get_events(
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert events_in == await frigate_client.async_get_events(
-        camera="test_camera",
-        label="test_label",
-        zone="test_zone",
+        cameras=["test_camera1", "test_camera2"],
+        labels=["test_label1", "test_label2"],
+        zones=["test_zone1", "test_zone2"],
         after=1,
         before=2,
         limit=3,
