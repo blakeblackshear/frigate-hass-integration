@@ -167,9 +167,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
                     **self._camera_config
                 )
             else:
-                self._stream_source = (
-                    f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
-                )
+                # TODO: Remover after https://github.com/AlexxIT/go2rtc/issues/194 gets fixed
+                self._stream_source = f"rtsp://{URL(self._url).host}:8554/{self._cam_name}?video=copy&audio=aac"
 
         elif self._camera_config.get("rtmp", {}).get("enabled"):
             self._restream_type = "rtmp"
