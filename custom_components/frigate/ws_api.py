@@ -155,6 +155,8 @@ async def ws_get_recordings_summary(
         vol.Optional("limit"): int,
         vol.Optional("has_clip"): bool,
         vol.Optional("has_snapshot"): bool,
+        vol.Optional("has_snapshot"): bool,
+        vol.Optional("favorites"): bool,
     }
 )  # type: ignore[misc]
 @websocket_api.async_response  # type: ignore[misc]
@@ -180,6 +182,7 @@ async def ws_get_events(
                 msg.get("limit"),
                 msg.get("has_clip"),
                 msg.get("has_snapshot"),
+                msg.get("favorites"),
                 decode_json=False,
             ),
         )
