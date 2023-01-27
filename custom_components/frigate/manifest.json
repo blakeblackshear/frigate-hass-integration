@@ -2,7 +2,7 @@
     "domain": "frigate",
     "documentation": "https://github.com/blakeblackshear/frigate",
     "name": "Frigate",
-    "version": "4.0.0-beta3",
+    "version": "4.0.0-beta4",
     "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
     "dependencies": [
         "http",
