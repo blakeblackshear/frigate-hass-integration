@@ -496,9 +496,9 @@ class RecordingIdentifier(Identifier):
 
     def get_changes_to_set_next_empty(self, data: str) -> dict[str, str]:
         """Get the changes that would set the next attribute in the hierarchy."""
-        for attribute in self.__attrs_attrs__:  # type: ignore[attr-defined]
-            if getattr(self, attribute.name) is None:
-                return {attribute.name: data}
+        for attribute in self.__attrs_attrs__:
+            if getattr(self, attribute.name) is None:  # type: ignore[attr-defined]
+                return {attribute.name: data}  # type: ignore[attr-defined]
         raise ValueError("No empty attribute available")
 
     @property
