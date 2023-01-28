@@ -125,8 +125,14 @@ norecursedirs = [
     "testing_config",
 ]
 filterwarnings = [
-    # Can be removed after there is a new pytest-cov release with https://github.com/pytest-dev/pytest-cov/issues/561 .
-    "ignore:.*hookimpl CovPlugin.*old-style configuration options.*:pytest.PytestDeprecationWarning"
+    # Can be removed after there is a new pytest-cov release with
+    # https://github.com/pytest-dev/pytest-cov/issues/561 .
+    "ignore:.*hookimpl CovPlugin.*old-style configuration options.*:pytest.PytestDeprecationWarning",
+
+    # Can be removed once we can update to pytest-asyncio==0.20.3 (which in
+    # turn requires a release of pytest-homeassistant-custom-component >
+    # 0.12.49)
+    "ignore:.*There is no current event loop.*:DeprecationWarning"
 ]
 addopts = "--timeout=10 --cov-report=xml:coverage.xml --cov-report=term-missing --cov=custom_components.frigate --cov-fail-under=100"
 
