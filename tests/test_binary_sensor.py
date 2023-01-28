@@ -23,7 +23,7 @@ from . import (
     TEST_SERVER_VERSION,
     create_mock_frigate_client,
     setup_mock_frigate_config_entry,
-    test_entities_are_setup_correctly_in_registry,
+    verify_entities_are_setup_correctly_in_registry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ async def test_binary_sensors_setup_correctly_in_registry(
 
     await setup_mock_frigate_config_entry(hass)
 
-    await test_entities_are_setup_correctly_in_registry(
+    await verify_entities_are_setup_correctly_in_registry(
         hass,
         entities_enabled={
             TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,

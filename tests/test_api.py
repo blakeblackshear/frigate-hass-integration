@@ -5,7 +5,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 import logging
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import aiohttp
 from aiohttp import web
@@ -44,7 +44,7 @@ async def test_async_get_stats(
 ) -> None:
     """Test async_get_config."""
     stats_in = {"detection_fps": 8.1}
-    stats_handler = Mock(return_value=web.json_response(stats_in))
+    stats_handler = AsyncMock(return_value=web.json_response(stats_in))
 
     server = await start_frigate_server(
         aiohttp_server, [web.get("/api/stats", stats_handler)]
@@ -148,7 +148,7 @@ async def test_async_get_config(
 ) -> None:
     """Test async_get_event_summary."""
     config_in = {"cameras": {"front_door": {"camera_config": "goes here"}}}
-    config_handler = Mock(return_value=web.json_response(config_in))
+    config_handler = AsyncMock(return_value=web.json_response(config_in))
 
     server = await start_frigate_server(
         aiohttp_server, [web.get("/api/config", config_handler)]
@@ -170,7 +170,7 @@ async def test_async_get_path(
         }
     ]
 
-    recordings_handler = Mock(return_value=web.json_response(recordings_in))
+    recordings_handler = AsyncMock(return_value=web.json_response(recordings_in))
 
     server = await start_frigate_server(
         aiohttp_server, [web.get("/recordings/moo/", recordings_handler)]
@@ -185,10 +185,10 @@ async def test_api_wrapper_methods(
 ) -> None:
     """Test the general api_wrapper."""
 
-    get_handler = Mock(return_value=web.json_response({"method": "GET"}))
-    put_handler = Mock(return_value=web.json_response({"method": "PUT"}))
-    patch_handler = Mock(return_value=web.json_response({"method": "PATCH"}))
-    post_handler = Mock(return_value=web.json_response({"method": "POST"}))
+    get_handler = AsyncMock(return_value=web.json_response({"method": "GET"}))
+    put_handler = AsyncMock(return_value=web.json_response({"method": "PUT"}))
+    patch_handler = AsyncMock(return_value=web.json_response({"method": "PATCH"}))
+    post_handler = AsyncMock(return_value=web.json_response({"method": "POST"}))
 
     server = await start_frigate_server(
         aiohttp_server,
@@ -225,7 +225,7 @@ async def test_api_wrapper_exceptions(
     server = await start_frigate_server(
         aiohttp_server,
         [
-            web.get("/get", Mock(return_value=web.json_response({}))),
+            web.get("/get", AsyncMock(return_value=web.json_response({}))),
         ],
     )
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
@@ -272,10 +272,10 @@ async def test_async_retain(
     """Test async_retain."""
 
     post_success = {"success": True, "message": "Post success"}
-    post_handler = Mock(return_value=web.json_response(post_success))
+    post_handler = AsyncMock(return_value=web.json_response(post_success))
 
     delete_success = {"success": True, "message": "Delete success"}
-    delete_handler = Mock(return_value=web.json_response(delete_success))
+    delete_handler = AsyncMock(return_value=web.json_response(delete_success))
 
     event_id = "1656282822.206673-bovnfg"
     server = await start_frigate_server(
@@ -301,7 +301,7 @@ async def test_async_get_recordings_summary(
     """Test async_recordings_summary."""
 
     summary_success = {"summary": "goes_here"}
-    summary_handler = Mock(return_value=web.json_response(summary_success))
+    summary_handler = AsyncMock(return_value=web.json_response(summary_success))
     camera = "front_door"
 
     server = await start_frigate_server(

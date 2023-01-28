@@ -209,7 +209,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             % ({"h": height} if height is not None and height > 0 else {})
         )
 
-        with async_timeout.timeout(10):
+        async with async_timeout.timeout(10):
             response = await websession.get(image_url)
             return await response.read()
 
