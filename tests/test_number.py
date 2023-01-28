@@ -17,7 +17,7 @@ from . import (
     create_mock_frigate_client,
     enable_and_load_entity,
     setup_mock_frigate_config_entry,
-    test_entities_are_setup_correctly_in_registry,
+    verify_entities_are_setup_correctly_in_registry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -171,7 +171,7 @@ async def test_numbers_setup_correctly_in_registry(
 
     await setup_mock_frigate_config_entry(hass)
 
-    await test_entities_are_setup_correctly_in_registry(
+    await verify_entities_are_setup_correctly_in_registry(
         hass,
         entities_disabled=DISABLED_NUMBER_ENTITY_IDS,
     )
