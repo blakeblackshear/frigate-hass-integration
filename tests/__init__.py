@@ -346,7 +346,7 @@ async def setup_mock_frigate_config_entry(
     return config_entry
 
 
-async def test_entities_are_setup_correctly_in_registry(
+async def verify_entities_are_setup_correctly_in_registry(
     hass: HomeAssistant,
     entities_enabled: set[str] | None = None,
     entities_disabled: set[str] | None = None,

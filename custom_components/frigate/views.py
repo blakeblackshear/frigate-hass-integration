@@ -463,8 +463,8 @@ class WebsocketProxyView(ProxyView):
         ) as ws_to_frigate:
             await asyncio.wait(
                 [
-                    self._proxy_msgs(ws_to_frigate, ws_to_user),
-                    self._proxy_msgs(ws_to_user, ws_to_frigate),
+                    asyncio.create_task(self._proxy_msgs(ws_to_frigate, ws_to_user)),
+                    asyncio.create_task(self._proxy_msgs(ws_to_user, ws_to_frigate)),
                 ],
                 return_when=asyncio.tasks.FIRST_COMPLETED,
             )

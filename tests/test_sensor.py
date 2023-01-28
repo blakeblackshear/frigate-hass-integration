@@ -59,7 +59,7 @@ from . import (
     create_mock_frigate_client,
     enable_and_load_entity,
     setup_mock_frigate_config_entry,
-    test_entities_are_setup_correctly_in_registry,
+    verify_entities_are_setup_correctly_in_registry,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -535,7 +535,7 @@ async def test_sensors_setup_correctly_in_registry(
     """Verify entities are enabled/visible as appropriate."""
 
     await setup_mock_frigate_config_entry(hass)
-    await test_entities_are_setup_correctly_in_registry(
+    await verify_entities_are_setup_correctly_in_registry(
         hass,
         entities_enabled={
             TEST_SENSOR_STEPS_ALL_ENTITY_ID,
