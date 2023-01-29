@@ -289,14 +289,15 @@ class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
                 .get(self._gpu_name, {})
                 .get("gpu")
             )
-            if data is not None:
-                if data == -1:
-                    return None
 
-                try:
-                    return float(data.replace("%", "").strip())
-                except ValueError:
-                    pass
+            if data is None or not isinstance(data, str):
+                return None
+
+            try:
+                return float(data.replace("%", "").strip())
+            except ValueError:
+                pass
+
         return None
 
     @property
