@@ -292,7 +292,7 @@ class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
             if data is not None:
                 if data == -1:
                     return None
-                
+
                 try:
                     return float(data.replace("%", "").strip())
                 except ValueError:
