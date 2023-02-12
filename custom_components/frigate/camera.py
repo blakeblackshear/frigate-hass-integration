@@ -141,7 +141,6 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
         ):
             self._attr_is_streaming = True
-            self._attr_go2rtc_stream_name = self._cam_name
         elif self._camera_config.get("rtmp", {}).get("enabled"):
             self._attr_is_streaming = True
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
@@ -232,9 +231,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     @property
     def extra_state_attributes(self) -> dict[str, str]:
         """Return entity specific state attributes."""
-        return {
+        result = {
             "restream_type": self._restream_type,
         }
+        if self._restream_type == "rtsp":
+            result["go2rtc_stream_name"] = self._cam_name
+        return result
 
     @property
     def supported_features(self) -> int:
@@ -350,6 +352,13 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
             "model": self._get_model(),
             "configuration_url": f"{self._url}/cameras/birdseye",
             "manufacturer": NAME,
+        }
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str]:
+        """Return entity specific state attributes."""
+        return {
+            "go2rtc_stream_name": "birdseye",
         }
 
     @property
