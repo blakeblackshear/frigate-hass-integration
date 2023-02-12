@@ -58,6 +58,7 @@ async def test_frigate_camera_setup_rtsp(
     assert entity_state.state == "streaming"
     assert entity_state.attributes["supported_features"] == 2
     assert entity_state.attributes["restream_type"] == "rtsp"
+    assert entity_state.attributes["go2rtc_stream_name"] == "front_door"
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
