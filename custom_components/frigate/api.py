@@ -55,6 +55,7 @@ class FrigateApiClient:
         self,
         cameras: list[str] | None = None,
         labels: list[str] | None = None,
+        sub_labels: list[str] | None = None,
         zones: list[str] | None = None,
         after: int | None = None,
         before: int | None = None,
@@ -68,6 +69,7 @@ class FrigateApiClient:
         params = {
             "cameras": ",".join(cameras) if cameras else None,
             "labels": ",".join(labels) if labels else None,
+            "sub_labels": ",".join(sub_labels) if sub_labels else None,
             "zones": ",".join(zones) if zones else None,
             "after": after,
             "before": before,

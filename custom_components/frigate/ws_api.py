@@ -149,6 +149,7 @@ async def ws_get_recordings_summary(
         vol.Required("instance_id"): str,
         vol.Optional("cameras"): [str],
         vol.Optional("labels"): [str],
+        vol.Optional("sub_labels"): [str],
         vol.Optional("zones"): [str],
         vol.Optional("after"): int,
         vol.Optional("before"): int,
@@ -176,6 +177,7 @@ async def ws_get_events(
             await client.async_get_events(
                 msg.get("cameras"),
                 msg.get("labels"),
+                msg.get("sub_labels"),
                 msg.get("zones"),
                 msg.get("after"),
                 msg.get("before"),

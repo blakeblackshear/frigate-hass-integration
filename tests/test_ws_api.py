@@ -19,6 +19,7 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 TEST_CAMERA = "front_door"
 TEST_EVENT_ID = "1656282822.206673-bovnfg"
 TEST_LABEL = "person"
+TEST_SUB_LABEL = "mr-frigate"
 TEST_ZONE = "steps"
 
 
@@ -255,6 +256,7 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
         "cameras": [TEST_CAMERA],
         "labels": [TEST_LABEL],
+        "sub_labels": [TEST_SUB_LABEL],
         "zones": [TEST_ZONE],
         "after": 1,
         "before": 2,
@@ -272,6 +274,7 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
     mock_client.async_get_events.assert_called_with(
         [TEST_CAMERA],
         [TEST_LABEL],
+        [TEST_SUB_LABEL],
         [TEST_ZONE],
         1,
         2,
