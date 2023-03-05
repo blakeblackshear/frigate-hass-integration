@@ -1255,6 +1255,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
         before=1622851200,
         cameras=["front_door"],
         labels=["person"],
+        sub_labels=None,
         zones=None,
         limit=50,
         has_snapshot=True,

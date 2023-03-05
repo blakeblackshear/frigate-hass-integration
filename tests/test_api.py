@@ -81,6 +81,7 @@ async def test_async_get_events(
             {
                 "cameras": "test_camera1,test_camera2",
                 "labels": "test_label1,test_label2",
+                "sub_labels": "test_sub_label1,test_sub_label2",
                 "zones": "test_zone1,test_zone2",
                 "after": "1",
                 "before": "2",
@@ -98,6 +99,7 @@ async def test_async_get_events(
     assert events_in == await frigate_client.async_get_events(
         cameras=["test_camera1", "test_camera2"],
         labels=["test_label1", "test_label2"],
+        sub_labels=["test_sub_label1", "test_sub_label2"],
         zones=["test_zone1", "test_zone2"],
         after=1,
         before=2,
