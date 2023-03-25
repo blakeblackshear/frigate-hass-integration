@@ -11,6 +11,7 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
+import pytz
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
 from custom_components.frigate.const import (
@@ -642,9 +643,13 @@ async def test_async_resolve_media(
             "/recordings/front_door/2021-05-30/15/46.08.mp4"
         ),
     )
+
+    as_utc = datetime.datetime(2021, 5, 30, 15, 46, 8).astimezone(pytz.UTC)
     assert media == PlayMedia(
         url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/23/front_door/utc/index.m3u8"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/"
+            + as_utc.strftime("%Y-%m/%d/%H")
+            + "/front_door/utc/index.m3u8"
         ),
         mime_type="application/x-mpegURL",
     )
