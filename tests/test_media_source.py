@@ -34,6 +34,7 @@ from homeassistant.components.media_source.error import MediaSourceError, Unreso
 from homeassistant.components.media_source.models import PlayMedia
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import system_info
 
 from . import (
     TEST_CONFIG,
@@ -644,11 +645,16 @@ async def test_async_resolve_media(
         ),
     )
 
-    as_utc = datetime.datetime(2021, 5, 30, 15, 46, 8).astimezone(pytz.UTC)
+    # Convert from HA local timezone to UTC.
+    info = await system_info.async_get_system_info(hass)
+    date = datetime.datetime(2021, 5, 30, 15, 46, 8)
+    pytz.timezone(info.get("timezone", "utc")).localize(date)
+    date = date.astimezone(pytz.utc)
+
     assert media == PlayMedia(
         url=(
             f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/"
-            + as_utc.strftime("%Y-%m/%d/%H")
+            + date.strftime("%Y-%m/%d/%H")
             + "/front_door/utc/index.m3u8"
         ),
         mime_type="application/x-mpegURL",

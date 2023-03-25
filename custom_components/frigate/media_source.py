@@ -463,9 +463,8 @@ class RecordingIdentifier(Identifier):
             and self.hour is not None
         ):
             year, month, day = self.year_month_day.split("-")
-            # Take the selected time in users local time
-            # and find the offset to utc, convert to UTC
-            # then request the vod for that time.
+            # Take the selected time in users local time and find the offset to
+            # UTC, convert to UTC then request the vod for that time.
             start_date: dt.datetime = dt.datetime(
                 int(year),
                 int(month),
