@@ -11,6 +11,7 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
+import pytz
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
 from custom_components.frigate.const import (
@@ -33,6 +34,7 @@ from homeassistant.components.media_source.error import MediaSourceError, Unreso
 from homeassistant.components.media_source.models import PlayMedia
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import system_info
 
 from . import (
     TEST_CONFIG,
@@ -642,9 +644,18 @@ async def test_async_resolve_media(
             "/recordings/front_door/2021-05-30/15/46.08.mp4"
         ),
     )
+
+    # Convert from HA local timezone to UTC.
+    info = await system_info.async_get_system_info(hass)
+    date = datetime.datetime(2021, 5, 30, 15, 46, 8)
+    date = pytz.timezone(info.get("timezone", "utc")).localize(date)
+    date = date.astimezone(pytz.utc)
+
     assert media == PlayMedia(
         url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/2021-05/30/23/front_door/utc/index.m3u8"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/"
+            + date.strftime("%Y-%m/%d/%H")
+            + "/front_door/utc/index.m3u8"
         ),
         mime_type="application/x-mpegURL",
     )
