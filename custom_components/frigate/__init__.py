@@ -170,8 +170,10 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
-
-    client = FrigateApiClient(entry.data.get(CONF_URL), async_get_clientsession(hass))
+    client = FrigateApiClient(
+        entry.data.get(CONF_URL),
+        async_get_clientsession(hass),
+    )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
 
@@ -207,6 +209,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     current_devices: set[tuple[str, str]] = set({get_frigate_device_identifier(entry)})
     for item in get_cameras_and_zones(config):
         current_devices.add(get_frigate_device_identifier(entry, item))
+
+    if config.get("birdseye", {}).get("restream", False):
+        current_devices.add(get_frigate_device_identifier(entry, "birdseye"))
 
     device_registry = dr.async_get(hass)
     for device_entry in dr.async_entries_for_config_entry(

@@ -40,6 +40,7 @@ CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
 CONF_PASSWORD = "password"
 CONF_PATH = "path"
 CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
+CONF_RTSP_URL_TEMPLATE = "rtsp_url_template"
 CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS = "notification_proxy_expire_after_seconds"
 
 # Defaults

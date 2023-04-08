@@ -79,9 +79,10 @@ async def test_async_get_events(
         _assert_request_params(
             request,
             {
-                "camera": "test_camera",
-                "label": "test_label",
-                "zone": "test_zone",
+                "cameras": "test_camera1,test_camera2",
+                "labels": "test_label1,test_label2",
+                "sub_labels": "test_sub_label1,test_sub_label2",
+                "zones": "test_zone1,test_zone2",
                 "after": "1",
                 "before": "2",
                 "limit": "3",
@@ -96,9 +97,10 @@ async def test_async_get_events(
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert events_in == await frigate_client.async_get_events(
-        camera="test_camera",
-        label="test_label",
-        zone="test_zone",
+        cameras=["test_camera1", "test_camera2"],
+        labels=["test_label1", "test_label2"],
+        sub_labels=["test_sub_label1", "test_sub_label2"],
+        zones=["test_zone1", "test_zone2"],
         after=1,
         before=2,
         limit=3,
@@ -300,7 +302,7 @@ async def test_async_get_recordings_summary(
 ) -> None:
     """Test async_recordings_summary."""
 
-    summary_success = {"summary": "goes_here"}
+    summary_success = [{"summary": "goes_here"}]
     summary_handler = AsyncMock(return_value=web.json_response(summary_success))
     camera = "front_door"
 
@@ -309,7 +311,10 @@ async def test_async_get_recordings_summary(
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
-    assert await frigate_client.async_get_recordings_summary(camera) == summary_success
+    assert (
+        await frigate_client.async_get_recordings_summary(camera, "utc")
+        == summary_success
+    )
     assert summary_handler.called
 
 
