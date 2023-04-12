@@ -21,6 +21,7 @@
             "init": {
                 "data": {
                     "rtmp_url_template": "RTMP URL template (see documentation)",
+                    "rtsp_url_template": "RTSP URL template (see documentation)",
                     "media_browser_enable": "Enable the media browser",
                     "notification_proxy_enable": "Enable the unauthenticated notification event proxy",
                     "notification_proxy_expire_after_seconds": "Disallow unauthenticated notification access after seconds (0=never)"

@@ -21,6 +21,7 @@
             "init": {
                 "data": {
                     "rtmp_url_template": "Modelo de URL RTMP (consulte a documentação)",
+                    "rtsp_url_template": "Modelo de URL RTSP (consulte a documentação)",
                     "notification_proxy_enable": "Habilitar o proxy de evento de notificação não autenticado"
                 }
             }

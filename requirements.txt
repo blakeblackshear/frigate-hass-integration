@@ -6,3 +6,4 @@ homeassistant==2023.1.7
 paho-mqtt
 python-dateutil
 yarl
+pytz==2022.7
