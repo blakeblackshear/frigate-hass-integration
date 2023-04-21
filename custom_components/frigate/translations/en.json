@@ -1,35 +1,35 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "description": "URL you use to access Frigate (ie. `http://frigate:5000/`)\n\nIf you are using HassOS with the addon, the URL should be `http://ccab4aaf-frigate:5000/`\n\nHome Assistant needs access to port 5000 (api) and 1935 (rtmp) for all features.\n\nThe integration will setup sensors, cameras, and media browser functionality.\n\nSensors:\n- Stats to monitor frigate performance\n- Object counts for all zones and cameras\n\nCameras:\n- Cameras for image of the last detected object for each camera\n- Camera entities with stream support (requires RTMP)\n\nMedia Browser:\n- Rich UI with thumbnails for browsing event clips\n- Rich UI for browsing 24/7 recordings by month, day, camera, time\n\nAPI:\n- Notification API with public facing endpoints for images in notifications",
-                "data": {
-                    "url": "URL"
-                }
-            }
-        },
-        "error": {
-            "cannot_connect": "Failed to connect",
-            "invalid_url": "Invalid URL"
-        },
-        "abort": {
-            "already_configured": "Device is already configured"
+  "config": {
+    "step": {
+      "user": {
+        "description": "URL you use to access Frigate (ie. `http://frigate:5000/`)\n\nIf you are using HassOS with the addon, the URL should be `http://ccab4aaf-frigate:5000/`\n\nHome Assistant needs access to port 5000 (api) and 1935 (rtmp) for all features.\n\nThe integration will setup sensors, cameras, and media browser functionality.\n\nSensors:\n- Stats to monitor frigate performance\n- Object counts for all zones and cameras\n\nCameras:\n- Cameras for image of the last detected object for each camera\n- Camera entities with stream support (requires RTMP)\n\nMedia Browser:\n- Rich UI with thumbnails for browsing event clips\n- Rich UI for browsing 24/7 recordings by month, day, camera, time\n\nAPI:\n- Notification API with public facing endpoints for images in notifications",
+        "data": {
+          "url": "URL"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "data": {
-                    "rtmp_url_template": "RTMP URL template (see documentation)",
-                    "rtsp_url_template": "RTSP URL template (see documentation)",
-                    "media_browser_enable": "Enable the media browser",
-                    "notification_proxy_enable": "Enable the unauthenticated notification event proxy",
-                    "notification_proxy_expire_after_seconds": "Disallow unauthenticated notification access after seconds (0=never)"
-                }
-            }
-        },
-        "abort": {
-            "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
-        }
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_url": "Invalid URL"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "rtmp_url_template": "RTMP URL template (see documentation)",
+          "rtsp_url_template": "RTSP URL template (see documentation)",
+          "media_browser_enable": "Enable the media browser",
+          "notification_proxy_enable": "Enable the unauthenticated notification event proxy",
+          "notification_proxy_expire_after_seconds": "Disallow unauthenticated notification access after seconds (0=never)"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
+    }
+  }
 }
