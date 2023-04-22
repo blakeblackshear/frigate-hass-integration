@@ -22,7 +22,8 @@
         "data": {
           "rtmp_url_template": "RTMP-URL-Vorlage (siehe Dokumentation)",
           "rtsp_url_template": "RTSP-URL-Vorlage (siehe Dokumentation)",
-          "media_browser_enable": "Aktivieren Sie den Medienbrowser"
+          "media_browser_enable": "Aktivieren Sie den Medienbrowser",
+          "notification_proxy_enable": "Aktivieren Sie den Proxy für nicht authentifizierte Benachrichtigungsereignisse"
         }
       }
     }
