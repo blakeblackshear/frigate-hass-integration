@@ -11,6 +11,9 @@
     "error": {
       "cannot_connect": "Verbindung fehlgeschlagen",
       "invalid_url": "Ungültige URL"
+    },
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert"
     }
   }
 }
