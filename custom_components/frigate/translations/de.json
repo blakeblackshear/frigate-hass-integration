@@ -27,6 +27,9 @@
           "notification_proxy_expire_after_seconds": "Zugriff auf nicht authentifizierte Benachrichtigungen nach Sekunden verbieten (0=nie)"
         }
       }
+    },
+    "abort": {
+      "only_advanced_options": "Der erweiterte Modus ist deaktiviert und es stehen nur erweiterte Optionen zur Verfügung"
     }
   }
 }
