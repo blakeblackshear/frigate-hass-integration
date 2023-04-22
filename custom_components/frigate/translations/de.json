@@ -7,6 +7,9 @@
           "url": "URL"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen"
     }
   }
 }
