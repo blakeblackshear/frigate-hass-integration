@@ -9,7 +9,8 @@
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen"
+      "cannot_connect": "Verbindung fehlgeschlagen",
+      "invalid_url": "Ungültige URL"
     }
   }
 }
