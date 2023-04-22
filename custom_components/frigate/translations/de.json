@@ -20,7 +20,8 @@
     "step": {
       "init": {
         "data": {
-          "rtmp_url_template": "RTMP-URL-Vorlage (siehe Dokumentation)"
+          "rtmp_url_template": "RTMP-URL-Vorlage (siehe Dokumentation)",
+          "rtsp_url_template": "RTSP-URL-Vorlage (siehe Dokumentation)"
         }
       }
     }
