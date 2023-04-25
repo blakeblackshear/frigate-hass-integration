@@ -108,7 +108,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> FrigateOptionsFlowHandler:
-        """Get the Hyperion Options flow."""
+        """Get the Frigate Options flow."""
         return FrigateOptionsFlowHandler(config_entry)
 
 
