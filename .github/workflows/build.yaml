@@ -21,7 +21,7 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v3.5.2
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v4.6.0
+        uses: actions/setup-python@v4.6.1
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install requirements
@@ -61,7 +61,7 @@ jobs:
       - name: Check out code from GitHub
         uses: "actions/checkout@v3.5.2"
       - name: Setup Python ${{ env.DEFAULT_PYTHON }}
-        uses: "actions/setup-python@v4.6.0"
+        uses: "actions/setup-python@v4.6.1"
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install requirements
@@ -72,7 +72,7 @@ jobs:
         run: |
           pytest -p no:sugar
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3.1.3
+        uses: codecov/codecov-action@v3.1.4
         with:
           env_vars: OS,PYTHON
           verbose: true
