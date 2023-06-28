@@ -38,6 +38,7 @@ from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_COORDINATOR,
+    ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     DOMAIN,
     FRIGATE_RELEASES_URL,
@@ -103,7 +104,8 @@ def get_cameras_and_objects(
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
         for obj in cam_config["objects"]["track"]:
-            camera_objects.add((cam_name, obj))
+            if obj not in ATTRIBUTE_LABELS:
+                camera_objects.add((cam_name, obj))
 
         # add an artificial all label to track
         # all objects for this camera
