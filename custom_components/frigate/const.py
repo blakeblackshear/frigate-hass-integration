@@ -33,6 +33,11 @@ ATTR_EVENT_ID = "event_id"
 ATTR_FAVORITE = "favorite"
 ATTR_MQTT = "mqtt"
 
+# Frigate Attribute Labels
+# These are labels that are not individually tracked as they are
+# attributes of another label. ex: face is an attribute of person
+ATTRIBUTE_LABELS = ["amazon", "face", "fedex", "license_plate", "ups"]
+
 # Configuration and options
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"
 CONF_MEDIA_BROWSER_ENABLE = "media_browser_enable"
