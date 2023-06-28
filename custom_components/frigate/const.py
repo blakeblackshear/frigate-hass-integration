@@ -34,6 +34,8 @@ ATTR_FAVORITE = "favorite"
 ATTR_MQTT = "mqtt"
 
 # Frigate Attribute Labels
+# These are labels that are not individually tracked as they are
+# attributes of another label. ex: face is an attribute of person
 ATTRIBUTE_LABELS = ["amazon", "face", "fedex", "license_plate", "ups"]
 
 # Configuration and options
