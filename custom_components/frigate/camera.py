@@ -35,12 +35,15 @@ from .const import (
     ATTR_CONFIG,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_PTZ_ACTION,
+    ATTR_PTZ_TYPE,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
     SERVICE_FAVORITE_EVENT,
+    SERVICE_PTZ,
     STATE_DETECTED,
     STATE_IDLE,
 )
@@ -83,6 +86,14 @@ async def async_setup_entry(
             vol.Optional(ATTR_FAVORITE, default=True): bool,
         },
         SERVICE_FAVORITE_EVENT,
+    )
+    platform.async_register_entity_service(
+        SERVICE_PTZ,
+        {
+            vol.Required(ATTR_PTZ_ACTION): str,
+            vol.Required(ATTR_PTZ_TYPE): str,
+        },
+        SERVICE_PTZ
     )
 
 

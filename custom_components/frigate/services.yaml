@@ -30,3 +30,36 @@ favorite_event:
       default: true
       selector:
         boolean:
+
+ptz:
+  name: Control camera via PTZ
+  description: >
+    Pan / Tilt, Zoom, or move a camera to a preset
+  target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
+  fields:
+    action:
+      name: PTZ Action
+      description: Type of PTZ action
+      required: true
+      advanced: false
+      example: move
+      default: move
+      selector:
+        select:
+          options:
+            - "move"
+            - "preset"
+            - "zoom"
+    type:
+      name: PTZ Action Type
+      description: left, right, up, down for move; in, out for zoom; name of preset for preset
+      required: true
+      advanced: false
+      example: down
+      default: ""
+      selector:
+        text:

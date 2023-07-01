@@ -32,6 +32,8 @@ ATTR_COORDINATOR = "coordinator"
 ATTR_EVENT_ID = "event_id"
 ATTR_FAVORITE = "favorite"
 ATTR_MQTT = "mqtt"
+ATTR_PTZ_ACTION = "action"
+ATTR_PTZ_TYPE = "type"
 
 # Configuration and options
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"
@@ -77,3 +79,4 @@ STATUS_STARTING = "starting"
 
 # Frigate Services
 SERVICE_FAVORITE_EVENT = "favorite_event"
+SERVICE_PTZ = "ptz"
