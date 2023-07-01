@@ -56,7 +56,8 @@ ptz:
             - "zoom"
     action:
       name: PTZ Action
-      description: left, right, up, down for move; in, out for zoom; name of preset for preset
+      description: > 
+        left, right, up, down for move; in, out for zoom; name of preset for preset
       required: true
       advanced: false
       example: down
