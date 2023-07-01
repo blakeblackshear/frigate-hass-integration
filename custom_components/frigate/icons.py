@@ -1,5 +1,6 @@
 """Handles icons for different entity types."""
 
+ICON_AUDIO = "mdi:ear-hearing"
 ICON_BICYCLE = "mdi:bicycle"
 ICON_CAR = "mdi:car"
 ICON_CAT = "mdi:cat"
@@ -43,6 +44,8 @@ def get_icon_from_switch(switch_type: str) -> str:
         return ICON_FILM_MULTIPLE
     if switch_type == "improve_contrast":
         return ICON_CONTRAST
+    if switch_type == "audio":
+        return ICON_AUDIO
 
     return ICON_MOTION_SENSOR
 
