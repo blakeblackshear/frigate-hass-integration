@@ -496,7 +496,7 @@ async def test_retain_service_call(
     client.async_retain.assert_called_with(event_id, True)
 
 
-async def test_ptz_service_call(
+async def test_ptz_move_service_call(
     hass: HomeAssistant,
     mqtt_mock: Any,
 ) -> None:
@@ -517,6 +517,15 @@ async def test_ptz_service_call(
     mqtt_mock.async_publish.assert_called_once_with(
         "frigate/front_door/ptz", "move_up", 0, False
     )
+
+
+async def test_ptz_preset_service_call(
+    hass: HomeAssistant,
+    mqtt_mock: Any,
+) -> None:
+    """Test ptz service call."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     await hass.services.async_call(
         DOMAIN,
