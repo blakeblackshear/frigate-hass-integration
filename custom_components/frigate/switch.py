@@ -161,9 +161,6 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
 
     def _get_descriptive_name(self) -> str:
         """Returns a more descriptive name for the switch."""
-        if self._switch_name == "detect":
-            return "object_detection"
-
         if self._switch_name == "audio":
             return "audio_detection"
 
