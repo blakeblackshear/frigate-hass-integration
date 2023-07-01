@@ -33,7 +33,7 @@ ATTR_EVENT_ID = "event_id"
 ATTR_FAVORITE = "favorite"
 ATTR_MQTT = "mqtt"
 ATTR_PTZ_ACTION = "action"
-ATTR_PTZ_TYPE = "type"
+ATTR_PTZ_SERVICE = "service"
 
 # Frigate Attribute Labels
 # These are labels that are not individually tracked as they are
