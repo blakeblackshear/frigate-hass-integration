@@ -36,13 +36,22 @@ async def async_setup_entry(
         entities.extend(
             [
                 FrigateSwitch(entry, frigate_config, camera, "detect", True),
-                FrigateSwitch(entry, frigate_config, camera, "audio", True),
                 FrigateSwitch(entry, frigate_config, camera, "motion", True),
                 FrigateSwitch(entry, frigate_config, camera, "recordings", True),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots", True),
                 FrigateSwitch(entry, frigate_config, camera, "improve_contrast", False),
             ]
         )
+
+        if (
+            frigate_config["cameras"][camera]
+            .get("audio", {})
+            .get("enabled_in_config", False)
+        ):
+            entities.append(
+                FrigateSwitch(entry, frigate_config, camera, "audio", True),
+            )
+
     async_add_entities(entities)
 
 
