@@ -36,6 +36,7 @@ async def async_setup_entry(
         entities.extend(
             [
                 FrigateSwitch(entry, frigate_config, camera, "detect", True),
+                FrigateSwitch(entry, frigate_config, camera, "audio", True),
                 FrigateSwitch(entry, frigate_config, camera, "motion", True),
                 FrigateSwitch(entry, frigate_config, camera, "recordings", True),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots", True),
@@ -117,7 +118,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._switch_name)}".title()
+        return f"{get_friendly_name(self._get_descriptive_name())}".title()
 
     @property
     def is_on(self) -> bool:
@@ -148,3 +149,13 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             0,
             False,
         )
+
+    def _get_descriptive_name(self) -> str:
+        """Returns a more descriptive name for the switch."""
+        if self._switch_name == "detect":
+            return "object_detection"
+
+        if self._switch_name == "audio":
+            return "audio_detection"
+
+        return self._switch_name
