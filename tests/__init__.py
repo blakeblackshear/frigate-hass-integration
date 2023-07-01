@@ -36,6 +36,7 @@ TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
 TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID = "number.front_door_contour_area"
 TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID = "number.front_door_threshold"
 
+TEST_SWITCH_FRONT_DOOR_AUDIO_DETECT_ENTITY_ID = "switch.front_door_audio_detection"
 TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID = "switch.front_door_detect"
 TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID = "switch.front_door_motion"
 TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID = "switch.front_door_snapshots"
@@ -78,6 +79,12 @@ TEST_CONFIG = {
                 "retain": {"default": 10, "objects": {}},
             },
             "detect": {"enabled": True, "max_disappeared": 20},
+            "audio": {
+                "enabled": True,
+                "max_not_heard": 30,
+                "listen": ["bark", "speech"],
+                "enabled_in_config": True,
+            },
             "ffmpeg_cmds": [
                 {
                     "cmd": "ffmpeg -hide_banner -loglevel warning -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -stimeout 5000000 -use_wallclock_as_timestamps 1 -i rtsp://rtsp:password@cam-front-door/live -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy -an /tmp/cache/front_door-%Y%m%d%H%M%S.mp4 -c copy -f flv rtmp://127.0.0.1/live/front_door -r 4 -f rawvideo -pix_fmt yuv420p pipe:",
