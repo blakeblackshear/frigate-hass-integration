@@ -49,7 +49,9 @@ async def async_setup_entry(
             .get("enabled_in_config", False)
         ):
             entities.append(
-                FrigateSwitch(entry, frigate_config, camera, "audio", True),
+                FrigateSwitch(
+                    entry, frigate_config, camera, "audio", True, "audio_detection"
+                ),
             )
 
     async_add_entities(entities)
@@ -67,6 +69,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         cam_name: str,
         switch_name: str,
         default_enabled: bool,
+        descriptive_name: str = "",
     ) -> None:
         """Construct a FrigateSwitch."""
         self._frigate_config = frigate_config
@@ -77,6 +80,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/{self._switch_name}/set"
         )
+        self._descriptive_name = descriptive_name if descriptive_name else switch_name
 
         self._attr_entity_registry_enabled_default = default_enabled
         self._icon = get_icon_from_switch(self._switch_name)
@@ -127,7 +131,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._get_descriptive_name())}".title()
+        return f"{get_friendly_name(self._descriptive_name)}".title()
 
     @property
     def is_on(self) -> bool:
@@ -158,10 +162,3 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             0,
             False,
         )
-
-    def _get_descriptive_name(self) -> str:
-        """Returns a more descriptive name for the switch."""
-        if self._switch_name == "audio":
-            return "audio_detection"
-
-        return self._switch_name
