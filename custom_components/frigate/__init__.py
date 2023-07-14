@@ -119,8 +119,9 @@ def get_cameras_and_audio(config: dict[str, Any]) -> set[tuple[str, str]]:
     """Get cameras and audio tuples."""
     camera_audio = set()
     for cam_name, cam_config in config["cameras"].items():
-        for audio in cam_config.get("audio", {}).get("listen", []):
-            camera_audio.add((cam_name, audio))
+        if cam_config.get("audio", {}).get("enabled_in_config", False):
+            for audio in cam_config.get("audio", {}).get("listen", []):
+                camera_audio.add((cam_name, audio))
 
     return camera_audio
 
