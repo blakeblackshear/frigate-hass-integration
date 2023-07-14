@@ -1,6 +1,7 @@
 """Handles icons for different entity types."""
 
 ICON_AUDIO = "mdi:ear-hearing"
+ICON_AUDIO_OFF = "mdi:ear-hearing-off"
 ICON_BICYCLE = "mdi:bicycle"
 ICON_CAR = "mdi:car"
 ICON_CAT = "mdi:cat"
@@ -32,6 +33,8 @@ def get_dynamic_icon_from_type(obj_type: str, is_on: bool) -> str:
         return ICON_CAR if is_on else ICON_CAR_OFF
     if obj_type == "dog":
         return ICON_DOG if is_on else ICON_DOG_OFF
+    if obj_type == "sound":
+        return ICON_AUDIO if is_on else ICON_AUDIO_OFF
 
     return ICON_DEFAULT_ON if is_on else ICON_DEFAULT_OFF
 
