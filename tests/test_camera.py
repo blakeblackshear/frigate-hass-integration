@@ -538,7 +538,7 @@ async def test_ptz_preset_service_call(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/ptz", "preset-main", 0, False
+        "frigate/front_door/ptz", "preset_main", 0, False
     )
 
 
