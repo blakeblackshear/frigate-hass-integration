@@ -91,7 +91,7 @@ async def async_setup_entry(
         SERVICE_PTZ,
         {
             vol.Required(ATTR_PTZ_ACTION): str,
-            vol.Optional(ATTR_PTZ_ARGUMENT): str,
+            vol.Optional(ATTR_PTZ_ARGUMENT, default=""): str,
         },
         SERVICE_PTZ,
     )
