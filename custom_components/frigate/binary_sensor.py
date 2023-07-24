@@ -147,7 +147,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
     @property
     def icon(self) -> str:
         """Return the icon of the sensor."""
-        return get_dynamic_icon_from_type("sound", self._is_on)
+        return get_dynamic_icon_from_type(self._obj_name, self._is_on)
 
 
 class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
@@ -217,7 +217,7 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{self._obj_name} sound"
+        return f"{self._audio_name} sound"
 
     @property
     def is_on(self) -> bool:
@@ -232,7 +232,7 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
     @property
     def icon(self) -> str:
         """Return the icon of the sensor."""
-        return get_dynamic_icon_from_type(self._obj_name, self._is_on)
+        return get_dynamic_icon_from_type("sound", self._is_on)
 
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
