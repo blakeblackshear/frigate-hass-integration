@@ -177,7 +177,6 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
                         f"{self._frigate_config['mqtt']['topic_prefix']}"
                         f"/{self._cam_name}/audio/{self._audio_name}"
                     ),
-                    "encoding": None,
                 },
             },
         )
