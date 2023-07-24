@@ -36,7 +36,7 @@ from .const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     ATTR_PTZ_ACTION,
-    ATTR_PTZ_SERVICE,
+    ATTR_PTZ_ARGUMENT,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
@@ -91,7 +91,7 @@ async def async_setup_entry(
         SERVICE_PTZ,
         {
             vol.Required(ATTR_PTZ_ACTION): str,
-            vol.Required(ATTR_PTZ_ARGUMENT): str,
+            vol.Optional(ATTR_PTZ_ARGUMENT): str,
         },
         SERVICE_PTZ,
     )
