@@ -41,7 +41,7 @@ ptz:
       domain: camera
       device_class: camera
   fields:
-    service:
+    action:
       name: PTZ Service
       description: Type of PTZ action
       required: true
@@ -53,12 +53,13 @@ ptz:
           options:
             - "move"
             - "preset"
+            - "stop"
             - "zoom"
-    action:
+    argument:
       name: PTZ Action
       description: >
         left, right, up, down for move; in, out for zoom; name of preset
-      required: true
+      required: false
       advanced: false
       example: down
       default: ""
