@@ -22,6 +22,7 @@ TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID = "binary_sensor.front_door_motio
 TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.front_door_person_occupancy"
 )
+TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID = "binary_sensor.front_door_speech_sound"
 TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.front_door_all_occupancy"
 )
