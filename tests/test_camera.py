@@ -13,7 +13,7 @@ from custom_components.frigate.const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     ATTR_PTZ_ACTION,
-    ATTR_PTZ_SERVICE,
+    ATTR_PTZ_ARGUMENT,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
@@ -509,8 +509,8 @@ async def test_ptz_move_service_call(
         SERVICE_PTZ,
         {
             ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
-            ATTR_PTZ_SERVICE: "move",
-            ATTR_PTZ_ACTION: "up",
+            ATTR_PTZ_ACTION: "move",
+            ATTR_PTZ_ARGUMENT: "up",
         },
         blocking=True,
     )
@@ -532,11 +532,33 @@ async def test_ptz_preset_service_call(
         SERVICE_PTZ,
         {
             ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
-            ATTR_PTZ_SERVICE: "preset",
-            ATTR_PTZ_ACTION: "main",
+            ATTR_PTZ_ACTION: "preset",
+            ATTR_PTZ_ARGUMENT: "main",
         },
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
         "frigate/front_door/ptz", "preset-main", 0, False
+    )
+
+
+async def test_ptz_stop_service_call(
+    hass: HomeAssistant,
+    mqtt_mock: Any,
+) -> None:
+    """Test ptz service call."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_PTZ,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_PTZ_ACTION: "stop",
+        },
+        blocking=True,
+    )
+    mqtt_mock.async_publish.assert_called_once_with(
+        "frigate/front_door/ptz", "stop", 0, False
     )
