@@ -90,8 +90,8 @@ async def async_setup_entry(
     platform.async_register_entity_service(
         SERVICE_PTZ,
         {
-            vol.Required(ATTR_PTZ_SERVICE): str,
             vol.Required(ATTR_PTZ_ACTION): str,
+            vol.Required(ATTR_PTZ_ARGUMENT): str,
         },
         SERVICE_PTZ,
     )
@@ -302,12 +302,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         """Favorite an event."""
         await self._client.async_retain(event_id, favorite)
 
-    async def ptz(self, service: str, action: str) -> None:
+    async def ptz(self, action: str, argument: str) -> None:
         """Run PTZ command."""
         await async_publish(
             self.hass,
             self._ptz_topic,
-            f"{service}-{action}" if service == "preset" else f"{service}_{action}",
+            f"{action}{f'_{argument}' if argument else ''}",
             0,
             False,
         )
