@@ -35,12 +35,15 @@ from .const import (
     ATTR_CONFIG,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_PTZ_ACTION,
+    ATTR_PTZ_ARGUMENT,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
     SERVICE_FAVORITE_EVENT,
+    SERVICE_PTZ,
     STATE_DETECTED,
     STATE_IDLE,
 )
@@ -83,6 +86,14 @@ async def async_setup_entry(
             vol.Optional(ATTR_FAVORITE, default=True): bool,
         },
         SERVICE_FAVORITE_EVENT,
+    )
+    platform.async_register_entity_service(
+        SERVICE_PTZ,
+        {
+            vol.Required(ATTR_PTZ_ACTION): str,
+            vol.Optional(ATTR_PTZ_ARGUMENT, default=""): str,
+        },
+        SERVICE_PTZ,
     )
 
 
@@ -144,6 +155,9 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
+        )
+        self._ptz_topic = (
+            f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/ptz"
         )
         self._set_motion_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
@@ -287,6 +301,16 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     async def favorite_event(self, event_id: str, favorite: bool) -> None:
         """Favorite an event."""
         await self._client.async_retain(event_id, favorite)
+
+    async def ptz(self, action: str, argument: str) -> None:
+        """Run PTZ command."""
+        await async_publish(
+            self.hass,
+            self._ptz_topic,
+            f"{action}{f'_{argument}' if argument else ''}",
+            0,
+            False,
+        )
 
 
 class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
