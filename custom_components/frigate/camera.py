@@ -15,7 +15,12 @@ from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -108,6 +113,7 @@ async def async_setup_entry(
             vol.Required(ATTR_INCLUDE_RECORDING, default=True): bool,
         },
         SERVICE_CREATE_EVENT,
+        supports_response=SupportsResponse.OPTIONAL,
     )
     platform.async_register_entity_service(
         SERVICE_END_EVENT,
@@ -321,11 +327,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
 
     async def create_custom_event(
         self, label: str, duration: int | None, include_recording: bool
-    ) -> None:
+    ) -> ServiceResponse:
         """Create a custom event."""
-        await self._client.async_create_event(
+        res = await self._client.async_create_event(
             self, self._cam_name, label, duration, include_recording
         )
+        return {"event_id": res["event_id"]}
 
     async def end_custom_event(self, event_id: str) -> None:
         """End a custom event."""

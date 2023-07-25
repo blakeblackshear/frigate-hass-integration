@@ -131,6 +131,23 @@ class FrigateApiClient:
         """Get data from the API."""
         return await self.api_wrapper("get", str(URL(self._host) / f"{path}/"))
 
+    async def create_event(
+        self,
+        camera: str,
+        label: str,
+        duration: int | None,
+        include_recording: bool,
+        decode_json: bool = True,
+    ) -> dict[str, any] | str:
+        """Create a custom event."""
+        result = await self.api_wrapper(
+            "post",
+            str(URL(self._host) / f"api/events/{camera}/{label}/create"),
+            decode_json=decode_json,
+            data={"duration": duration, "include_recording": include_recording},
+        )
+        return cast(dict[str, Any], result) if decode_json else result
+
     async def async_retain(
         self, event_id: str, retain: bool, decode_json: bool = True
     ) -> dict[str, Any] | str:
