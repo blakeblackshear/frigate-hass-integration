@@ -33,8 +33,11 @@ from . import (
 from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
+    ATTR_DURATION,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_INCLUDE_RECORDING,
+    ATTR_LABEL,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     CONF_RTMP_URL_TEMPLATE,
@@ -42,6 +45,8 @@ from .const import (
     DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
+    SERVICE_CREATE_EVENT,
+    SERVICE_END_EVENT,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
     STATE_DETECTED,
@@ -94,6 +99,22 @@ async def async_setup_entry(
             vol.Optional(ATTR_PTZ_ARGUMENT, default=""): str,
         },
         SERVICE_PTZ,
+    )
+    platform.async_register_entity_service(
+        SERVICE_CREATE_EVENT,
+        {
+            vol.Required(ATTR_LABEL): str,
+            vol.Optional(ATTR_DURATION, default=30): int,
+            vol.Required(ATTR_INCLUDE_RECORDING, default=True): bool,
+        },
+        SERVICE_CREATE_EVENT,
+    )
+    platform.async_register_entity_service(
+        SERVICE_END_EVENT,
+        {
+            vol.Required(ATTR_EVENT_ID): str,
+        },
+        SERVICE_END_EVENT,
     )
 
 
@@ -297,6 +318,18 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             0,
             False,
         )
+
+    async def create_custom_event(
+        self, label: str, duration: int | None, include_recording: bool
+    ) -> None:
+        """Create a custom event."""
+        await self._client.async_create_event(
+            self, self._cam_name, label, duration, include_recording
+        )
+
+    async def end_custom_event(self, event_id: str) -> None:
+        """End a custom event."""
+        await self._client.async_end_event(event_id)
 
     async def favorite_event(self, event_id: str, favorite: bool) -> None:
         """Favorite an event."""

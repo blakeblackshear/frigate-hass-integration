@@ -1,4 +1,67 @@
 ---
+create_custom_event:
+  name: Create a custom event
+  description: >
+    Create a custom event in Frigate.
+  target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
+  fields:
+    label:
+      name: Label
+      description: Descriptive name of event type
+      required: true
+      advanced: false
+      example: "doorbell press"
+      default: ""
+      selector:
+        text:
+    duration:
+      name: Duration Of Event
+      description: >
+        The duration of the custom event, can be disabled to create an
+        indeterminate length event that must be ended using the
+        end_custom_event service.
+      required: false
+      advanced: false
+      example: 30
+      default: 30
+      selector:
+        number:
+          min: 1
+    include_recording:
+      name: Include Recording
+      description: >
+        Control if this event should save recordings or not.
+      required: true
+      advanced: false
+      example: true
+      default: true
+      selector:
+        boolean:
+
+end_custom_event:
+  name: End a custom event
+  description: >
+    End an in progress custom event in Frigate.
+  target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
+  fields:
+    event_id:
+      name: Event ID
+      description: ID of the custom event to end.
+      required: true
+      advanced: false
+      example: "1656510950.19548-ihtjj7"
+      default: ""
+      selector:
+        text:
+
 favorite_event:
   name: Favorite or unfavorite Event
   description: >
