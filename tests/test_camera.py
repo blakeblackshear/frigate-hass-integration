@@ -10,14 +10,19 @@ import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.const import (
+    ATTR_DURATION,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_INCLUDE_RECORDING,
+    ATTR_LABEL,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
     NAME,
+    SERVICE_CREATE_EVENT,
+    SERVICE_END_EVENT,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
 )
@@ -447,6 +452,58 @@ async def test_cameras_setup_correctly_in_registry(
             TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
     )
+
+
+async def test_create_event_service_call(
+    hass: HomeAssistant,
+) -> None:
+    """Test create event service call."""
+    post_success = {
+        "success": True,
+        "message": "Post success",
+        "event_id": "1656282822.206673-bovnfg",
+    }
+
+    client = create_mock_frigate_client()
+    client.async_create_event = AsyncMock(return_value=post_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_CREATE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_DURATION: 30,
+            ATTR_INCLUDE_RECORDING: True,
+            ATTR_LABEL: "Test",
+        },
+        blocking=True,
+    )
+    client.async_create_event.assert_called_with("front_door", "Test", 30, True)
+
+
+async def test_end_event_service_call(
+    hass: HomeAssistant,
+) -> None:
+    """Test end event service call."""
+    event_id = "1656282822.206673-bovnfg"
+    post_success = {"success": True, "message": "Post success"}
+
+    client = create_mock_frigate_client()
+    client.async_end_event = AsyncMock(return_value=post_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    event_id = "1656282822.206673-bovnfg"
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_END_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+        },
+        blocking=True,
+    )
+    client.async_retain.assert_called_with(event_id)
 
 
 async def test_retain_service_call(
