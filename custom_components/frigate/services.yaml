@@ -31,6 +31,7 @@ create_custom_event:
       selector:
         number:
           min: 1
+          max: 600
     include_recording:
       name: Include Recording
       description: >
