@@ -69,7 +69,7 @@ async def test_async_get_events(
             "label": "person",
             "start_time": 1623643750.569992,
             "thumbnail": "thumbnail",
-            "top_score": 0.70703125,
+            "data": {"top_score": 0.70703125},
             "zones": [],
         }
     ]

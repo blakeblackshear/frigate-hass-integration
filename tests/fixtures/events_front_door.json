@@ -8,7 +8,9 @@
     "id": "1623454583.525913-y14xk9",
     "label": "person",
     "start_time": 1623454583.525913,
-    "top_score": 0.720703125,
+    "data": {
+      "top_score": 0.720703125
+    },
     "zones": []
   },
   {
@@ -20,7 +22,9 @@
     "id": "1623426532.275314-2t0hdm",
     "label": "person",
     "start_time": 1623426532.275314,
-    "top_score": 0.771484375,
+    "data": {
+      "top_score": 0.771484375
+    },
     "zones": []
   },
   {
@@ -32,7 +36,9 @@
     "id": "1623370502.185623-9q96ov",
     "label": "person",
     "start_time": 1623370502.185623,
-    "top_score": 0.75390625,
+    "data": {
+      "top_score": 0.75390625
+    },
     "zones": []
   },
   {
@@ -44,7 +50,9 @@
     "id": "1623364851.126517-vflbf1",
     "label": "person",
     "start_time": 1623364851.126517,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": []
   },
   {
@@ -56,7 +64,9 @@
     "id": "1623364835.320608-s66bwi",
     "label": "person",
     "start_time": 1623364835.320608,
-    "top_score": 0.80859375,
+    "data": {
+      "top_score": 0.80859375
+    },
     "zones": []
   },
   {
@@ -68,7 +78,9 @@
     "id": "1623364821.326626-1b57pw",
     "label": "person",
     "start_time": 1623364821.326626,
-    "top_score": 0.84375,
+    "data": {
+      "top_score": 0.84375
+    },
     "zones": []
   },
   {
@@ -80,7 +92,9 @@
     "id": "1623362929.841867-7bi9eo",
     "label": "person",
     "start_time": 1623362929.841867,
-    "top_score": 0.7578125,
+    "data": {
+      "top_score": 0.7578125
+    },
     "zones": []
   },
   {
@@ -92,7 +106,9 @@
     "id": "1623357709.342476-9kvbi7",
     "label": "person",
     "start_time": 1623357709.342476,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": []
   },
   {
@@ -104,7 +120,9 @@
     "id": "1623353924.909505-cbib8t",
     "label": "person",
     "start_time": 1623353924.909505,
-    "top_score": 0.796875,
+    "data": {
+      "top_score": 0.796875
+    },
     "zones": []
   },
   {
@@ -116,7 +134,9 @@
     "id": "1623353024.67293-yab95u",
     "label": "person",
     "start_time": 1623353024.67293,
-    "top_score": 0.8125,
+    "data": {
+      "top_score": 0.8125
+    },
     "zones": []
   },
   {
@@ -128,7 +148,9 @@
     "id": "1623348878.990005-k4um1a",
     "label": "person",
     "start_time": 1623348878.990005,
-    "top_score": 0.7265625,
+    "data": {
+      "top_score": 0.7265625
+    },
     "zones": []
   },
   {
@@ -140,7 +162,9 @@
     "id": "1623348870.999845-h7jsp0",
     "label": "person",
     "start_time": 1623348870.999845,
-    "top_score": 0.751953125,
+    "data": {
+      "top_score": 0.751953125
+    },
     "zones": []
   },
   {
@@ -152,7 +176,9 @@
     "id": "1623334360.993274-udpbvf",
     "label": "person",
     "start_time": 1623334360.993274,
-    "top_score": 0.8203125,
+    "data": {
+      "top_score": 0.8203125
+    },
     "zones": []
   },
   {
@@ -164,7 +190,9 @@
     "id": "1623278208.495996-ozbrrc",
     "label": "person",
     "start_time": 1623278208.495996,
-    "top_score": 0.84375,
+    "data": {
+      "top_score": 0.84375
+    },
     "zones": []
   },
   {
@@ -176,7 +204,9 @@
     "id": "1623278200.514217-iwql5m",
     "label": "person",
     "start_time": 1623278200.514217,
-    "top_score": 0.734375,
+    "data": {
+      "top_score": 0.734375
+    },
     "zones": []
   },
   {
@@ -188,7 +218,9 @@
     "id": "1623253177.647162-gqubnm",
     "label": "person",
     "start_time": 1623253177.647162,
-    "top_score": 0.71484375,
+    "data": {
+      "top_score": 0.71484375
+    },
     "zones": []
   },
   {
@@ -200,7 +232,9 @@
     "id": "1623208416.590956-yebgor",
     "label": "person",
     "start_time": 1623208416.590956,
-    "top_score": 0.78515625,
+    "data": {
+      "top_score": 0.78515625
+    },
     "zones": []
   },
   {
@@ -212,7 +246,9 @@
     "id": "1623208328.59143-u4wp1r",
     "label": "person",
     "start_time": 1623208328.59143,
-    "top_score": 0.78515625,
+    "data": {
+      "top_score": 0.78515625
+    },
     "zones": []
   },
   {
@@ -224,7 +260,9 @@
     "id": "1623208222.61608-oejmia",
     "label": "person",
     "start_time": 1623208222.61608,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": []
   },
   {
@@ -236,7 +274,9 @@
     "id": "1623206235.738943-hj0dzh",
     "label": "person",
     "start_time": 1623206235.738943,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": []
   },
   {
@@ -248,7 +288,9 @@
     "id": "1623206104.010827-wb184z",
     "label": "person",
     "start_time": 1623206104.010827,
-    "top_score": 0.8203125,
+    "data": {
+      "top_score": 0.8203125
+    },
     "zones": []
   },
   {
@@ -260,7 +302,9 @@
     "id": "1623205957.489517-pjoqir",
     "label": "person",
     "start_time": 1623205957.489517,
-    "top_score": 0.79296875,
+    "data": {
+      "top_score": 0.79296875
+    },
     "zones": []
   },
   {
@@ -272,7 +316,9 @@
     "id": "1623205451.499876-ohcwoz",
     "label": "person",
     "start_time": 1623205451.499876,
-    "top_score": 0.83203125,
+    "data": {
+      "top_score": 0.83203125
+    },
     "zones": ["bench"]
   },
   {
@@ -284,7 +330,9 @@
     "id": "1623205285.048291-rkxxba",
     "label": "person",
     "start_time": 1623205285.048291,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": ["bench"]
   },
   {
@@ -296,7 +344,9 @@
     "id": "1623205038.04245-yjrbog",
     "label": "person",
     "start_time": 1623205038.04245,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": ["bench"]
   },
   {
@@ -308,7 +358,9 @@
     "id": "1623205016.486243-pwm3vs",
     "label": "person",
     "start_time": 1623205016.486243,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": ["bench"]
   },
   {
@@ -320,7 +372,9 @@
     "id": "1623204877.797351-180606",
     "label": "person",
     "start_time": 1623204877.797351,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": ["bench"]
   },
   {
@@ -332,7 +386,9 @@
     "id": "1623203220.771993-akbrl9",
     "label": "person",
     "start_time": 1623203220.771993,
-    "top_score": 0.76953125,
+    "data": {
+      "top_score": 0.76953125
+    },
     "zones": []
   },
   {
@@ -344,7 +400,9 @@
     "id": "1623203179.787299-yagdny",
     "label": "person",
     "start_time": 1623203179.787299,
-    "top_score": 0.796875,
+    "data": {
+      "top_score": 0.796875
+    },
     "zones": []
   },
   {
@@ -356,7 +414,9 @@
     "id": "1623202539.9922-291afx",
     "label": "person",
     "start_time": 1623202539.9922,
-    "top_score": 0.80859375,
+    "data": {
+      "top_score": 0.80859375
+    },
     "zones": []
   },
   {
@@ -368,7 +428,9 @@
     "id": "1623202383.29624-oqjiaw",
     "label": "person",
     "start_time": 1623202383.29624,
-    "top_score": 0.78515625,
+    "data": {
+      "top_score": 0.78515625
+    },
     "zones": []
   },
   {
@@ -380,7 +442,9 @@
     "id": "1623202279.536914-mvg7lv",
     "label": "person",
     "start_time": 1623202279.536914,
-    "top_score": 0.82421875,
+    "data": {
+      "top_score": 0.82421875
+    },
     "zones": []
   },
   {
@@ -392,7 +456,9 @@
     "id": "1623200555.723996-vobpb7",
     "label": "person",
     "start_time": 1623200555.723996,
-    "top_score": 0.796875,
+    "data": {
+      "top_score": 0.796875
+    },
     "zones": []
   },
   {
@@ -404,7 +470,9 @@
     "id": "1623199251.229748-lwih22",
     "label": "person",
     "start_time": 1623199251.229748,
-    "top_score": 0.771484375,
+    "data": {
+      "top_score": 0.771484375
+    },
     "zones": []
   },
   {
@@ -416,7 +484,9 @@
     "id": "1623199185.284409-7swbm0",
     "label": "person",
     "start_time": 1623199185.284409,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": []
   },
   {
@@ -428,7 +498,9 @@
     "id": "1623199164.03415-vbrar6",
     "label": "person",
     "start_time": 1623199164.03415,
-    "top_score": 0.796875,
+    "data": {
+      "top_score": 0.796875
+    },
     "zones": []
   },
   {
@@ -440,7 +512,9 @@
     "id": "1623199137.784839-943rhr",
     "label": "person",
     "start_time": 1623199137.784839,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": []
   },
   {
@@ -452,7 +526,9 @@
     "id": "1623199098.229762-96bcdq",
     "label": "person",
     "start_time": 1623199098.229762,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": []
   },
   {
@@ -464,7 +540,9 @@
     "id": "1623199048.256623-b1dv8x",
     "label": "person",
     "start_time": 1623199048.256623,
-    "top_score": 0.80859375,
+    "data": {
+      "top_score": 0.80859375
+    },
     "zones": []
   },
   {
@@ -476,7 +554,9 @@
     "id": "1623199024.772678-23e2g2",
     "label": "person",
     "start_time": 1623199024.772678,
-    "top_score": 0.75390625,
+    "data": {
+      "top_score": 0.75390625
+    },
     "zones": []
   },
   {
@@ -488,7 +568,9 @@
     "id": "1623199003.056419-uh2nqa",
     "label": "person",
     "start_time": 1623199003.056419,
-    "top_score": 0.75390625,
+    "data": {
+      "top_score": 0.75390625
+    },
     "zones": []
   },
   {
@@ -500,7 +582,9 @@
     "id": "1623198925.515204-lgdc2p",
     "label": "person",
     "start_time": 1623198925.515204,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": []
   },
   {
@@ -512,7 +596,9 @@
     "id": "1623198900.24296-suqy9u",
     "label": "person",
     "start_time": 1623198900.24296,
-    "top_score": 0.79296875,
+    "data": {
+      "top_score": 0.79296875
+    },
     "zones": []
   },
   {
@@ -524,7 +610,9 @@
     "id": "1623198859.780307-hnkbvg",
     "label": "person",
     "start_time": 1623198859.780307,
-    "top_score": 0.8046875,
+    "data": {
+      "top_score": 0.8046875
+    },
     "zones": []
   },
   {
@@ -536,7 +624,9 @@
     "id": "1623198825.529094-pi5g53",
     "label": "person",
     "start_time": 1623198825.529094,
-    "top_score": 0.779296875,
+    "data": {
+      "top_score": 0.779296875
+    },
     "zones": []
   },
   {
@@ -548,7 +638,9 @@
     "id": "1623198802.534272-ij1xt3",
     "label": "person",
     "start_time": 1623198802.534272,
-    "top_score": 0.705078125,
+    "data": {
+      "top_score": 0.705078125
+    },
     "zones": []
   },
   {
@@ -560,7 +652,9 @@
     "id": "1623198791.523746-y2kljz",
     "label": "person",
     "start_time": 1623198791.523746,
-    "top_score": 0.74609375,
+    "data": {
+      "top_score": 0.74609375
+    },
     "zones": []
   },
   {
@@ -572,7 +666,9 @@
     "id": "1623198727.993567-x7wmq2",
     "label": "person",
     "start_time": 1623198727.993567,
-    "top_score": 0.7265625,
+    "data": {
+      "top_score": 0.7265625
+    },
     "zones": []
   },
   {
@@ -584,7 +680,9 @@
     "id": "1623198711.513559-p8cipn",
     "label": "person",
     "start_time": 1623198711.513559,
-    "top_score": 0.76953125,
+    "data": {
+      "top_score": 0.76953125
+    },
     "zones": []
   },
   {
@@ -596,7 +694,9 @@
     "id": "1623198698.555377-55xy6j",
     "label": "person",
     "start_time": 1623198698.555377,
-    "top_score": 0.7265625,
+    "data": {
+      "top_score": 0.7265625
+    },
     "zones": []
   }
 ]
