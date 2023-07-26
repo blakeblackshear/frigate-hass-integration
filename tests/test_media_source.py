@@ -364,9 +364,7 @@ async def test_async_browse_media_clip_search_drilldown(
                 "id": "1623454583.525913-y14xk9",
                 "label": "person",
                 "start_time": 1623454583.525913,
-                "data": {
-                    "top_score": 0.720703125
-                },
+                "data": {"top_score": 0.720703125},
                 "zones": [],
             }
         },
@@ -1201,9 +1199,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                 "id": "1622764801.555377-55xy6j",
                 "label": "person",
                 "start_time": 1622764801,
-                "data": {
-                    "top_score": 0.7265625
-                },
+                "data": {"top_score": 0.7265625},
                 "zones": [],
             }
         ]
@@ -1255,9 +1251,7 @@ async def test_snapshots(hass: HomeAssistant) -> None:
                         "id": "1622764801.555377-55xy6j",
                         "label": "person",
                         "start_time": 1622764801,
-                        "data": {
-                            "top_score": 0.7265625
-                        },
+                        "data": {"top_score": 0.7265625},
                         "zones": [],
                     }
                 },
@@ -1322,9 +1316,7 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                 "label": "person",
                 # This is 10s before the value of TODAY:
                 "start_time": 1622764820.0,
-                "data": {
-                    "top_score": 0.7265625
-                },
+                "data": {"top_score": 0.7265625},
                 "zones": [],
             }
         ]
@@ -1379,9 +1371,7 @@ async def test_in_progress_event(hass: HomeAssistant) -> None:
                         "id": "1622764820.555377-55xy6j",
                         "label": "person",
                         "start_time": 1622764820.0,
-                        "data": {
-                            "top_score": 0.7265625
-                        },
+                        "data": {"top_score": 0.7265625},
                         "zones": [],
                     }
                 },
@@ -1405,9 +1395,7 @@ async def test_bad_event(hass: HomeAssistant) -> None:
                 "has_snapshot": True,
                 "id": "1622764820.555377-55xy6j",
                 "label": "person",
-                "data": {
-                    "top_score": 0.7265625
-                },
+                "data": {"top_score": 0.7265625},
                 "zones": [],
             }
         ]
