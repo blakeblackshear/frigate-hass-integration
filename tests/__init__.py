@@ -222,11 +222,11 @@ TEST_STATS = {
         }
     },
     "processes": {
-        "audioDetector": { "pid": 835 },
-        "go2rtc": { "pid": 89 },
-        "logger": { "pid": 727 },
-        "recording": { "pid": 729 },
-    }
+        "audioDetector": {"pid": 835},
+        "go2rtc": {"pid": 89},
+        "logger": {"pid": 727},
+        "recording": {"pid": 729},
+    },
 }
 TEST_EVENT_SUMMARY = [
     # Today
