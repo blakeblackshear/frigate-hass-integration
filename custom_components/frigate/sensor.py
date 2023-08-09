@@ -48,6 +48,9 @@ async def async_setup_entry(
         elif key == "gpu_usages":
             for name in value.keys():
                 entities.append(GpuLoadSensor(coordinator, entry, name))
+        elif key == "processes":
+            # don't create sensor for other processes
+            continue
         elif key == "service":
             # Temperature is only supported on PCIe Coral.
             for name in value.get("temperatures", {}):
