@@ -221,6 +221,12 @@ TEST_STATS = {
             "mem": "57.0 %",
         }
     },
+    "processes": {
+        "audioDetector": {"pid": 835},
+        "go2rtc": {"pid": 89},
+        "logger": {"pid": 727},
+        "recording": {"pid": 729},
+    },
 }
 TEST_EVENT_SUMMARY = [
     # Today
