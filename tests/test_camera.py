@@ -38,6 +38,7 @@ from . import (
     TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
+    TEST_FRIGATE_INSTANCE_ID,
     TEST_SERVER_VERSION,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
@@ -124,6 +125,15 @@ async def test_frigate_camera_setup_rtmp(
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
     assert image
     assert image.content == b"data-277"
+
+
+async def test_frigate_extra_attributes(hass: HomeAssistant) -> None:
+    """Test that frigate extra attributes are correct."""
+    await setup_mock_frigate_config_entry(hass)
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.attributes["camera_name"] == "front_door"
+    assert entity_state.attributes["client_id"] == TEST_FRIGATE_INSTANCE_ID
 
 
 async def test_frigate_camera_image_height(
