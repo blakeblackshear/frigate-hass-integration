@@ -115,7 +115,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         config_entry: ConfigEntry,
         cam_name: str,
         frigate_client: FrigateApiClient,
-        frigate_client_id: str,
+        frigate_client_id: Any | None,
         frigate_config: dict[str, Any],
         camera_config: dict[str, Any],
     ) -> None:
@@ -254,7 +254,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     def extra_state_attributes(self) -> dict[str, str]:
         """Return entity specific state attributes."""
         return {
-            "client_id": self._client_id,
+            "client_id": str(self._client_id),
             "camera_name": self._cam_name,
             "restream_type": self._restream_type,
         }
