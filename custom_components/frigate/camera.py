@@ -242,7 +242,6 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
 
             if data:
                 return True
-
         return False
 
     @property
