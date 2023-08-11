@@ -7,8 +7,12 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
+from pytest_homeassistant_custom_component.common import (
+    async_fire_mqtt_message,
+    async_fire_time_changed,
+)
 
+from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
@@ -31,6 +35,7 @@ from homeassistant.components.camera import (
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+import homeassistant.util.dt as dt_util
 
 from . import (
     TEST_CAMERA_BIRDSEYE_ENTITY_ID,
@@ -40,6 +45,7 @@ from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_FRIGATE_INSTANCE_ID,
     TEST_SERVER_VERSION,
+    TEST_STATS,
     create_mock_frigate_client,
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
@@ -353,6 +359,25 @@ async def test_camera_disable_motion_detection(
     mqtt_mock.async_publish.assert_called_once_with(
         "frigate/front_door/motion/set", "OFF", 0, False
     )
+
+
+async def test_camera_unavailable(hass: HomeAssistant) -> None:
+    """Test that camera is marked as unavailable."""
+    await setup_mock_frigate_config_entry(hass)
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+
+    client = create_mock_frigate_client()
+    stats = copy.deepcopy(TEST_STATS)
+    stats["front_door"]["camera_fps"] = 0.0
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unavailable"
 
 
 @pytest.mark.parametrize(
