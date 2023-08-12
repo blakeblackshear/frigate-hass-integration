@@ -47,6 +47,7 @@ from .const import (
     STATE_DETECTED,
     STATE_IDLE,
 )
+from .views import get_frigate_instance_id_for_config_entry
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -58,11 +59,17 @@ async def async_setup_entry(
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     frigate_client = hass.data[DOMAIN][entry.entry_id][ATTR_CLIENT]
+    client_id = get_frigate_instance_id_for_config_entry(hass, entry)
 
     async_add_entities(
         [
             FrigateCamera(
-                entry, cam_name, frigate_client, frigate_config, camera_config
+                entry,
+                cam_name,
+                frigate_client,
+                client_id,
+                frigate_config,
+                camera_config,
             )
             for cam_name, camera_config in frigate_config["cameras"].items()
         ]
@@ -108,11 +115,13 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         config_entry: ConfigEntry,
         cam_name: str,
         frigate_client: FrigateApiClient,
+        frigate_client_id: Any | None,
         frigate_config: dict[str, Any],
         camera_config: dict[str, Any],
     ) -> None:
         """Initialize a Frigate camera."""
         self._client = frigate_client
+        self._client_id = frigate_client_id
         self._frigate_config = frigate_config
         self._camera_config = camera_config
         self._cam_name = cam_name
@@ -245,6 +254,8 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
     def extra_state_attributes(self) -> dict[str, str]:
         """Return entity specific state attributes."""
         return {
+            "client_id": str(self._client_id),
+            "camera_name": self._cam_name,
             "restream_type": self._restream_type,
         }
 
