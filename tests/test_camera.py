@@ -372,7 +372,7 @@ async def test_camera_unavailable(hass: HomeAssistant) -> None:
     stats["front_door"]["camera_fps"] = 0.0
     client.async_get_stats = AsyncMock(return_value=stats)
 
-    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    async_fire_time_changed(hass, dt_util.utcnow() + (SCAN_INTERVAL * 10))
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
