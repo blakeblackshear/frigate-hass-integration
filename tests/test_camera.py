@@ -363,16 +363,18 @@ async def test_camera_disable_motion_detection(
 
 async def test_camera_unavailable(hass: HomeAssistant) -> None:
     """Test that camera is marked as unavailable."""
-    await setup_mock_frigate_config_entry(hass)
+    client = create_mock_frigate_client()
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
     entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert entity_state
+    assert entity_state.state == "streaming"
 
-    client = create_mock_frigate_client()
-    stats = copy.deepcopy(TEST_STATS)
     stats["front_door"]["camera_fps"] = 0.0
-    client.async_get_stats = AsyncMock(return_value=stats)
 
-    async_fire_time_changed(hass, dt_util.utcnow() + (SCAN_INTERVAL * 10))
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
