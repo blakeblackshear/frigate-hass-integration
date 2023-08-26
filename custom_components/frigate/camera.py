@@ -20,8 +20,10 @@ from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import (
+    FrigateDataUpdateCoordinator,
     FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
@@ -33,6 +35,7 @@ from . import (
 from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
+    ATTR_COORDINATOR,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     ATTR_PTZ_ACTION,
@@ -60,6 +63,7 @@ async def async_setup_entry(
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     frigate_client = hass.data[DOMAIN][entry.entry_id][ATTR_CLIENT]
     client_id = get_frigate_instance_id_for_config_entry(hass, entry)
+    coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
     async_add_entities(
         [
@@ -68,6 +72,7 @@ async def async_setup_entry(
                 cam_name,
                 frigate_client,
                 client_id,
+                coordinator,
                 frigate_config,
                 camera_config,
             )
@@ -104,7 +109,7 @@ async def async_setup_entry(
     )
 
 
-class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
+class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: ignore[misc]
     """Representation of a Frigate camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
@@ -116,6 +121,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         cam_name: str,
         frigate_client: FrigateApiClient,
         frigate_client_id: Any | None,
+        coordinator: FrigateDataUpdateCoordinator,
         frigate_config: dict[str, Any],
         camera_config: dict[str, Any],
     ) -> None:
@@ -150,6 +156,7 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
             },
         )
         FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
         Camera.__init__(self)
         self._url = config_entry.data[CONF_URL]
         self._attr_is_on = True
@@ -226,6 +233,14 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         """Handle a new received MQTT extra message."""
         self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
         self.async_write_ha_state()
+
+    @property
+    def available(self) -> bool:
+        """Signal when frigate loses connection to camera."""
+        if self.coordinator.data:
+            if self.coordinator.data.get(self._cam_name, {}).get("camera_fps", 0) == 0:
+                return False
+        return super().available
 
     @property
     def unique_id(self) -> str:

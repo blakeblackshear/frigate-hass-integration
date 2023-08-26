@@ -414,7 +414,7 @@ class FrigateEntity(Entity):  # type: ignore[misc]
     @property
     def available(self) -> bool:
         """Return the availability of the entity."""
-        return self._available
+        return self._available and super().available
 
     def _get_model(self) -> str:
         """Get the Frigate device model string."""
@@ -451,11 +451,13 @@ class FrigateMQTTEntity(FrigateEntity):
             self._topic_map,
         )
         self._sub_state = await async_subscribe_topics(self.hass, state)
+        await super().async_added_to_hass()
 
     async def async_will_remove_from_hass(self) -> None:
         """Cleanup prior to hass removal."""
         async_unsubscribe_topics(self.hass, self._sub_state)
         self._sub_state = None
+        await super().async_will_remove_from_hass()
 
     @callback  # type: ignore[misc]
     def _availability_message_received(self, msg: ReceiveMessage) -> None:

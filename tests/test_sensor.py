@@ -284,13 +284,18 @@ async def test_status_sensor_error(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass, client=client)
     await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
 
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
     client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
     assert entity_state
-    assert entity_state.state == "error"
+
+    # The update coordinator will treat the error as unavailability.
+    assert entity_state.state == "unavailable"
     assert entity_state.attributes["icon"] == ICON_SERVER
 
 
