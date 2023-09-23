@@ -342,7 +342,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         self, playback_factor: str, start_time: str, end_time: str
     ) -> None:
         """Export recording."""
-        await self.client.async_export_recording(
+        await self._client.async_export_recording(
             self._cam_name,
             playback_factor,
             datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),

@@ -516,6 +516,7 @@ async def test_export_recording_service_call(
         blocking=True,
     )
     client.async_export_recording.assert_called_with(
+        "front_door",
         playback_factor,
         datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
