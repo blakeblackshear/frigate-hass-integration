@@ -25,14 +25,16 @@ export_recording:
       description: Start time of exported recording
       required: true
       advanced: false
-      datetime:
+      selector:
+        datetime:
     end_time:
       name: Export End Time
       description: End time of exported recording
       required: true
       advanced: false
-      datetime:
-      
+      selector:
+        datetime:
+
 favorite_event:
   name: Favorite or unfavorite Event
   description: >
