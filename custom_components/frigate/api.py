@@ -157,7 +157,7 @@ class FrigateApiClient:
                 URL(self._host)
                 / f"api/export/{camera}/start/{start_time}/end/{end_time}"
             ),
-            data={"playback": playback_factor},
+            data={"playback": playback_factor.lower()},
             decode_json=decode_json,
         )
 
