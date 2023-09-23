@@ -146,8 +146,8 @@ class FrigateApiClient:
         self,
         camera: str,
         playback_factor: str,
-        start_time: int,
-        end_time: int,
+        start_time: float,
+        end_time: float,
         decode_json: bool = True,
     ) -> dict[str, Any] | str:
         """Export recording."""
