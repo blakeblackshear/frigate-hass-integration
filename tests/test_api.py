@@ -307,16 +307,12 @@ async def test_async_export_recording(
     post_handler = AsyncMock(return_value=web.json_response(post_success))
 
     playback_factor = "Realtime"
-    start_time = (
-        datetime.datetime.strptime(
-            "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
-        ).timestamp(),
-    )
-    end_time = (
-        datetime.datetime.strptime(
-            "2023-09-23 18:11:22", "%Y-%m-%d %H:%M:%S"
-        ).timestamp(),
-    )
+    start_time = datetime.datetime.strptime(
+        "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    end_time = datetime.datetime.strptime(
+        "2023-09-23 18:11:22", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
     server = await start_frigate_server(
         aiohttp_server,
         [
