@@ -29,11 +29,14 @@ ATTR_CLIENT = "client"
 ATTR_CLIENT_ID = "client_id"
 ATTR_CONFIG = "config"
 ATTR_COORDINATOR = "coordinator"
+ATTR_END_TIME = "end_time"
 ATTR_EVENT_ID = "event_id"
 ATTR_FAVORITE = "favorite"
 ATTR_MQTT = "mqtt"
+ATTR_PLAYBACK_FACTOR = "playback_factor"
 ATTR_PTZ_ACTION = "action"
 ATTR_PTZ_ARGUMENT = "argument"
+ATTR_START_TIME = "start_time"
 
 # Frigate Attribute Labels
 # These are labels that are not individually tracked as they are
@@ -83,5 +86,6 @@ STATUS_RUNNING = "running"
 STATUS_STARTING = "starting"
 
 # Frigate Services
+SERVICE_EXPORT_RECORDING = "export_recording"
 SERVICE_FAVORITE_EVENT = "favorite_event"
 SERVICE_PTZ = "ptz"
