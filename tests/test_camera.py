@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import datetime
 import logging
 from typing import Any
 from unittest.mock import AsyncMock
@@ -14,14 +15,18 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import (
+    ATTR_END_TIME,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_PLAYBACK_FACTOR,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
+    ATTR_START_TIME,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
     NAME,
+    SERVICE_EXPORT_RECORDING,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
 )
@@ -483,6 +488,38 @@ async def test_cameras_setup_correctly_in_registry(
             TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
             TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
+    )
+
+
+async def test_export_recording_service_call(
+    hass: HomeAssistant,
+) -> None:
+    """Test export recording service call."""
+    post_success = {"success": True, "message": "Post success"}
+
+    client = create_mock_frigate_client()
+    client.async_export_recording = AsyncMock(return_value=post_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    playback_factor = "Realtime"
+    start_time = "2023-09-23 13:33:44"
+    end_time = "2023-09-23 18:11:22"
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_EXPORT_RECORDING,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_PLAYBACK_FACTOR: playback_factor,
+            ATTR_START_TIME: start_time,
+            ATTR_END_TIME: end_time,
+        },
+        blocking=True,
+    )
+    client.async_export_recording.assert_called_with(
+        "front_door",
+        playback_factor,
+        datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+        datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
     )
 
 

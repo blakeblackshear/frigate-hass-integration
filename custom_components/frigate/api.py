@@ -142,6 +142,26 @@ class FrigateApiClient:
         )
         return cast(dict[str, Any], result) if decode_json else result
 
+    async def async_export_recording(
+        self,
+        camera: str,
+        playback_factor: str,
+        start_time: float,
+        end_time: float,
+        decode_json: bool = True,
+    ) -> dict[str, Any] | str:
+        """Export recording."""
+        result = await self.api_wrapper(
+            "post",
+            str(
+                URL(self._host)
+                / f"api/export/{camera}/start/{start_time}/end/{end_time}"
+            ),
+            data={"playback": playback_factor},
+            decode_json=decode_json,
+        )
+        return cast(dict[str, Any], result) if decode_json else result
+
     async def async_get_recordings_summary(
         self, camera: str, timezone: str, decode_json: bool = True
     ) -> list[dict[str, Any]] | str:

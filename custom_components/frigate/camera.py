@@ -1,6 +1,7 @@
 """Support for Frigate cameras."""
 from __future__ import annotations
 
+import datetime
 import logging
 from typing import Any, cast
 
@@ -36,15 +37,19 @@ from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_COORDINATOR,
+    ATTR_END_TIME,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_PLAYBACK_FACTOR,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
+    ATTR_START_TIME,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
+    SERVICE_EXPORT_RECORDING,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
     STATE_DETECTED,
@@ -91,6 +96,15 @@ async def async_setup_entry(
 
     # setup services
     platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_EXPORT_RECORDING,
+        {
+            vol.Required(ATTR_PLAYBACK_FACTOR, default="realtime"): str,
+            vol.Required(ATTR_START_TIME): str,
+            vol.Required(ATTR_END_TIME): str,
+        },
+        SERVICE_EXPORT_RECORDING,
+    )
     platform.async_register_entity_service(
         SERVICE_FAVORITE_EVENT,
         {
@@ -322,6 +336,17 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
             "OFF",
             0,
             False,
+        )
+
+    async def export_recording(
+        self, playback_factor: str, start_time: str, end_time: str
+    ) -> None:
+        """Export recording."""
+        await self._client.async_export_recording(
+            self._cam_name,
+            playback_factor,
+            datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+            datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         )
 
     async def favorite_event(self, event_id: str, favorite: bool) -> None:
