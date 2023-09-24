@@ -157,7 +157,7 @@ class FrigateApiClient:
                 URL(self._host)
                 / f"api/export/{camera}/start/{start_time}/end/{end_time}"
             ),
-            data={"playback": playback_factor.lower()},
+            data={"playback": playback_factor},
             decode_json=decode_json,
         )
         return cast(dict[str, Any], result) if decode_json else result
