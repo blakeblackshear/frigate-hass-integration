@@ -99,7 +99,7 @@ async def async_setup_entry(
     platform.async_register_entity_service(
         SERVICE_EXPORT_RECORDING,
         {
-            vol.Required(ATTR_PLAYBACK_FACTOR, default="Realtime"): str,
+            vol.Required(ATTR_PLAYBACK_FACTOR, default="realtime"): str,
             vol.Required(ATTR_START_TIME): str,
             vol.Required(ATTR_END_TIME): str,
         },

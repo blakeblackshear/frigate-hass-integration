@@ -13,13 +13,13 @@ export_recording:
       description: Playback factor for recordings
       required: true
       advanced: false
-      example: Realtime
-      default: Realtime
+      example: realtime
+      default: realtime
       selector:
         select:
           options:
-            - "Realtime"
-            - "Timelapse"
+            - "realtime"
+            - "timelapse"
     start_time:
       name: Export Start Time
       description: Start time of exported recording
