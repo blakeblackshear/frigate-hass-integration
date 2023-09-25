@@ -89,7 +89,9 @@ async def test_entry_async_get_version_incompatible(hass: HomeAssistant) -> None
     assert config_entry.state == ConfigEntryState.SETUP_ERROR
 
 
-async def test_entry_async_get_version_compatible_leading_zero(hass: HomeAssistant) -> None:
+async def test_entry_async_get_version_compatible_leading_zero(
+    hass: HomeAssistant,
+) -> None:
     """Test running an incompatible server version."""
 
     client = create_mock_frigate_client()
