@@ -5,7 +5,7 @@ import datetime
 import logging
 from typing import Any
 
-from homeassistant.components.image import Image
+from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
@@ -34,17 +34,18 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
+            FrigateMqttSnapshots(hass, entry, frigate_config, cam_name, obj_name)
             for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
         ]
     )
 
 
-class FrigateMqttSnapshots(FrigateMQTTEntity, Image):  # type: ignore[misc]
+class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):  # type: ignore[misc]
     """Frigate best image class."""
 
     def __init__(
         self,
+        hass: HomeAssistant,
         config_entry: ConfigEntry,
         frigate_config: dict[str, Any],
         cam_name: str,
@@ -54,7 +55,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Image):  # type: ignore[misc]
         self._frigate_config = frigate_config
         self._cam_name = cam_name
         self._obj_name = obj_name
-        self._last_image_timestamp = None
+        self._last_image_timestamp: datetime.datetime | None = None
         self._last_image: bytes | None = None
 
         FrigateMQTTEntity.__init__(
@@ -73,7 +74,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Image):  # type: ignore[misc]
                 },
             },
         )
-        Image.__init__(self)
+        ImageEntity.__init__(self, hass)
 
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
@@ -87,7 +88,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Image):  # type: ignore[misc]
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
             self._config_entry.entry_id,
-            "image",
+            "image_best_snapshot",
             f"{self._cam_name}_{self._obj_name}",
         )
 
