@@ -19,7 +19,6 @@ from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -28,7 +27,6 @@ from . import (
     FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
-    get_cameras_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
@@ -53,8 +51,6 @@ from .const import (
     SERVICE_EXPORT_RECORDING,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
-    STATE_DETECTED,
-    STATE_IDLE,
 )
 from .views import get_frigate_instance_id_for_config_entry
 
@@ -83,10 +79,6 @@ async def async_setup_entry(
                 camera_config,
             )
             for cam_name, camera_config in frigate_config["cameras"].items()
-        ]
-        + [
-            FrigateMqttSnapshots(entry, frigate_config, cam_name, obj_name)
-            for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
         ]
         + (
             [BirdseyeCamera(entry, frigate_client)]
@@ -469,85 +461,3 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
-
-
-class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
-    """Frigate best camera class."""
-
-    def __init__(
-        self,
-        config_entry: ConfigEntry,
-        frigate_config: dict[str, Any],
-        cam_name: str,
-        obj_name: str,
-    ) -> None:
-        """Construct a FrigateMqttSnapshots camera."""
-        self._frigate_config = frigate_config
-        self._cam_name = cam_name
-        self._obj_name = obj_name
-        self._last_image: bytes | None = None
-
-        FrigateMQTTEntity.__init__(
-            self,
-            config_entry,
-            frigate_config,
-            {
-                "state_topic": {
-                    "msg_callback": self._state_message_received,
-                    "qos": 0,
-                    "topic": (
-                        f"{self._frigate_config['mqtt']['topic_prefix']}"
-                        f"/{self._cam_name}/{self._obj_name}/snapshot"
-                    ),
-                    "encoding": None,
-                },
-            },
-        )
-        Camera.__init__(self)
-
-    @callback  # type: ignore[misc]
-    def _state_message_received(self, msg: ReceiveMessage) -> None:
-        """Handle a new received MQTT state message."""
-        self._last_image = msg.payload
-        self.async_write_ha_state()
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique ID to use for this entity."""
-        return get_frigate_entity_unique_id(
-            self._config_entry.entry_id,
-            "camera_snapshots",
-            f"{self._cam_name}_{self._obj_name}",
-        )
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Get the device information."""
-        return {
-            "identifiers": {
-                get_frigate_device_identifier(self._config_entry, self._cam_name)
-            },
-            "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
-            "model": self._get_model(),
-            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
-            "manufacturer": NAME,
-        }
-
-    @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return self._obj_name.title()
-
-    async def async_camera_image(
-        self, width: int | None = None, height: int | None = None
-    ) -> bytes | None:
-        """Return image response."""
-        return self._last_image
-
-    @property
-    def state(self) -> str:  # pylint: disable=overridden-final-method
-        """Return the camera state."""
-        if self._last_image is None:
-            return STATE_IDLE
-        return STATE_DETECTED
