@@ -12,8 +12,9 @@ NUMBER = "number"
 SENSOR = "sensor"
 SWITCH = "switch"
 CAMERA = "camera"
+IMAGE = "image"
 UPDATE = "update"
-PLATFORMS = [SENSOR, CAMERA, NUMBER, SWITCH, BINARY_SENSOR, UPDATE]
+PLATFORMS = [SENSOR, CAMERA, IMAGE, NUMBER, SWITCH, BINARY_SENSOR, UPDATE]
 
 # Device Classes
 # This device class does not exist in HA, but we use it to be able
