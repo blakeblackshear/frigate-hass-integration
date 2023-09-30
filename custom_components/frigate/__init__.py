@@ -268,6 +268,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if entity_id:
             entity_registry.async_remove(entity_id)
 
+    # Cleanup camera snapshot entities (replaced with image entities).
+    for cam_name, obj_name in get_cameras_and_objects(config, False):
+        unique_id = get_frigate_entity_unique_id(
+            entry.entry_id,
+            "camera_snapshots",
+            f"{cam_name}_{obj_name}",
+        )
+        entity_id = entity_registry.async_get_entity_id("camera", DOMAIN, unique_id)
+        if entity_id:
+            entity_registry.async_remove(entity_id)
+
     # Rename / change ID of object count sensors.
     for cam_name, obj_name in get_cameras_zones_and_objects(config):
         unique_id = get_frigate_entity_unique_id(
