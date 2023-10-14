@@ -184,6 +184,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
             or self._cam_name
             in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
         )
+        self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
         )
