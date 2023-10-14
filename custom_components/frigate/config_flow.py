@@ -16,12 +16,12 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
+    CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
-    CONF_ENABLE_WEBRTC,
     DEFAULT_HOST,
     DOMAIN,
 )

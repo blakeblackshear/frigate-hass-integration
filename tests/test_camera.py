@@ -22,9 +22,9 @@ from custom_components.frigate.const import (
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
+    CONF_ENABLE_WEBRTC,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
-    CONF_ENABLE_WEBRTC,
     DOMAIN,
     NAME,
     SERVICE_EXPORT_RECORDING,
@@ -139,7 +139,6 @@ async def test_frigate_camera_setup_web_rtc(
     assert msg["type"] == TYPE_RESULT
     assert msg["success"]
     assert msg["result"]["answer"] == "return_sdp"
-
 
 
 async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
