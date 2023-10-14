@@ -11,6 +11,7 @@ from custom_components.frigate.const import (
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
+    CONF_ENABLE_WEBRTC,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
@@ -175,6 +176,7 @@ async def test_options_advanced(hass: HomeAssistant) -> None:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={
+                CONF_ENABLE_WEBRTC: True,
                 CONF_RTMP_URL_TEMPLATE: "http://moo",
                 CONF_RTSP_URL_TEMPLATE: "http://moo",
                 CONF_NOTIFICATION_PROXY_ENABLE: False,
@@ -184,6 +186,7 @@ async def test_options_advanced(hass: HomeAssistant) -> None:
         )
         await hass.async_block_till_done()
         assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+        assert result["data"][CONF_ENABLE_WEBRTC] is True
         assert result["data"][CONF_RTMP_URL_TEMPLATE] == "http://moo"
         assert result["data"][CONF_RTSP_URL_TEMPLATE] == "http://moo"
         assert result["data"][CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS] == 60
