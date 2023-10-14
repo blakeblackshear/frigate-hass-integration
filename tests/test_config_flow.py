@@ -8,10 +8,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
+    CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
-    CONF_ENABLE_WEBRTC,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
