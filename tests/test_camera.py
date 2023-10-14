@@ -24,6 +24,7 @@ from custom_components.frigate.const import (
     ATTR_START_TIME,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
+    CONF_ENABLE_WEBRTC,
     DOMAIN,
     NAME,
     SERVICE_EXPORT_RECORDING,
@@ -34,9 +35,11 @@ from homeassistant.components.camera import (
     DOMAIN as CAMERA_DOMAIN,
     SERVICE_DISABLE_MOTION,
     SERVICE_ENABLE_MOTION,
+    StreamType,
     async_get_image,
     async_get_stream_source,
 )
+from homeassistant.components.websocket_api.const import TYPE_RESULT
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -73,6 +76,7 @@ async def test_frigate_camera_setup_rtsp(
     assert entity_state.state == "streaming"
     assert entity_state.attributes["supported_features"] == 2
     assert entity_state.attributes["restream_type"] == "rtsp"
+    assert entity_state.attributes["frontend_stream_type"] == StreamType.HLS
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
@@ -86,6 +90,56 @@ async def test_frigate_camera_setup_rtsp(
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
     assert image
     assert image.content == b"data-277"
+
+
+async def test_frigate_camera_setup_web_rtc(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+    hass_ws_client: Any,
+) -> None:
+    """Set up a camera."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_ENABLE_WEBRTC: True}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+    assert entity_state.attributes["restream_type"] == "webrtc"
+    assert entity_state.attributes["frontend_stream_type"] == StreamType.WEB_RTC
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert source is None
+
+    aioclient_mock.post(
+        "http://example.com/api/go2rtc/webrtc?src=front_door",
+        json={"type": "answer", "sdp": "return_sdp"},
+    )
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {
+            "id": 5,
+            "type": "camera/web_rtc_offer",
+            "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            "offer": "send_sdp",
+        }
+    )
+
+    msg = await client.receive_json()
+    assert msg["id"] == 5
+    assert msg["type"] == TYPE_RESULT
+    assert msg["success"]
+    assert msg["result"]["answer"] == "return_sdp"
+
 
 
 async def test_frigate_camera_setup_birdseye_rtsp(hass: HomeAssistant) -> None:
