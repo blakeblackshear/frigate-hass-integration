@@ -331,7 +331,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
             answer = await resp.json()
-            return answer["sdp"]
+            return cast(str, answer["sdp"])
 
     async def async_enable_motion_detection(self) -> None:
         """Enable motion detection for this camera."""
