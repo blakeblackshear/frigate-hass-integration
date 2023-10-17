@@ -384,3 +384,30 @@ async def test_async_get_recordings(
         await frigate_client.async_get_recordings(camera, after, before)
         == recordings_success
     )
+
+
+async def test_async_get_ptz_info(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_ptz_info."""
+
+    camera = "master_bedroom"
+    summary_success = [
+        {
+            "features": ["pt", "zoom", "pt-r", "zoom-r"],
+            "name": camera,
+            "presets": [
+                "preset01",
+                "preset02",
+            ],
+        }
+    ]
+    summary_handler = AsyncMock(return_value=web.json_response(summary_success))
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get(f"/api/{camera}/ptz/info", summary_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert await frigate_client.async_get_ptz_info(camera) == summary_success
+    assert summary_handler.called
