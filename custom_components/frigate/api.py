@@ -127,6 +127,18 @@ class FrigateApiClient:
             await self.api_wrapper("get", str(URL(self._host) / "api/config")),
         )
 
+    async def async_get_ptz_info(
+        self,
+        camera: str,
+        decode_json: bool = True,
+    ) -> Any:
+        """Get PTZ info."""
+        return await self.api_wrapper(
+            "get",
+            str(URL(self._host) / "api" / camera / "ptz/info"),
+            decode_json=decode_json,
+        )
+
     async def async_get_path(self, path: str) -> Any:
         """Get data from the API."""
         return await self.api_wrapper("get", str(URL(self._host) / f"{path}/"))
