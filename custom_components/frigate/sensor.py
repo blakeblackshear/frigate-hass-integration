@@ -69,7 +69,10 @@ async def async_setup_entry(
         elif key == "cameras":
             for name in value.keys():
                 entities.extend(
-                    [CameraFpsSensor(coordinator, entry, name, t) for t in CAMERA_FPS_TYPES]
+                    [
+                        CameraFpsSensor(coordinator, entry, name, t)
+                        for t in CAMERA_FPS_TYPES
+                    ]
                 )
         else:
             entities.extend(
@@ -378,11 +381,13 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         if self.coordinator.data:
             if not self.coordinator.data.get("cameras", {}):
                 data = self.coordinator.data.get(self._cam_name, {}).get(
-                  f"{self._fps_type}_fps"
+                    f"{self._fps_type}_fps"
                 )
             else:
-                data = self.coordinator.data.get("cameras", {}).get(self._cam_name, {}).get(
-                  f"{self._fps_type}_fps"
+                data = (
+                    self.coordinator.data.get("cameras", {})
+                    .get(self._cam_name, {})
+                    .get(f"{self._fps_type}_fps")
                 )
 
             if data is not None:
@@ -602,10 +607,16 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
             )
 
             if not self.coordinator.data.get("cameras", {}):
-                pid = str(self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1"))
+                pid = str(
+                    self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1")
+                )
             else:
-                pid = str(self.coordinator.data.get("cameras", {}).get(self._cam_name, {}).get(pid_key, "-1"))
-
+                pid = str(
+                    self.coordinator.data.get("cameras", {})
+                    .get(self._cam_name, {})
+                    .get(pid_key, "-1")
+                )
+ 
             data = (
                 self.coordinator.data.get("cpu_usages", {})
                 .get(pid, {})
