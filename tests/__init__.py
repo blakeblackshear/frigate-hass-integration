@@ -164,19 +164,21 @@ TEST_CONFIG = {
     "go2rtc": {"streams": {"front_door": "rtsp://rtsp:password@cam-front-door/live"}},
 }
 TEST_STATS = {
+    "cameras": {
+        "front_door": {
+            "camera_fps": 4.1,
+            "capture_pid": 53,
+            "detection_fps": 6.0,
+            "pid": 52,
+            "ffmpeg_pid": 54,
+            "process_fps": 4.0,
+            "skipped_fps": 0.0,
+        },
+    },
     "detection_fps": 13.7,
     "detectors": {
         "cpu1": {"detection_start": 0.0, "inference_speed": 91.43, "pid": 42},
         "cpu2": {"detection_start": 0.0, "inference_speed": 84.99, "pid": 44},
-    },
-    "front_door": {
-        "camera_fps": 4.1,
-        "capture_pid": 53,
-        "detection_fps": 6.0,
-        "pid": 52,
-        "ffmpeg_pid": 54,
-        "process_fps": 4.0,
-        "skipped_fps": 0.0,
     },
     "service": {
         "storage": {
