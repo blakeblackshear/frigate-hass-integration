@@ -526,7 +526,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         return self._last_image
 
     @property
-    def state(self) -> str:
+    def state(self) -> str:  # pylint: disable=overridden-final-method
         """Return the camera state."""
         if self._last_image is None:
             return STATE_IDLE

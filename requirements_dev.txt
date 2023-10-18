@@ -5,7 +5,7 @@ mypy==1.1.1
 pre-commit
 pytest
 pytest-homeassistant-custom-component==0.12.49
-pylint-pytest
+pylint-pytest==1.1.3a0
 pylint
 pytest-aiohttp
 pytest-asyncio

@@ -131,11 +131,11 @@ class Identifier:
 
     @classmethod
     def _add_frigate_instance_id_to_parts_if_absent(
-        self, parts: list[str], default_frigate_instance_id: str | None = None
+        cls, parts: list[str], default_frigate_instance_id: str | None = None
     ) -> list[str]:
         """Add a frigate instance id if it's not specified."""
         if (
-            self._get_index(parts, 0) == self.get_identifier_type()
+            cls._get_index(parts, 0) == cls.get_identifier_type()
             and default_frigate_instance_id is not None
         ):
             parts.insert(0, default_frigate_instance_id)
@@ -168,32 +168,28 @@ class FrigateMediaType(enum.Enum):
         """Get mime type for this frigate media type."""
         if self == FrigateMediaType.CLIPS:
             return "application/x-mpegURL"
-        else:
-            return "image/jpg"
+        return "image/jpg"
 
     @property
     def media_type(self) -> str:
         """Get media type for this frigate media type."""
         if self == FrigateMediaType.CLIPS:
             return str(MEDIA_TYPE_VIDEO)
-        else:
-            return str(MEDIA_TYPE_IMAGE)
+        return str(MEDIA_TYPE_IMAGE)
 
     @property
     def media_class(self) -> str:
         """Get media class for this frigate media type."""
         if self == FrigateMediaType.CLIPS:
             return str(MEDIA_CLASS_VIDEO)
-        else:
-            return str(MEDIA_CLASS_IMAGE)
+        return str(MEDIA_CLASS_IMAGE)
 
     @property
     def extension(self) -> str:
         """Get filename extension."""
         if self == FrigateMediaType.CLIPS:
             return "m3u8"
-        else:
-            return "jpg"
+        return "jpg"
 
 
 @attr.s(frozen=True)
@@ -255,8 +251,7 @@ class EventIdentifier(Identifier):
         """Get the equivalent Frigate server path."""
         if self.frigate_media_type == FrigateMediaType.CLIPS:
             return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
-        else:
-            return f"snapshot/{self.id}"
+        return f"snapshot/{self.id}"
 
     @property
     def mime_type(self) -> str:
@@ -375,7 +370,7 @@ def _validate_year_month_day(
         try:
             dt.datetime.strptime(data, "%Y-%m-%d")
         except ValueError as exc:
-            raise ValueError("Invalid date in identifier: %s" % data) from exc
+            raise ValueError(f"Invalid date in identifier: {data}") from exc
 
 
 def _validate_hour(
@@ -383,7 +378,7 @@ def _validate_hour(
 ) -> None:
     """Determine if a value is a valid hour."""
     if value is not None and (int(value) < 0 or int(value) > 23):
-        raise ValueError("Invalid hour in identifier: %s" % value)
+        raise ValueError(f"Invalid hour in identifier: {value}")
 
 
 @attr.s(frozen=True)
@@ -554,8 +549,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             return client
 
         raise MediaSourceError(
-            "Could not find client for frigate instance id: %s"
-            % identifier.frigate_instance_id
+            "Could not find client for frigate instance "
+            f"id: {identifier.frigate_instance_id}"
         )
 
     def _get_default_frigate_instance_id(self) -> str | None:
@@ -584,7 +579,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,
             )
-        raise Unresolvable("Unknown or disallowed identifier: %s" % item.identifier)
+        raise Unresolvable(f"Unknown or disallowed identifier: {item.identifier}")
 
     async def async_browse_media(
         self,
@@ -672,7 +667,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             identifier.frigate_instance_id
         ):
             raise MediaSourceError(
-                "Forbidden media source identifier: %s" % item.identifier
+                f"Forbidden media source identifier: {item.identifier}"
             )
 
         if isinstance(identifier, EventSearchIdentifier):
@@ -719,7 +714,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
             except FrigateApiClientError as exc:
                 raise MediaSourceError from exc
 
-        raise MediaSourceError("Invalid media source identifier: %s" % item.identifier)
+        raise MediaSourceError(f"Invalid media source identifier: {item.identifier}")
 
     async def _get_event_summary_data(
         self, identifier: EventSearchIdentifier
@@ -1229,19 +1224,13 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
     ) -> int:
         """Return count of events that match the identifier."""
         return sum(
-            [
-                d["count"]
-                for d in summary_data.data
-                if (
-                    (identifier.after is None or d["timestamp"] >= identifier.after)
-                    and (
-                        identifier.before is None or d["timestamp"] < identifier.before
-                    )
-                    and (identifier.camera is None or identifier.camera in d["camera"])
-                    and (identifier.label is None or identifier.label in d["label"])
-                    and (identifier.zone is None or identifier.zone in d["zones"])
-                )
-            ]
+            d["count"]
+            for d in summary_data.data
+            if (identifier.after is None or d["timestamp"] >= identifier.after)
+            and (identifier.before is None or d["timestamp"] < identifier.before)
+            and (identifier.camera is None or identifier.camera in d["camera"])
+            and (identifier.label is None or identifier.label in d["label"])
+            and (identifier.zone is None or identifier.zone in d["zones"])
         )
 
     def _get_recording_base_media_source(
@@ -1298,8 +1287,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 dt.datetime.strptime(day_item["day"], "%Y-%m-%d")
             except ValueError as exc:
                 raise MediaSourceError(
-                    "Media source is not valid for %s %s"
-                    % (identifier, day_item["day"])
+                    f"Media source is not valid for {identifier} {day_item['day']}"
                 ) from exc
 
             base.children.append(
@@ -1340,8 +1328,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 title = dt.datetime.strptime(hour_data["hour"], "%H").strftime("%H:00")
             except ValueError as exc:
                 raise MediaSourceError(
-                    "Media source is not valid for %s %s"
-                    % (identifier, hour_data["hour"])
+                    f"Media source is not valid for {identifier} {hour_data['hour']}"
                 ) from exc
 
             base.children.append(
