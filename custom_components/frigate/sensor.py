@@ -74,10 +74,6 @@ async def async_setup_entry(
                         for t in CAMERA_FPS_TYPES
                     ]
                 )
-        else:
-            entities.extend(
-                [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
-            )
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     entities.extend(
@@ -379,16 +375,11 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Return the state of the sensor."""
 
         if self.coordinator.data:
-            if not self.coordinator.data.get("cameras", {}):
-                data = self.coordinator.data.get(self._cam_name, {}).get(
-                    f"{self._fps_type}_fps"
-                )
-            else:
-                data = (
-                    self.coordinator.data.get("cameras", {})
-                    .get(self._cam_name, {})
-                    .get(f"{self._fps_type}_fps")
-                )
+            data = (
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get(f"{self._fps_type}_fps")
+            )
 
             if data is not None:
                 try:
@@ -606,15 +597,10 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
                 "pid" if self._process_type == "detect" else f"{self._process_type}_pid"
             )
 
-            if not self.coordinator.data.get("cameras", {}):
-                pid = str(
-                    self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1")
-                )
-            else:
-                pid = str(
-                    self.coordinator.data.get("cameras", {})
-                    .get(self._cam_name, {})
-                    .get(pid_key, "-1")
+            pid = str(
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get(pid_key, "-1")
                 )
  
             data = (
