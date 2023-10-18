@@ -83,7 +83,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
         self,
         user_input: dict[str, Any] | None = None,
         errors: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:  # pylint: disable=unused-argument
+    ) -> dict[str, Any]:
         """Show the configuration form."""
         if user_input is None:
             user_input = {}
