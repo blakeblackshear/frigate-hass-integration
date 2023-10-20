@@ -196,7 +196,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
 
-    if AwesomeVersion(server_version.split("-")[0]) < AwesomeVersion(
+    if AwesomeVersion(server_version.split("-")[0]) <= AwesomeVersion(
         FRIGATE_VERSION_ERROR_CUTOFF
     ):
         _LOGGER.error(
