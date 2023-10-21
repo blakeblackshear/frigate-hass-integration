@@ -377,7 +377,7 @@ async def test_camera_unavailable(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "streaming"
 
-    stats["front_door"]["camera_fps"] = 0.0
+    stats["cameras"]["front_door"]["camera_fps"] = 0.0
 
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()

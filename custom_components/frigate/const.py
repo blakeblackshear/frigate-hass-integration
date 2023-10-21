@@ -2,7 +2,7 @@
 # Base component constants
 NAME = "Frigate"
 DOMAIN = "frigate"
-FRIGATE_VERSION_ERROR_CUTOFF = "0.8.4"
+FRIGATE_VERSION_ERROR_CUTOFF = "0.12.1"
 FRIGATE_RELEASES_URL = "https://github.com/blakeblackshear/frigate/releases"
 FRIGATE_RELEASE_TAG_URL = f"{FRIGATE_RELEASES_URL}/tag"
 

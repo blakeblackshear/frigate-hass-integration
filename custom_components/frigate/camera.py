@@ -252,7 +252,12 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
     def available(self) -> bool:
         """Signal when frigate loses connection to camera."""
         if self.coordinator.data:
-            if self.coordinator.data.get(self._cam_name, {}).get("camera_fps", 0) == 0:
+            if (
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get("camera_fps", 0)
+                == 0
+            ):
                 return False
         return super().available
 

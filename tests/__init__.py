@@ -63,7 +63,7 @@ TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
-TEST_SERVER_VERSION = "0.9.0-09a4d6d"
+TEST_SERVER_VERSION = "0.13.0-0858859"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
@@ -164,19 +164,21 @@ TEST_CONFIG = {
     "go2rtc": {"streams": {"front_door": "rtsp://rtsp:password@cam-front-door/live"}},
 }
 TEST_STATS = {
+    "cameras": {
+        "front_door": {
+            "camera_fps": 4.1,
+            "capture_pid": 53,
+            "detection_fps": 6.0,
+            "pid": 52,
+            "ffmpeg_pid": 54,
+            "process_fps": 4.0,
+            "skipped_fps": 0.0,
+        },
+    },
     "detection_fps": 13.7,
     "detectors": {
         "cpu1": {"detection_start": 0.0, "inference_speed": 91.43, "pid": 42},
         "cpu2": {"detection_start": 0.0, "inference_speed": 84.99, "pid": 44},
-    },
-    "front_door": {
-        "camera_fps": 4.1,
-        "capture_pid": 53,
-        "detection_fps": 6.0,
-        "pid": 52,
-        "ffmpeg_pid": 54,
-        "process_fps": 4.0,
-        "skipped_fps": 0.0,
     },
     "service": {
         "storage": {

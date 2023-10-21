@@ -389,7 +389,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
-    stats["front_door"]["camera_fps"] = 3.9
+    stats["cameras"]["front_door"]["camera_fps"] = 3.9
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
@@ -397,7 +397,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "4"
 
-    stats["front_door"]["camera_fps"] = None
+    stats["cameras"]["front_door"]["camera_fps"] = None
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
@@ -405,7 +405,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "unknown"
 
-    stats["front_door"]["camera_fps"] = "NOT_A_NUMBER"
+    stats["cameras"]["front_door"]["camera_fps"] = "NOT_A_NUMBER"
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
