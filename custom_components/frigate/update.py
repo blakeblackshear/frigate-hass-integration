@@ -75,7 +75,7 @@ class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  #
         if not version_hash:
             return None
 
-        version = str(version_hash).split("-")[0]
+        version = str(version_hash).split("-", maxsplit=1)[0]
 
         return version
 

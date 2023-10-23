@@ -50,8 +50,8 @@ DEFAULT_HOST = "http://ccab4aaf-frigate:5000"
 
 STARTUP_MESSAGE = """
 -------------------------------------------------------------------
-{title}
-Integration Version: {integration_version}
+%s
+Integration Version: %s
 This is a custom integration!
 If you have any issues with this you need to open an issue here:
 https://github.com/blakeblackshear/frigate-hass-integration/issues
