@@ -20,6 +20,7 @@
     "step": {
       "init": {
         "data": {
+          "enable_webrtc": "Enable WebRTC for camera streams",
           "rtmp_url_template": "RTMP URL template (see documentation)",
           "rtsp_url_template": "RTSP URL template (see documentation)",
           "media_browser_enable": "Enable the media browser",
