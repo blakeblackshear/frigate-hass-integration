@@ -37,7 +37,7 @@ async def test_frigate_mqtt_snapshots_image_setup(
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
-    assert not entity_state
+    assert entity_state
 
     async_fire_mqtt_message(hass, "frigate/front_door/person/snapshot", "mqtt_data")
     await hass.async_block_till_done()
