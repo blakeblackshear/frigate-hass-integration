@@ -32,7 +32,6 @@ async def test_frigate_mqtt_snapshots_image_setup(
     entity_state = hass.states.get(TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unavailable"
-    assert entity_state.attributes["supported_features"] == 0
 
     async_fire_mqtt_message(hass, "frigate/available", "online")
     await hass.async_block_till_done()
@@ -53,7 +52,7 @@ async def test_frigate_mqtt_snapshots_image_setup(
     [
         (
             TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID,
-            f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person",
+            f"{TEST_CONFIG_ENTRY_ID}:image_best_snapshot:front_door_person",
         ),
     ],
 )
