@@ -24,7 +24,8 @@ jobs:
           days-before-stale: 30
           days-before-close: 3
           exempt-draft-pr: true
-          exempt-issue-labels: "pinned,security"
+          exempt-issue-labels:
+            "pinned,security,help wanted,pending,good first issue"
           exempt-pr-labels: "pinned,security,dependencies"
           operations-per-run: 1000
       - name: Print outputs

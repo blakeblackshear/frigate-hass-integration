@@ -6,10 +6,11 @@ https://github.com/blakeblackshear/frigate-hass-integration
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import timedelta
 import logging
 import re
-from typing import Any, Callable, Final
+from typing import Any, Final
 
 from awesomeversion import AwesomeVersion
 
@@ -70,8 +71,7 @@ def get_frigate_device_identifier(
     """Get a device identifier."""
     if camera_name:
         return (DOMAIN, f"{entry.entry_id}:{slugify(camera_name)}")
-    else:
-        return (DOMAIN, entry.entry_id)
+    return (DOMAIN, entry.entry_id)
 
 
 def get_frigate_entity_unique_id(
@@ -155,10 +155,9 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
     integration = await async_get_integration(hass, DOMAIN)
     _LOGGER.info(
-        STARTUP_MESSAGE.format(
-            title=NAME,
-            integration_version=integration.version,
-        )
+        STARTUP_MESSAGE,
+        NAME,
+        integration.version,
     )
 
     hass.data.setdefault(DOMAIN, {})

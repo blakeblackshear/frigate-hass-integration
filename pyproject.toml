@@ -27,7 +27,6 @@ ignore = [
 jobs = 2
 load-plugins = [
     "pylint.extensions.typing",
-    "pylint_strict_informational",
     "pylint_pytest",
 ]
 persistent = false
@@ -104,9 +103,9 @@ expected-line-ending-format = "LF"
 
 [tool.pylint.EXCEPTIONS]
 overgeneral-exceptions = [
-    "BaseException",
-    "Exception",
-    "HomeAssistantError",
+    "builtins.BaseException",
+    "builtins.Exception",
+    "homeassistant.HomeAssistantError",
 ]
 
 [tool.pylint.TYPING]
