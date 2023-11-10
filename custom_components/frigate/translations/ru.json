@@ -20,6 +20,7 @@
         "step": {
             "init": {
                 "data": {
+                    "enable_webrtc": "Использовать WebRTC для трансляции камер",
                     "rtmp_url_template": "Шаблон URL для RTMP (см. документацию)",
                     "rtsp_url_template": "Шаблон URL для RTSP (см. документацию)",
                     "media_browser_enable": "Включить медиа-браузер",
