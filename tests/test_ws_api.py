@@ -402,3 +402,78 @@ async def test_get_events_summary_api_error(
     response = await ws_client.receive_json()
     assert not response["success"]
     assert response["error"]["code"] == "frigate_error"
+
+
+async def test_get_ptz_info_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving PTZ info successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    ptz_info_json = {
+        "id": 1,
+        "type": "frigate/ptz/info",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": "master_bedroom",
+    }
+    ptz_info_success = {
+        "features": ["pt", "zoom", "pt-r", "zoom-r"],
+        "name": "master_bedroom",
+        "presets": [
+            "preset01",
+            "preset02",
+        ],
+    }
+    mock_client.async_get_ptz_info = AsyncMock(return_value=ptz_info_success)
+    await ws_client.send_json(ptz_info_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_ptz_info.assert_called_with(
+        "master_bedroom", decode_json=False
+    )
+    assert response["success"]
+    assert response["result"] == ptz_info_success
+
+
+async def test_get_ptz_info_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving PTZ info from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    ptz_info_json = {
+        "id": 1,
+        "type": "frigate/ptz/info",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+        "camera": "master_bedroom",
+    }
+
+    await ws_client.send_json(ptz_info_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_get_ptz_info_api_error(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving PTZ info when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    ptz_info_json = {
+        "id": 1,
+        "type": "frigate/ptz/info",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": "master_bedroom",
+    }
+
+    mock_client.async_get_ptz_info = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(ptz_info_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"

@@ -17,6 +17,7 @@ from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
     get_cameras,
+    get_cameras_and_audio,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -42,6 +43,14 @@ async def async_setup_entry(
         [
             FrigateObjectOccupancySensor(entry, frigate_config, cam_name, obj)
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+        ]
+    )
+
+    # add audio sensors for cameras
+    entities.extend(
+        [
+            FrigateAudioSensor(entry, frigate_config, cam_name, audio)
+            for cam_name, audio in get_cameras_and_audio(frigate_config)
         ]
     )
 
@@ -139,6 +148,87 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return get_dynamic_icon_from_type(self._obj_name, self._is_on)
+
+
+class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+    """Frigate Audio Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        audio_name: str,
+    ) -> None:
+        """Construct a new FrigateAudioSensor."""
+        self._cam_name = cam_name
+        self._audio_name = audio_name
+        self._is_on = False
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/audio/{self._audio_name}"
+                    ),
+                },
+            },
+        )
+
+    @callback  # type: ignore[misc]
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        self._is_on = msg.payload == "ON"
+        self.async_write_ha_state()
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "audio_sensor",
+            f"{self._cam_name}_{self._audio_name}",
+        )
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{self._audio_name} sound"
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if the binary sensor is on."""
+        return self._is_on
+
+    @property
+    def device_class(self) -> str:
+        """Return the device class."""
+        return cast(str, BinarySensorDeviceClass.SOUND)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return get_dynamic_icon_from_type("sound", self._is_on)
 
 
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]

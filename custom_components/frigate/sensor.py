@@ -48,6 +48,9 @@ async def async_setup_entry(
         elif key == "gpu_usages":
             for name in value.keys():
                 entities.append(GpuLoadSensor(coordinator, entry, name))
+        elif key == "processes":
+            # don't create sensor for other processes
+            continue
         elif key == "service":
             # Temperature is only supported on PCIe Coral.
             for name in value.get("temperatures", {}):
@@ -63,10 +66,14 @@ async def async_setup_entry(
                 entities.append(
                     CameraProcessCpuSensor(coordinator, entry, camera, "ffmpeg")
                 )
-        else:
-            entities.extend(
-                [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
-            )
+        elif key == "cameras":
+            for name in value.keys():
+                entities.extend(
+                    [
+                        CameraFpsSensor(coordinator, entry, name, t)
+                        for t in CAMERA_FPS_TYPES
+                    ]
+                )
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     entities.extend(
@@ -368,9 +375,12 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Return the state of the sensor."""
 
         if self.coordinator.data:
-            data = self.coordinator.data.get(self._cam_name, {}).get(
-                f"{self._fps_type}_fps"
+            data = (
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get(f"{self._fps_type}_fps")
             )
+
             if data is not None:
                 try:
                     return round(float(data))
@@ -586,7 +596,13 @@ class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[
             pid_key = (
                 "pid" if self._process_type == "detect" else f"{self._process_type}_pid"
             )
-            pid = str(self.coordinator.data.get(self._cam_name, {}).get(pid_key, "-1"))
+
+            pid = str(
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get(pid_key, "-1")
+            )
+
             data = (
                 self.coordinator.data.get("cpu_usages", {})
                 .get(pid, {})

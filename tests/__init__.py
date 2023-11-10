@@ -22,6 +22,7 @@ TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID = "binary_sensor.front_door_motio
 TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.front_door_person_occupancy"
 )
+TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID = "binary_sensor.front_door_speech_sound"
 TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID = (
     "binary_sensor.front_door_all_occupancy"
 )
@@ -36,6 +37,7 @@ TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
 TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID = "number.front_door_contour_area"
 TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID = "number.front_door_threshold"
 
+TEST_SWITCH_FRONT_DOOR_AUDIO_DETECT_ENTITY_ID = "switch.front_door_audio_detection"
 TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID = "switch.front_door_detect"
 TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID = "switch.front_door_motion"
 TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID = "switch.front_door_snapshots"
@@ -61,7 +63,7 @@ TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
-TEST_SERVER_VERSION = "0.9.0-09a4d6d"
+TEST_SERVER_VERSION = "0.13.0-0858859"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
@@ -78,6 +80,12 @@ TEST_CONFIG = {
                 "retain": {"default": 10, "objects": {}},
             },
             "detect": {"enabled": True, "max_disappeared": 20},
+            "audio": {
+                "enabled": True,
+                "max_not_heard": 30,
+                "listen": ["bark", "speech"],
+                "enabled_in_config": True,
+            },
             "ffmpeg_cmds": [
                 {
                     "cmd": "ffmpeg -hide_banner -loglevel warning -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -stimeout 5000000 -use_wallclock_as_timestamps 1 -i rtsp://rtsp:password@cam-front-door/live -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy -an /tmp/cache/front_door-%Y%m%d%H%M%S.mp4 -c copy -f flv rtmp://127.0.0.1/live/front_door -r 4 -f rawvideo -pix_fmt yuv420p pipe:",
@@ -156,19 +164,21 @@ TEST_CONFIG = {
     "go2rtc": {"streams": {"front_door": "rtsp://rtsp:password@cam-front-door/live"}},
 }
 TEST_STATS = {
+    "cameras": {
+        "front_door": {
+            "camera_fps": 4.1,
+            "capture_pid": 53,
+            "detection_fps": 6.0,
+            "pid": 52,
+            "ffmpeg_pid": 54,
+            "process_fps": 4.0,
+            "skipped_fps": 0.0,
+        },
+    },
     "detection_fps": 13.7,
     "detectors": {
         "cpu1": {"detection_start": 0.0, "inference_speed": 91.43, "pid": 42},
         "cpu2": {"detection_start": 0.0, "inference_speed": 84.99, "pid": 44},
-    },
-    "front_door": {
-        "camera_fps": 4.1,
-        "capture_pid": 53,
-        "detection_fps": 6.0,
-        "pid": 52,
-        "ffmpeg_pid": 54,
-        "process_fps": 4.0,
-        "skipped_fps": 0.0,
     },
     "service": {
         "storage": {
@@ -212,6 +222,12 @@ TEST_STATS = {
             "gpu": "19 %",
             "mem": "57.0 %",
         }
+    },
+    "processes": {
+        "audioDetector": {"pid": 835},
+        "go2rtc": {"pid": 89},
+        "logger": {"pid": 727},
+        "recording": {"pid": 729},
     },
 }
 TEST_EVENT_SUMMARY = [

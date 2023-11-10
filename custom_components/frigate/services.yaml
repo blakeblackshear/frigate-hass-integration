@@ -1,4 +1,40 @@
 ---
+export_recording:
+  name: Export recording
+  description: Export a custom recording or timelapse.
+  target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
+  fields:
+    playback_factor:
+      name: Playback Factor
+      description: Playback factor for recordings
+      required: true
+      advanced: false
+      example: realtime
+      default: realtime
+      selector:
+        select:
+          options:
+            - "realtime"
+            - "timelapse"
+    start_time:
+      name: Export Start Time
+      description: Start time of exported recording
+      required: true
+      advanced: false
+      selector:
+        datetime:
+    end_time:
+      name: Export End Time
+      description: End time of exported recording
+      required: true
+      advanced: false
+      selector:
+        datetime:
+
 favorite_event:
   name: Favorite or unfavorite Event
   description: >
@@ -30,3 +66,38 @@ favorite_event:
       default: true
       selector:
         boolean:
+
+ptz:
+  name: Control camera via PTZ
+  description: >
+    Pan / Tilt, Zoom, or move a camera to a preset
+  target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
+  fields:
+    action:
+      name: PTZ Service
+      description: Type of PTZ action
+      required: true
+      advanced: false
+      example: move
+      default: move
+      selector:
+        select:
+          options:
+            - "move"
+            - "preset"
+            - "stop"
+            - "zoom"
+    argument:
+      name: PTZ Action
+      description: >
+        left, right, up, down for move; in, out for zoom; name of preset
+      required: false
+      advanced: false
+      example: down
+      default: ""
+      selector:
+        text:

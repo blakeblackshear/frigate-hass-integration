@@ -20,6 +20,7 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_recordings_summary)
     websocket_api.async_register_command(hass, ws_get_events)
     websocket_api.async_register_command(hass, ws_get_events_summary)
+    websocket_api.async_register_command(hass, ws_get_ptz_info)
 
 
 def _get_client_or_send_error(
@@ -233,4 +234,39 @@ async def ws_get_events_summary(
             "frigate_error",
             f"API error whilst retrieving events summary for Frigate instance "
             f"{msg['instance_id']}",
+        )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "frigate/ptz/info",
+        vol.Required("instance_id"): str,
+        vol.Required("camera"): str,
+    }
+)  # type: ignore[misc]
+@websocket_api.async_response  # type: ignore[misc]
+async def ws_get_ptz_info(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Get PTZ info."""
+    client = _get_client_or_send_error(hass, msg["instance_id"], msg["id"], connection)
+    if not client:
+        return
+
+    try:
+        connection.send_result(
+            msg["id"],
+            await client.async_get_ptz_info(
+                msg["camera"],
+                decode_json=False,
+            ),
+        )
+    except FrigateApiClientError:
+        connection.send_error(
+            msg["id"],
+            "frigate_error",
+            f"API error whilst retrieving PTZ info for camera "
+            f"{msg['camera']} for Frigate instance {msg['instance_id']}",
         )
