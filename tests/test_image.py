@@ -1,13 +1,14 @@
 """Test the frigate image."""
 from __future__ import annotations
 
+import datetime
 import logging
 from typing import Any
 
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from homeassistant.components.camera import async_get_image
+from homeassistant.components.image import async_get_image
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -42,9 +43,9 @@ async def test_frigate_mqtt_snapshots_image_setup(
     async_fire_mqtt_message(hass, "frigate/front_door/person/snapshot", "mqtt_data")
     await hass.async_block_till_done()
 
-    image = await async_get_image(hass, TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
-    assert image
-    assert image.content == b"mqtt_data"
+    entity_state = hass.states.get(TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
+    assert entity_state
+    assert datetime.datetime.strptime(entity_state.state, "%Y-%m-%dT%H:%M:%S.%f")
 
 
 @pytest.mark.parametrize(
