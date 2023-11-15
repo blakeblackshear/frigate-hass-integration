@@ -54,6 +54,23 @@ async def async_setup_entry(
                 ),
             )
 
+        if (
+            frigate_config["cameras"][camera]
+            .get("onvif", {})
+            .get("autotracking", {})
+            .get("enabled_in_config", False)
+        ):
+            entities.append(
+                FrigateSwitch(
+                    entry,
+                    frigate_config,
+                    camera,
+                    "ptz_autotracker",
+                    True,
+                    "ptz_autotracker",
+                ),
+            )
+
     async_add_entities(entities)
 
 
