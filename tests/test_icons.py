@@ -48,3 +48,4 @@ async def test_get_switch_icons() -> None:
     assert get_icon_from_switch("snapshots") == "mdi:image-multiple"
     assert get_icon_from_switch("recordings") == "mdi:filmstrip-box-multiple"
     assert get_icon_from_switch("motion") == "mdi:motion-sensor"
+    assert get_icon_from_switch("ptz_autotracker") == "mdi:cctv"
