@@ -524,6 +524,7 @@ def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
             hdrs.SEC_WEBSOCKET_VERSION,
             hdrs.SEC_WEBSOCKET_KEY,
             hdrs.HOST,
+            hdrs.AUTHORIZATION,
         ):
             continue
         headers[name] = value
