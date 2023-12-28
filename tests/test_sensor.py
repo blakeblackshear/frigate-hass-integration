@@ -29,7 +29,7 @@ from custom_components.frigate.icons import (
     ICON_SERVER,
     ICON_SPEEDOMETER,
 )
-from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
+from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
@@ -234,7 +234,7 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "50.0"
     assert entity_state.attributes["icon"] == ICON_CORAL
-    assert entity_state.attributes["unit_of_measurement"] == TEMP_CELSIUS
+    assert entity_state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
 
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)

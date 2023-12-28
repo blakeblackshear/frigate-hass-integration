@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL, PERCENTAGE, TEMP_CELSIUS
+from homeassistant.const import CONF_URL, PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -528,7 +528,7 @@ class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def icon(self) -> str:
