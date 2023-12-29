@@ -235,12 +235,12 @@ class FrigateCamera(FrigateMQTTEntity, Camera):  # type: ignore[misc]
         }
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
         if not self._attr_is_streaming:
-            return 0
+            return CameraEntityFeature(0)
 
-        return cast(int, CameraEntityFeature.STREAM)
+        return CameraEntityFeature.STREAM
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
@@ -351,9 +351,9 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         }
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
-        return cast(int, CameraEntityFeature.STREAM)
+        return CameraEntityFeature.STREAM
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
