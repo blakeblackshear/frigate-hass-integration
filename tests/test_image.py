@@ -8,7 +8,6 @@ from typing import Any
 import pytest
 from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
-from homeassistant.components.image import async_get_image
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
