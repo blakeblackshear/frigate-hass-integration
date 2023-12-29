@@ -14,5 +14,5 @@
     "iot_class": "local_push",
     "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
     "requirements": ["pytz==2022.7"],
-    "version": "4.0.0"
+    "version": "4.0.1"
 }
