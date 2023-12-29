@@ -647,16 +647,10 @@ async def test_async_resolve_media(
 
     # Convert from HA local timezone to UTC.
     info = await system_info.async_get_system_info(hass)
-    date = datetime.datetime(
-        2021, 
-        5, 
-        30, 
-        15, 
-        46, 
-        8, 
-        0, 
-        datetime.timezone.utc
-    ) - (datetime.datetime.now(pytz.timezone(info.get("timezone", "utc"))).utcoffset() or datetime.timedelta())
+    date = datetime.datetime(2021, 5, 30, 15, 46, 8, 0, datetime.timezone.utc) - (
+        datetime.datetime.now(pytz.timezone(info.get("timezone", "utc"))).utcoffset()
+        or datetime.timedelta()
+    )
 
     assert media == PlayMedia(
         url=(
