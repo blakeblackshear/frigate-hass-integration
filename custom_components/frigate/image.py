@@ -116,6 +116,8 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):  # type: ignore[misc
         """Return timestamp of last image update."""
         return self._last_image_timestamp
 
-    def image(self) -> bytes | None:
+    def image(
+        self,
+    ) -> bytes | None:  # pragma: no cover (HA currently does not support a direct way to test this)
         """Return bytes of image."""
         return self._last_image
