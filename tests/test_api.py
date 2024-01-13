@@ -176,7 +176,7 @@ async def test_async_get_path(
     recordings_handler = AsyncMock(return_value=web.json_response(recordings_in))
 
     server = await start_frigate_server(
-        aiohttp_server, [web.get("/recordings/moo/", recordings_handler)]
+        aiohttp_server, [web.get("/recordings/moo", recordings_handler)]
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)

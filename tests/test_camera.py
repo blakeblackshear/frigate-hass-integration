@@ -1,4 +1,4 @@
-"""Test the frigate binary sensor."""
+"""Test the frigate camera."""
 from __future__ import annotations
 
 import copy
@@ -48,7 +48,6 @@ import homeassistant.util.dt as dt_util
 from . import (
     TEST_CAMERA_BIRDSEYE_ENTITY_ID,
     TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
-    TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_CONFIG,
     TEST_CONFIG_ENTRY_ID,
     TEST_FRIGATE_INSTANCE_ID,
@@ -307,38 +306,6 @@ async def test_frigate_camera_recording_camera_state(
     assert entity_state.attributes["supported_features"] == 0
 
 
-async def test_frigate_mqtt_snapshots_camera_setup(
-    hass: HomeAssistant,
-    aioclient_mock: Any,
-) -> None:
-    """Set up an mqtt camera."""
-
-    await setup_mock_frigate_config_entry(hass)
-
-    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID)
-    assert entity_state
-    assert entity_state.state == "unavailable"
-    assert entity_state.attributes["supported_features"] == 0
-
-    async_fire_mqtt_message(hass, "frigate/available", "online")
-    await hass.async_block_till_done()
-
-    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID)
-    assert entity_state
-    assert entity_state.state == "idle"
-
-    async_fire_mqtt_message(hass, "frigate/front_door/person/snapshot", "mqtt_data")
-    await hass.async_block_till_done()
-
-    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID)
-    assert image
-    assert image.content == b"mqtt_data"
-
-    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID)
-    assert entity_state
-    assert entity_state.state == "active"
-
-
 async def test_camera_device_info(hass: HomeAssistant) -> None:
     """Verify camera device information."""
     config_entry = await setup_mock_frigate_config_entry(hass)
@@ -358,7 +325,6 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
         for entry in er.async_entries_for_device(entity_registry, device.id)
     ]
     assert TEST_CAMERA_FRONT_DOOR_ENTITY_ID in entities_from_device
-    assert TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID in entities_from_device
 
 
 async def test_camera_enable_motion_detection(
@@ -444,10 +410,6 @@ async def test_camera_unavailable(hass: HomeAssistant) -> None:
     "entityid_to_uniqueid",
     [
         (TEST_CAMERA_FRONT_DOOR_ENTITY_ID, f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
-        (
-            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
-            f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person",
-        ),
     ],
 )
 async def test_camera_unique_id(
@@ -535,11 +497,9 @@ async def test_cameras_setup_correctly_in_registry(
         hass,
         entities_enabled={
             TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
-            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
         entities_visible={
             TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
-            TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID,
         },
     )
 

@@ -32,7 +32,8 @@ TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID = (
 TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID = "binary_sensor.steps_all_occupancy"
 TEST_CAMERA_BIRDSEYE_ENTITY_ID = "camera.birdseye"
 TEST_CAMERA_FRONT_DOOR_ENTITY_ID = "camera.front_door"
-TEST_CAMERA_FRONT_DOOR_PERSON_ENTITY_ID = "camera.front_door_person"
+
+TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID = "image.front_door_person"
 
 TEST_NUMBER_FRONT_DOOR_CONTOUR_AREA_ENTITY_ID = "number.front_door_contour_area"
 TEST_NUMBER_FRONT_DOOR_THRESHOLD_ENTITY_ID = "number.front_door_threshold"
