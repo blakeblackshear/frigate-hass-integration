@@ -117,7 +117,7 @@ async def test_frigate_camera_setup_web_rtc(
     assert entity_state.attributes["frontend_stream_type"] == StreamType.WEB_RTC
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
-    assert source is None
+    assert source == "rtsp://example.com:8554/front_door"
 
     aioclient_mock.post(
         "http://example.com/api/go2rtc/webrtc?src=front_door",

@@ -197,22 +197,23 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
             else:
                 self._restream_type = "rtsp"
                 self._attr_frontend_stream_type = StreamType.HLS
-                streaming_template = config_entry.options.get(
-                    CONF_RTSP_URL_TEMPLATE, ""
-                ).strip()
 
-                if streaming_template:
-                    # Can't use homeassistant.helpers.template as it requires hass which
-                    # is not available in the constructor, so use direct jinja2
-                    # template instead. This means templates cannot access HomeAssistant
-                    # state, but rather only the camera config.
-                    self._stream_source = Template(streaming_template).render(
-                        **self._camera_config
-                    )
-                else:
-                    self._stream_source = (
-                        f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
-                    )
+            streaming_template = config_entry.options.get(
+                CONF_RTSP_URL_TEMPLATE, ""
+            ).strip()
+
+            if streaming_template:
+                # Can't use homeassistant.helpers.template as it requires hass which
+                # is not available in the constructor, so use direct jinja2
+                # template instead. This means templates cannot access HomeAssistant
+                # state, but rather only the camera config.
+                self._stream_source = Template(streaming_template).render(
+                    **self._camera_config
+                )
+            else:
+                self._stream_source = (
+                    f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
+                )
         elif self._camera_config.get("rtmp", {}).get("enabled"):
             self._restream_type = "rtmp"
             streaming_template = config_entry.options.get(
