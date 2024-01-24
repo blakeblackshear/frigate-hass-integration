@@ -16,10 +16,10 @@ from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
     TEST_SWITCH_FRONT_DOOR_AUDIO_DETECT_ENTITY_ID,
-    TEST_SWITCH_FRONT_DOOR_AUTOTRACKING_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_PTZ_AUTOTRACKER_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
     create_mock_frigate_client,
@@ -71,7 +71,7 @@ async def test_switch_state(hass: HomeAssistant) -> None:
 
     async_fire_mqtt_message(hass, "frigate/front_door/ptz_autotracker/state", "ON")
     await hass.async_block_till_done()
-    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_AUTOTRACKING_ENTITY_ID)
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_PTZ_AUTOTRACKER_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "on"
 
