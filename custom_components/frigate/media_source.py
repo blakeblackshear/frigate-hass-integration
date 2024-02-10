@@ -857,7 +857,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     ),
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
-                    title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int((event['data'].get('top_score') or event['top_score'])*100)}%]",
+                    title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int((event['data'].get('top_score') or event['top_score'] or 0)*100)}%]",
                     can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
                     can_expand=False,
                     thumbnail=f"/api/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
