@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "URL que vous utilisez pour accéder à Frigate (par exemple, `http://frigate:5000/`)\n\nSi vous utilisez HassOS avec l'addon, l'URL devrait être `http://ccab4aaf-frigate:5000/`\n\nHome Assistant a besoin d'accès au port 5000 (api) et 1935 (rtmp) pour toutes les fonctionnalités.\n\nL'intégration configurera des capteurs, des caméras et la fonctionnalité de navigateur multimédia.\n\nCapteurs :\n- Statistiques pour surveiller la performance de Frigate\n- Comptes d'objets pour toutes les zones et caméras\n\nCaméras :\n- Caméras pour l'image du dernier objet détecté pour chaque caméra\n- Entités de caméra avec support de flux (nécessite RTMP)\n\nNavigateur multimédia :\n- Interface riche avec miniatures pour parcourir les clips d'événements\n- Interface riche pour parcourir les enregistrements 24/7 par mois, jour, caméra, heure\n\nAPI :\n- API de notification avec des points de terminaison publics pour les images dans les notifications",
+        "data": {
+          "url": "URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion",
+      "invalid_url": "URL invalide"
+    },
+    "abort": {
+      "already_configured": "L'appareil est déjà configuré"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "enable_webrtc": "Activer WebRTC pour les flux de caméra",
+          "rtmp_url_template": "Modèle d'URL RTMP (voir la documentation)",
+          "rtsp_url_template": "Modèle d'URL RTSP (voir la documentation)",
+          "media_browser_enable": "Activer le navigateur multimédia",
+          "notification_proxy_enable": "Activer le proxy d'événement de notification non authentifié",
+          "notification_proxy_expire_after_seconds": "Interdire l'accès à la notification non authentifiée après secondes (0=jamais)"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "Le mode avancé est désactivé et il n'y a que des options avancées"
+    }
+  }
+}
