@@ -1,31 +1,73 @@
----
-detectors:
-  cpu1:
-    type: cpu
-  cpu2:
-    type: cpu
 mqtt:
   host: mqtt
+
+# database:
+#   path: /db/frigate.db
+
+rtmp:
+  enabled: false
+
 cameras:
-  big_buck_bunny:
+  camera_1:
+    enabled: True
     ffmpeg:
       inputs:
-        - path: rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4
+        - path: rtsp://admin:P@ssw0rd!23@10.118.210.113:554/Streaming/Channels/1
           roles:
-            - rtmp
             - detect
-            - record
-      # yamllint disable-line rule:line-length
-      input_args: -avoid_negative_ts make_zero -fflags nobuffer -flags low_delay -strict experimental -fflags +genpts+discardcorrupt -use_wallclock_as_timestamps 1
-      output_args:
-        # yamllint disable-line rule:line-length
-        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c:v libx264 -an
-        rtmp: -c:v  libx264 -an -f flv
     detect:
-      width: 240
-      height: 160
-    live:
-      height: 160
+      width: 1920
+      height: 1080
+      fps: 15
     objects:
       track:
-        - cat
+        - car
+    snapshots:
+      enabled: True
+      timestamp: True
+      bounding_box: True
+      crop: True  # Crop the snapshot to the detected object
+      required_zones: [parking_zone]  # Снимки будут создаваться только если обнаружение произошло в указанной зоне
+      retain:
+        default: 10  # Сохранять снимки в течение 10 дней
+    zones:
+      parking_zone:
+        coordinates: 1458,539,921,555,953,296,1460,292
+        filters:
+          car:
+            min_area: 5000  # Минимальная площадь объекта для обнаружения
+            max_area: 100000  # Максимальная площадь объекта для обнаружения
+            min_score: 0.5  # Минимальный score для обнаружения
+            threshold: 0.7  # Порог для обнаружения
+
+  camera_2:
+    enabled: True
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:P@ssw0rd!23@10.118.210.112:554/Streaming/Channels/1
+          roles:
+            - detect
+    detect:
+      width: 1920
+      height: 1080
+      fps: 15
+    objects:
+      track:
+        - car
+    snapshots:
+      enabled: True
+      timestamp: True
+      bounding_box: True
+      crop: True  # Crop the snapshot to the detected object
+      required_zones: [parking_zone]  # Снимки будут создаваться только если обнаружение произошло в указанной зоне
+      retain:
+        default: 10  # Сохранять снимки в течение 10 дней
+    # zones:
+    #   parking_zone:
+    #     coordinates: 500,0,500,1080,0,1080,0,0  # Замените координатами вашей зоны
+    #     filters:
+    #       car:
+    #         min_area: 5000  # Минимальная площадь объекта для обнаружения
+    #         max_area: 100000  # Максимальная площадь объекта для обнаружения
+    #         min_score: 0.5  # Минимальный score для обнаружения
+    #         threshold: 0.7  # Порог для обнаружения

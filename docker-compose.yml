@@ -12,7 +12,7 @@ services:
       - /var/run/docker.sock:/var/run/docker-host.sock
       - .:${LOCAL_WORKSPACE_FOLDER}:cached
   hass:
-    image: "homeassistant/home-assistant:${HA_VERSION:-latest}"
+    image: "ghcr.io/home-assistant/home-assistant:stable"
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -22,6 +22,13 @@ services:
       - .devcontainer/config/specific_configuration.yaml:/config/specific_configuration.yaml:ro
       - .devcontainer/config/www:/config/www
       - ./custom_components:/config/custom_components:ro
+    ports:
+      - 8123:8123
+
+    privileged: true
+    # network_mode: host
+
+
   frigate:
     privileged: true
     image: "ghcr.io/blakeblackshear/frigate:${FRIGATE_VERSION:-0.12.0-rc1}"
@@ -33,6 +40,9 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - .devcontainer/frigate.yml:/config/config.yml:ro
       - ./frigate:/media/frigate
+    ports:
+      - "5000:5000"
+
   mqtt:
     image: eclipse-mosquitto:1.6
     restart: unless-stopped
