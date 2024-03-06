@@ -62,6 +62,7 @@ TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID = "sensor.front_door_detection_fp
 TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE = "sensor.front_door_ffmpeg_cpu_usage"
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
+TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID = "sensor.front_door_sound_level"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
@@ -181,6 +182,7 @@ TEST_STATS = {
             "ffmpeg_pid": 54,
             "process_fps": 4.0,
             "skipped_fps": 0.0,
+            "audio_dBFS": -12,
         },
     },
     "detection_fps": 13.7,

@@ -449,7 +449,7 @@ class CameraSoundSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return "sound_level"
+        return "sound level"
 
     @property
     def unit_of_measurement(self) -> str:
