@@ -452,7 +452,7 @@ class CameraSoundSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return "sound level"
 
     @property
-    def unit_of_measurement(self) -> str:
+    def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
         return UnitOfSoundPressure.DECIBEL
 
