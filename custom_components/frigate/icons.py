@@ -19,6 +19,7 @@ ICON_OTHER = "mdi:shield-alert"
 ICON_PERSON = "mdi:human"
 ICON_SERVER = "mdi:server"
 ICON_SPEEDOMETER = "mdi:speedometer"
+ICON_WAVEFORM = "mdi:waveform"
 
 ICON_DEFAULT_ON = "mdi:home"
 
