@@ -28,8 +28,9 @@ from custom_components.frigate.icons import (
     ICON_PERSON,
     ICON_SERVER,
     ICON_SPEEDOMETER,
+    ICON_WAVEFORM,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
@@ -51,6 +52,7 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID,
     TEST_SENSOR_GPU_LOAD_ENTITY_ID,
     TEST_SENSOR_STEPS_ALL_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
@@ -410,6 +412,47 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
+async def test_camera_audio_sensor(hass: HomeAssistant) -> None:
+    """Test CameraAudioLevel state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "-12"
+    assert entity_state.attributes["icon"] == ICON_WAVEFORM
+    assert entity_state.attributes["unit_of_measurement"] == UnitOfSoundPressure.DECIBEL
+
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["cameras"]["front_door"]["audio_dBFS"] = -3.9
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "-4"
+
+    stats["cameras"]["front_door"]["audio_dBFS"] = None
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["cameras"]["front_door"]["audio_dBFS"] = "NOT_A_NUMBER"
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
     assert entity_state
     assert entity_state.state == "unknown"
 

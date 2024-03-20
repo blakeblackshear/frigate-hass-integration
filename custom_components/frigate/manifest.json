@@ -13,6 +13,6 @@
     "documentation": "https://github.com/blakeblackshear/frigate",
     "iot_class": "local_push",
     "issue_tracker": "https://github.com/blakeblackshear/frigate-hass-integration/issues",
-    "requirements": ["pytz==2022.7"],
-    "version": "5.0.1"
+    "requirements": ["pytz"],
+    "version": "5.1.0"
 }

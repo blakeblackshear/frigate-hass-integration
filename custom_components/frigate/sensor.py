@@ -5,7 +5,12 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL, PERCENTAGE, UnitOfTemperature
+from homeassistant.const import (
+    CONF_URL,
+    PERCENTAGE,
+    UnitOfSoundPressure,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -24,7 +29,13 @@ from . import (
     get_zones,
 )
 from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
-from .icons import ICON_CORAL, ICON_SERVER, ICON_SPEEDOMETER, get_icon_from_type
+from .icons import (
+    ICON_CORAL,
+    ICON_SERVER,
+    ICON_SPEEDOMETER,
+    ICON_WAVEFORM,
+    get_icon_from_type,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -74,6 +85,9 @@ async def async_setup_entry(
                         for t in CAMERA_FPS_TYPES
                     ]
                 )
+
+                if frigate_config["cameras"][name]["audio"]["enabled_in_config"]:
+                    entities.append(CameraSoundSensor(coordinator, entry, name))
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     entities.extend(
@@ -392,6 +406,78 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
+
+
+class CameraSoundSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+    """Frigate Camera Sound Level class."""
+
+    def __init__(
+        self,
+        coordinator: FrigateDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        cam_name: str,
+    ) -> None:
+        """Construct a CameraSoundSensor."""
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._cam_name = cam_name
+        self._attr_entity_registry_enabled_default = True
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_sound_level",
+            f"{self._cam_name}_dB",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "sound level"
+
+    @property
+    def unit_of_measurement(self) -> Any:
+        """Return the unit of measurement of the sensor."""
+        return UnitOfSoundPressure.DECIBEL
+
+    @property
+    def state(self) -> int | None:
+        """Return the state of the sensor."""
+
+        if self.coordinator.data:
+            data = (
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get("audio_dBFS")
+            )
+
+            if data is not None:
+                try:
+                    return round(float(data))
+                except ValueError:
+                    pass
+        return None
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_WAVEFORM
 
 
 class FrigateObjectCountSensor(FrigateMQTTEntity):
