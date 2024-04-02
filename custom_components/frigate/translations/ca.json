@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "L'URL que utilitzeu per accedir a Frigate (p. ex. 'http://frigate:5000/')\\n\\nSi feu servir HassOS amb el complement, l'URL hauria de ser 'http://ccab4aaf-frigate:5000/' \\n\\nHome Assistant necessita accedir al port 5000 (api) i 1935 (rtmp) per a totes les funcions.\\n\\nLa integració configurarà sensors, càmeres i la funcionalitat del navegador multimèdia.\\n\\nSensors:\\n- Estadístiques per supervisar el rendiment de Frigate\\n- Recompte d'objectes per a totes les zones i càmeres\\n\\nCàmeres:\\n- Càmeres per a la imatge de l'últim objecte detectat per a cada càmera\\n- Entitats de càmera amb suport de transmissió (requereix RTMP)\\n\\nNavegador multimèdia:\\n - Interfície d'usuari enriquida amb miniatures per explorar clips d'esdeveniments\\n- Interfície d'usuari enriquida per navegar per enregistraments les 24 hores al dia, els set dies a la setmana, per mes, dia, càmera, hora\\n\\nAPI:\\n- API de notificació amb punts de connexió públics per a imatges a les notificacions.",
+        "data": {
+          "url": "URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No s'ha pogut connectar",
+      "invalid_url": "URL no vàlid"
+    },
+    "abort": {
+      "already_configured": "El dispositiu ja està configurat"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "enable_webrtc": "Activa WebRTC per als fluxos de la càmera",
+          "rtmp_url_template": "Plantilla de l'URL del RTMP (vegeu la documentació)",
+          "rtsp_url_template": "Plantilla de l'URL del RTSP (vegeu la documentació)",
+          "media_browser_enable": "Habiliteu el navegador multimèdia",
+          "notification_proxy_enable": "Habiliteu el servidor intermediari no autenticat d'esdeveniments de notificacions",
+          "notification_proxy_expire_after_seconds": "No permetre l'accés a notificacions no autenticades després dels segons especificats (0=mai)"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "El mode avançat està desactivat i només hi ha opcions avançades"
+    }
+  }
+}
