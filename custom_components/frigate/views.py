@@ -277,11 +277,11 @@ class NotificationsProxyView(ProxyView):
         if path.endswith("clip.mp4"):
             return f"api/events/{event_id}/clip.mp4"
 
-        if path.endswith("event_preview.gif"):
+        if path.endsWith("event_preview.gif"):
             return f"api/events/{event_id}/preview.gif"
-        
-        if path.endswith("review_preview.gif"):
-            return f"api/review/{event_id}/preview.gif"
+
+        if path.endsWith("review_preview.gif"):
+            return f"api/review/{event_id}/preview"
 
         return None
 
