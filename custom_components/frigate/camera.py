@@ -325,7 +325,8 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
     async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
         """Handle the WebRTC offer and return an answer."""
         websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
-        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
+        # the camera config will be populated with approppriate default values (i.e. the camera name) if the user has not configured a livestream name.
+        url = f"{self._url}/api/go2rtc/webrtc?src={self._camera_config["live"]["stream_name"]}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
             answer = await resp.json()
