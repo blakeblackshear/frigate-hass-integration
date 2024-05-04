@@ -27,6 +27,7 @@ from . import (
     FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
+    decode_if_necessary,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
@@ -238,13 +239,13 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        self._attr_is_recording = msg.payload.decode("utf-8") == "ON"
+        self._attr_is_recording = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
     @callback  # type: ignore[misc]
     def _motion_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT extra message."""
-        self._attr_motion_detection_enabled = msg.payload.decode("utf-8") == "ON"
+        self._attr_motion_detection_enabled = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
     @property

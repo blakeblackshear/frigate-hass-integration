@@ -15,6 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
+    decode_if_necessary,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
@@ -119,7 +120,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @callback  # type: ignore[misc]
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        self._is_on = msg.payload == "ON"
+        self._is_on = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
     @property

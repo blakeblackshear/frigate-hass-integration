@@ -87,6 +87,18 @@ async def test_switch_state(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "off"
 
+    async_fire_mqtt_message(hass, "frigate/front_door/detect/state", b"ON")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/detect/state", b"OFF")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "off"
+
     async_fire_mqtt_message(hass, "frigate/front_door/detect/state", "INVALID_VALUE")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
