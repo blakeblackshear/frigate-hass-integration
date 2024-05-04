@@ -164,6 +164,11 @@ def get_zones(config: dict[str, Any]) -> set[str]:
     return cameras_zones
 
 
+def decode_if_necessary(data: str | bytes) -> str:
+    """Decode a string if necessary."""
+    return data.decode("utf-8") if isinstance(data, bytes) else data
+
+
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
     """Set up this integration using YAML is not supported."""
     integration = await async_get_integration(hass, DOMAIN)
@@ -474,5 +479,5 @@ class FrigateMQTTEntity(FrigateEntity):
     @callback  # type: ignore[misc]
     def _availability_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT availability message."""
-        self._available = msg.payload == "online"
+        self._available = decode_if_necessary(msg.payload) == "online"
         self.async_write_ha_state()
