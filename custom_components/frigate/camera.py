@@ -212,7 +212,8 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
                 )
             else:
                 self._stream_source = (
-                    f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
+                    # the camera config will be populated with approppriate default values (i.e. the camera name) if the user has not configured a livestream name.
+                    f"rtsp://{URL(self._url).host}:8554/{self._camera_config["live"]["stream_name"]}"
                 )
         elif self._camera_config.get("rtmp", {}).get("enabled"):
             self._restream_type = "rtmp"
