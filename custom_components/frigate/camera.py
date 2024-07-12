@@ -212,8 +212,10 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
                     **self._camera_config
                 )
             else:
+                # the camera config will be populated with approppriate default values (i.e. the camera name) if the user has not configured a livestream name.
+                stream_name = self._camera_config["live"]["stream_name"]
                 self._stream_source = (
-                    f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
+                    f"rtsp://{URL(self._url).host}:8554/{stream_name}"
                 )
         elif self._camera_config.get("rtmp", {}).get("enabled"):
             self._restream_type = "rtmp"
@@ -326,7 +328,9 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
     async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
         """Handle the WebRTC offer and return an answer."""
         websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
-        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
+        # the camera config will be populated with approppriate default values (i.e. the camera name) if the user has not configured a livestream name.
+        stream_name = self._camera_config["live"]["stream_name"]
+        url = f"{self._url}/api/go2rtc/webrtc?src={stream_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
             answer = await resp.json()
