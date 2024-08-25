@@ -1,9 +1,14 @@
 """Test the Frigate HA websocket API."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 from unittest.mock import AsyncMock
+
+import async_timeout
+import pytest
+from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.api import FrigateApiClientError
 from homeassistant.core import HomeAssistant
@@ -21,6 +26,7 @@ TEST_EVENT_ID = "1656282822.206673-bovnfg"
 TEST_LABEL = "person"
 TEST_SUB_LABEL = "mr-frigate"
 TEST_ZONE = "steps"
+TEST_EVENT_DATA = "EVENT_DATA"
 
 
 async def test_retain_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
@@ -477,3 +483,174 @@ async def test_get_ptz_info_api_error(hass: HomeAssistant, hass_ws_client: Any) 
     response = await ws_client.receive_json()
     assert not response["success"]
     assert response["error"]["code"] == "frigate_error"
+
+
+async def test_subscribe_events(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test subscribing to events."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client_1 = await hass_ws_client()
+    await ws_client_1.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client_1.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    ws_client_2 = await hass_ws_client()
+    await ws_client_2.send_json(
+        {
+            "id": 2,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client_2.receive_json()
+    assert response["success"]
+    assert response["result"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/events", TEST_EVENT_DATA)
+    await hass.async_block_till_done()
+
+    response = await ws_client_1.receive_json()
+    assert response["event"] == TEST_EVENT_DATA
+
+    response = await ws_client_2.receive_json()
+    assert response["event"] == TEST_EVENT_DATA
+
+
+async def test_subscribe_events_invalid_instance_id(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test subscribing to events with an invalid instance id"""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": "DOES_NOT_EXIST",
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unsubscribe_events(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test unsubscribing from events."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    await ws_client.send_json(
+        {
+            "id": 2,
+            "type": "frigate/events/unsubscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+            "subscription_id": 1,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+
+    async_fire_mqtt_message(hass, "frigate/events", TEST_EVENT_DATA)
+    await hass.async_block_till_done()
+
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        async with async_timeout.timeout(0):
+            response = await ws_client.receive_json()
+
+
+async def test_unsubscribe_events_invalid_instance_id(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test unsubscribing events from an invalid instance id."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/unsubscribe",
+            "instance_id": "DOES_NOT_EXIST",
+            "subscription_id": 1,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unsubscribe_events_from_invalid_subscription(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test unsubscribing events from a subscription that does not exist."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/unsubscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+            "subscription_id": 20000,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unload_unsubscribes_from_events(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test to verify unload unsubscribes from events."""
+
+    config_entry = await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    await hass.config_entries.async_unload(config_entry.entry_id)
+
+    async_fire_mqtt_message(hass, "frigate/events", TEST_EVENT_DATA)
+    await hass.async_block_till_done()
+
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        async with async_timeout.timeout(0):
+            response = await ws_client.receive_json()

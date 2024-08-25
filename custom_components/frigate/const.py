@@ -38,6 +38,7 @@ ATTR_PLAYBACK_FACTOR = "playback_factor"
 ATTR_PTZ_ACTION = "action"
 ATTR_PTZ_ARGUMENT = "argument"
 ATTR_START_TIME = "start_time"
+ATTR_WS_EVENT_PROXY = "ws_event_proxy"
 
 # Frigate Attribute Labels
 # These are labels that are not individually tracked as they are
