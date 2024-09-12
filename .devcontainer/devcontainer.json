@@ -1,10 +1,14 @@
 {
   "dockerComposeFile": "../docker-compose.yml",
-  "service": "dev",
+  "service": "devcontainer",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
   "workspaceFolder": "${localWorkspaceFolder}",
-  "shutdownAction": "stopCompose",
-  "initializeCommand": ".devcontainer/set_dot_env.sh",
-  "postCreateCommand": ".devcontainer/post_create.sh",
+  "initializeCommand": [".devcontainer/set_dot_env.sh"],
+  "postCreateCommand": [".devcontainer/post_create.sh"],
   "forwardPorts": ["hass:8123", "frigate:5000"],
   "portsAttributes": {
     "hass:8123": {
@@ -16,44 +20,46 @@
       "onAutoForward": "silent"
     }
   },
-  "extensions": [
-    "ms-python.python",
-    "visualstudioexptteam.vscodeintellicode",
-    "mhutchie.git-graph",
-    "ms-azuretools.vscode-docker",
-    "streetsidesoftware.code-spell-checker",
-    "eamodio.gitlens",
-    "esbenp.prettier-vscode",
-    "ms-python.vscode-pylance",
-    "redhat.vscode-yaml",
-    "keesschollaart.vscode-home-assistant",
-    "ms-azuretools.vscode-docker"
-  ],
-  "settings": {
-    "python.defaultInterpreterPath": "/usr/local/bin/python",
-    "editor.formatOnPaste": false,
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
-    "files.trimTrailingWhitespace": true,
-    "yaml.schemas": {
-      "http://frigate:5000/api/config/schema": "/frigate.yml"
-    },
-    "files.associations": {
-      "**/config/*configuration.yaml": "home-assistant"
-    },
-    "vscode-home-assistant.hostUrl": "http://hass:8123",
-    "vscode-home-assistant.longLivedAccessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhOTZjZTdhYTg0YzU0ODcxYWZhNTJmYmU4OWFmMjg3OSIsImlhdCI6MTY1NDgwNzk2MiwiZXhwIjoxOTcwMTY3OTYyfQ.0JUxrtqWWj-FwkAujcQCc5aRq9sf5_uR_sCI2eWcmIE",
-    "[home-assistant]": {
-      "editor.defaultFormatter": "keesschollaart.vscode-home-assistant"
-    },
-    "[json]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[jsonc]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[yaml]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "visualstudioexptteam.vscodeintellicode",
+        "mhutchie.git-graph",
+        "ms-azuretools.vscode-docker",
+        "streetsidesoftware.code-spell-checker",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "ms-python.vscode-pylance",
+        "redhat.vscode-yaml",
+        "keesschollaart.vscode-home-assistant",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "~/.local/bin/python",
+        "editor.formatOnSave": true,
+        "files.trimTrailingWhitespace": true,
+        "yaml.schemas": {
+          "http://frigate:5000/api/config/schema.json": "/frigate.yml"
+        },
+        "files.associations": {
+          "**/config/*configuration.yaml": "home-assistant"
+        },
+        "vscode-home-assistant.hostUrl": "http://hass:8123",
+        "vscode-home-assistant.longLivedAccessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhOTZjZTdhYTg0YzU0ODcxYWZhNTJmYmU4OWFmMjg3OSIsImlhdCI6MTY1NDgwNzk2MiwiZXhwIjoxOTcwMTY3OTYyfQ.0JUxrtqWWj-FwkAujcQCc5aRq9sf5_uR_sCI2eWcmIE",
+        "[home-assistant]": {
+          "editor.defaultFormatter": "keesschollaart.vscode-home-assistant"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
     }
   }
 }
