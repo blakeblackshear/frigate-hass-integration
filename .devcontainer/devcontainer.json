@@ -36,8 +36,10 @@
         "ms-azuretools.vscode-docker"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "~/.local/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnPaste": false,
         "editor.formatOnSave": true,
+        "editor.formatOnType": true,
         "files.trimTrailingWhitespace": true,
         "yaml.schemas": {
           "http://frigate:5000/api/config/schema.json": "/frigate.yml"
