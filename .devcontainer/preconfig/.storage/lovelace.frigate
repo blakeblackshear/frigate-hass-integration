@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.frigate",
+  "data": {
+    "config": {
+      "strategy": {
+        "type": "iframe",
+        "url": "http://localhost:5000"
+      }
+    }
+  }
+}
