@@ -12,11 +12,8 @@ import pytz
 
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_DIRECTORY,
-    MEDIA_CLASS_IMAGE,
-    MEDIA_CLASS_MOVIE,
-    MEDIA_CLASS_VIDEO,
-    MEDIA_TYPE_IMAGE,
-    MEDIA_TYPE_VIDEO,
+    MediaClass,
+    MediaType,
 )
 from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
 from homeassistant.components.media_source.models import (
@@ -174,15 +171,15 @@ class FrigateMediaType(enum.Enum):
     def media_type(self) -> str:
         """Get media type for this frigate media type."""
         if self == FrigateMediaType.CLIPS:
-            return str(MEDIA_TYPE_VIDEO)
-        return str(MEDIA_TYPE_IMAGE)
+            return str(MediaType.VIDEO)
+        return str(MediaType.IMAGE)
 
     @property
     def media_class(self) -> str:
         """Get media class for this frigate media type."""
         if self == FrigateMediaType.CLIPS:
-            return str(MEDIA_CLASS_VIDEO)
-        return str(MEDIA_CLASS_IMAGE)
+            return str(MediaClass.VIDEO)
+        return str(MediaClass.IMAGE)
 
     @property
     def extension(self) -> str:
@@ -492,12 +489,12 @@ class RecordingIdentifier(Identifier):
     @property
     def media_class(self) -> str:
         """Get media class for this identifier."""
-        return str(MEDIA_CLASS_MOVIE)
+        return str(MediaClass.MOVIE)
 
     @property
     def media_type(self) -> str:
         """Get media type for this identifier."""
-        return str(MEDIA_TYPE_VIDEO)
+        return str(MediaType.VIDEO)
 
 
 @attr.s(frozen=True)
@@ -592,8 +589,8 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                 domain=DOMAIN,
                 identifier="",
                 media_class=MEDIA_CLASS_DIRECTORY,
-                children_media_class=MEDIA_CLASS_VIDEO,
-                media_content_type=MEDIA_TYPE_VIDEO,
+                children_media_class=MediaClass.VIDEO,
+                media_content_type=MediaType.VIDEO,
                 title=NAME,
                 can_play=False,
                 can_expand=True,
@@ -858,7 +855,7 @@ class FrigateMediaSource(MediaSource):  # type: ignore[misc]
                     media_class=identifier.media_class,
                     media_content_type=identifier.media_type,
                     title=f"{dt.datetime.fromtimestamp(event['start_time'], DEFAULT_TIME_ZONE).strftime(DATE_STR_FORMAT)} [{duration}s, {event['label'].capitalize()} {int((event['data'].get('top_score') or event['top_score'] or 0)*100)}%]",
-                    can_play=identifier.media_type == MEDIA_TYPE_VIDEO,
+                    can_play=identifier.media_type == MediaType.VIDEO,
                     can_expand=False,
                     thumbnail=f"/api/frigate/{identifier.frigate_instance_id}/thumbnail/{event['id']}",
                     frigate=FrigateBrowseMediaMetadata(event=event),
