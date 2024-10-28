@@ -70,7 +70,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         # Search for duplicates with the same Frigate CONF_HOST value.
         for existing_entry in self._async_current_entries(include_ignore=False):
             if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
-                self.async_abort(reason="already_configured")
+                return self.async_abort(reason="already_configured")
 
         return self.async_create_entry(
             title=get_config_entry_title(user_input[CONF_URL]), data=user_input
