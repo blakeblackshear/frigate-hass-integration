@@ -1,4 +1,5 @@
 """Tests for the Frigate integration."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -340,7 +341,7 @@ def create_mock_frigate_config_entry(
     options: dict[str, Any] | None = None,
     entry_id: str | None = TEST_CONFIG_ENTRY_ID,
     title: str | None = TEST_URL,
-) -> ConfigEntry:
+) -> MockConfigEntry:
     """Add a test config entry."""
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=entry_id,

@@ -1,4 +1,5 @@
 """Test the frigate switch."""
+
 from __future__ import annotations
 
 import logging
@@ -157,6 +158,8 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
+
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entity_registry = er.async_get(hass)

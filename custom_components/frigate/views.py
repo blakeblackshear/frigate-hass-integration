@@ -1,4 +1,5 @@
 """Frigate HTTP views."""
+
 from __future__ import annotations
 
 import asyncio
@@ -90,7 +91,7 @@ def get_client_for_frigate_instance_id(
 def get_frigate_instance_id_for_config_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
-) -> ConfigEntry | None:
+) -> str | None:
     """Get a frigate_instance_id for a ConfigEntry."""
 
     config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
@@ -115,7 +116,7 @@ def async_setup(hass: HomeAssistant) -> None:
 #  - https://github.com/home-assistant/supervisor/blob/main/supervisor/api/ingress.py
 
 
-class ProxyView(HomeAssistantView):  # type: ignore[misc]
+class ProxyView(HomeAssistantView):
     """HomeAssistant view."""
 
     requires_auth = True
@@ -364,7 +365,7 @@ class VodSegmentProxyView(ProxyView):
     async def _async_validate_signed_manifest(self, request: web.Request) -> bool:
         """Validate the signature for the manifest of this segment."""
         hass = request.app[KEY_HASS]
-        secret = hass.data.get(DATA_SIGN_SECRET)
+        secret = str(hass.data.get(DATA_SIGN_SECRET))
         signature = request.query.get(SIGN_QUERY_PARAM)
 
         if signature is None:

@@ -1,4 +1,5 @@
 """Test the frigate image."""
+
 from __future__ import annotations
 
 import datetime

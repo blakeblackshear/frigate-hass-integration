@@ -1,4 +1,5 @@
 """Test the frigate binary sensor."""
+
 from __future__ import annotations
 
 import logging
@@ -162,6 +163,7 @@ async def test_binary_sensor_device_info(
     )
     assert device
     assert device.manufacturer == NAME
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = [

@@ -1,4 +1,5 @@
 """Number platform for frigate."""
+
 from __future__ import annotations
 
 import logging
@@ -13,6 +14,7 @@ from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
+    FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
     get_cameras,
@@ -42,9 +44,9 @@ async def async_setup_entry(
     """Sensor entry setup."""
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
 
-    entities = []
+    entities: list[FrigateEntity] = []
 
-    # add motion configurations for cameras
+    # Add motion sensors for cameras.
     for cam_name in get_cameras(frigate_config):
         entities.extend(
             [FrigateMotionContourArea(entry, frigate_config, cam_name, False)]
@@ -56,7 +58,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
+class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):
     """FrigateMotionContourArea class."""
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -100,7 +102,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
@@ -149,7 +151,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):  # type: ignore
         return ICON_SPEEDOMETER
 
 
-class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[misc]
+class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):
     """FrigateMotionThreshold class."""
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -193,7 +195,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):  # type: ignore[m
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
