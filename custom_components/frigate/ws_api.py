@@ -1,4 +1,5 @@
 """Frigate HTTP views."""
+
 from __future__ import annotations
 
 import logging
@@ -55,8 +56,8 @@ def _get_client_or_send_error(
         vol.Required("event_id"): str,
         vol.Required("retain"): bool,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_retain_event(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -90,8 +91,8 @@ async def ws_retain_event(
         vol.Optional("after"): int,
         vol.Optional("before"): int,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_get_recordings(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -124,8 +125,8 @@ async def ws_get_recordings(
         vol.Required("camera"): str,
         vol.Optional("timezone"): str,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_get_recordings_summary(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -166,8 +167,8 @@ async def ws_get_recordings_summary(
         vol.Optional("has_snapshot"): bool,
         vol.Optional("favorites"): bool,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_get_events(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -212,8 +213,8 @@ async def ws_get_events(
         vol.Optional("has_snapshot"): bool,
         vol.Optional("timezone"): str,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_get_events_summary(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -248,8 +249,8 @@ async def ws_get_events_summary(
         vol.Required("type"): "frigate/events/subscribe",
         vol.Required("instance_id"): str,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_subscribe_events(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -279,8 +280,8 @@ async def ws_subscribe_events(
         vol.Required("instance_id"): str,
         vol.Required("subscription_id"): int,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_unsubscribe_events(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
@@ -313,8 +314,8 @@ async def ws_unsubscribe_events(
         vol.Required("instance_id"): str,
         vol.Required("camera"): str,
     }
-)  # type: ignore[misc]
-@websocket_api.async_response  # type: ignore[misc]
+)
+@websocket_api.async_response
 async def ws_get_ptz_info(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,

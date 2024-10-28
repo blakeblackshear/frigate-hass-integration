@@ -1,19 +1,19 @@
 ---
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.12.0
+    rev: v3.19.0
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 24.10.0
     hooks:
       - id: black
         args:
           - --safe
           - --quiet
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.0.0
+    rev: v2.3.0
     hooks:
       - id: codespell
         args:
@@ -23,29 +23,24 @@ repos:
         exclude_types: [csv, json]
         exclude: ^tests/fixtures/
   - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    rev: 7.1.1
     hooks:
       - id: flake8
   - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v5.0.0
     hooks:
       - id: check-executables-have-shebangs
         stages: [manual]
       - id: check-json
         exclude: (.vscode|.devcontainer)
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.24.2
+    rev: v1.35.1
     hooks:
       - id: yamllint
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.2.1
-    hooks:
-      - id: prettier
-        stages: [manual]
   - repo: local
     hooks:
       - id: pylint

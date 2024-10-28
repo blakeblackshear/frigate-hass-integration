@@ -1,4 +1,5 @@
 """Test the frigate config flow."""
+
 from __future__ import annotations
 
 import logging
@@ -94,6 +95,7 @@ async def test_user_connection_failure(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result["type"] == "form"
+    assert result["errors"]
     assert result["errors"]["base"] == "cannot_connect"
 
 
@@ -114,6 +116,7 @@ async def test_user_invalid_url(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert result["type"] == "form"
+    assert result["errors"]
     assert result["errors"]["base"] == "invalid_url"
 
 

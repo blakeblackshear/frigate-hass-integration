@@ -1,4 +1,5 @@
 """Sensor platform for frigate."""
+
 from __future__ import annotations
 
 import logging
@@ -49,7 +50,7 @@ async def async_setup_entry(
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
-    entities = []
+    entities: list[FrigateEntity] = []
     for key, value in coordinator.data.items():
         if key == "detection_fps":
             entities.append(FrigateFpsSensor(coordinator, entry))
@@ -100,7 +101,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class FrigateFpsSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -155,7 +156,9 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return ICON_SPEEDOMETER
 
 
-class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class FrigateStatusSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
     """Frigate Status Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -198,7 +201,9 @@ class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         return ICON_SERVER
 
 
-class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class DetectorSpeedSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
     """Frigate Detector Speed class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -265,7 +270,7 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         return ICON_SPEEDOMETER
 
 
-class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class GpuLoadSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate GPU Load class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -332,7 +337,7 @@ class GpuLoadSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return ICON_SPEEDOMETER
 
 
-class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class CameraFpsSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Camera Fps class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -408,7 +413,7 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return ICON_SPEEDOMETER
 
 
-class CameraSoundSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class CameraSoundSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Camera Sound Level class."""
 
     def __init__(
@@ -513,7 +518,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
@@ -566,7 +571,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         return self._icon
 
 
-class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class DeviceTempSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Coral Temperature Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -632,7 +637,9 @@ class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return ICON_CORAL
 
 
-class CameraProcessCpuSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class CameraProcessCpuSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
     """Cpu usage for camera processes class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC

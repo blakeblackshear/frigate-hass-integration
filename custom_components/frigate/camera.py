@@ -1,11 +1,11 @@
 """Support for Frigate cameras."""
+
 from __future__ import annotations
 
 import datetime
 import logging
 from typing import Any, cast
 
-import aiohttp
 import async_timeout
 from jinja2 import Template
 import voluptuous as vol
@@ -19,6 +19,7 @@ from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -117,7 +118,9 @@ async def async_setup_entry(
     )
 
 
-class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: ignore[misc]
+class FrigateCamera(
+    FrigateMQTTEntity, CoordinatorEntity[FrigateDataUpdateCoordinator], Camera
+):
     """Representation of a Frigate camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
@@ -236,13 +239,13 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         else:
             self._restream_type = "none"
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._attr_is_recording = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
-    @callback  # type: ignore[misc]
+    @callback
     def _motion_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT extra message."""
         self._attr_motion_detection_enabled = decode_if_necessary(msg.payload) == "ON"
@@ -271,7 +274,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return the device information."""
         return {
             "identifiers": {
@@ -305,7 +308,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+        websession = async_get_clientsession(self.hass)
 
         image_url = str(
             URL(self._url)
@@ -325,7 +328,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
 
     async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
         """Handle the WebRTC offer and return an answer."""
-        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+        websession = async_get_clientsession(self.hass)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
@@ -378,7 +381,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         )
 
 
-class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
+class BirdseyeCamera(FrigateEntity, Camera):
     """Representation of the Frigate birdseye camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
@@ -426,7 +429,7 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return the device information."""
         return {
             "identifiers": {
@@ -448,7 +451,7 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+        websession = async_get_clientsession(self.hass)
 
         image_url = str(
             URL(self._url)

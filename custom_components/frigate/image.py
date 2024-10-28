@@ -1,4 +1,5 @@
 """Support for Frigate images."""
+
 from __future__ import annotations
 
 import datetime
@@ -40,7 +41,7 @@ async def async_setup_entry(
     )
 
 
-class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):  # type: ignore[misc]
+class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
     """Frigate best image class."""
 
     def __init__(
@@ -76,12 +77,13 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):  # type: ignore[misc
         )
         ImageEntity.__init__(self, hass)
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        self._last_image_timestamp = datetime.datetime.now()
-        self._last_image = msg.payload
-        self.async_write_ha_state()
+        if isinstance(msg.payload, bytes):
+            self._last_image_timestamp = datetime.datetime.now()
+            self._last_image = msg.payload
+            self.async_write_ha_state()
 
     @property
     def unique_id(self) -> str:
@@ -118,6 +120,8 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):  # type: ignore[misc
 
     def image(
         self,
-    ) -> bytes | None:  # pragma: no cover (HA currently does not support a direct way to test this)
+    ) -> (
+        bytes | None
+    ):  # pragma: no cover (HA currently does not support a direct way to test this)
         """Return bytes of image."""
         return self._last_image

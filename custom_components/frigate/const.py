@@ -1,4 +1,5 @@
 """Constants for frigate."""
+
 # Base component constants
 NAME = "Frigate"
 DOMAIN = "frigate"

@@ -1,4 +1,5 @@
 """Test the frigate binary sensor."""
+
 from __future__ import annotations
 
 import asyncio
@@ -203,7 +204,9 @@ async def test_vod_segment_proxy(
 
     await async_setup_auth(hass, app)
 
-    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
     signed_path = async_sign_path(
         hass,
         "/api/frigate/vod/present/segment.ts",
@@ -233,7 +236,9 @@ async def test_vod_segment_proxy_unauthorized(
 
     await async_setup_auth(hass, app)
 
-    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
     signed_path = async_sign_path(
         hass,
         "/api/frigate/vod/present/segment.ts",
@@ -544,7 +549,9 @@ async def test_vod_segment_with_frigate_instance_id(
 
     await async_setup_auth(hass, app)
 
-    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
     signed_path = async_sign_path(
         hass,
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/segment.ts",
