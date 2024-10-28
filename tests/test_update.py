@@ -1,4 +1,5 @@
 """Test the frigate updaters."""
+
 from __future__ import annotations
 
 import copy

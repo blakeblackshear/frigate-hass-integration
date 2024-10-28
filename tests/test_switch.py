@@ -1,4 +1,5 @@
 """Test the frigate switch."""
+
 from __future__ import annotations
 
 import logging
@@ -15,9 +16,11 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from . import (
     TEST_CONFIG_ENTRY_ID,
     TEST_SERVER_VERSION,
+    TEST_SWITCH_FRONT_DOOR_AUDIO_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_MOTION_ENTITY_ID,
+    TEST_SWITCH_FRONT_DOOR_PTZ_AUTOTRACKER_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_RECORDINGS_ENTITY_ID,
     TEST_SWITCH_FRONT_DOOR_SNAPSHOTS_ENTITY_ID,
     create_mock_frigate_client,
@@ -61,6 +64,18 @@ async def test_switch_state(hass: HomeAssistant) -> None:
         assert entity_state
         assert entity_state.state == "off"
 
+    async_fire_mqtt_message(hass, "frigate/front_door/audio/state", "ON")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_AUDIO_DETECT_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/ptz_autotracker/state", "ON")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_PTZ_AUTOTRACKER_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
+
     async_fire_mqtt_message(hass, "frigate/front_door/detect/state", "ON")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
@@ -68,6 +83,18 @@ async def test_switch_state(hass: HomeAssistant) -> None:
     assert entity_state.state == "on"
 
     async_fire_mqtt_message(hass, "frigate/front_door/detect/state", "OFF")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "off"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/detect/state", b"ON")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/detect/state", b"OFF")
     await hass.async_block_till_done()
     entity_state = hass.states.get(TEST_SWITCH_FRONT_DOOR_DETECT_ENTITY_ID)
     assert entity_state
@@ -131,6 +158,8 @@ async def test_switch_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
+
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entity_registry = er.async_get(hass)

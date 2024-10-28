@@ -1,10 +1,7 @@
 ---
-version: "3"
-
 services:
-  dev:
+  devcontainer:
     build: .devcontainer
-    user: vscode
     init: true
     env_file:
       - .env
@@ -12,7 +9,7 @@ services:
       - /var/run/docker.sock:/var/run/docker-host.sock
       - .:${LOCAL_WORKSPACE_FOLDER}:cached
   hass:
-    image: "homeassistant/home-assistant:${HA_VERSION:-stable}"
+    image: "homeassistant/home-assistant:${HA_VERSION:-latest}"
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -24,7 +21,7 @@ services:
       - ./custom_components:/config/custom_components:ro
   frigate:
     privileged: true
-    image: "blakeblackshear/frigate:${FRIGATE_VERSION:-stable-amd64}"
+    image: "ghcr.io/blakeblackshear/frigate:${FRIGATE_VERSION:-stable}"
     restart: unless-stopped
     devices:
       - /dev/bus/usb:/dev/bus/usb

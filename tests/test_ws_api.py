@@ -1,9 +1,15 @@
 """Test the Frigate HA websocket API."""
+
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 from unittest.mock import AsyncMock
+
+import async_timeout
+import pytest
+from pytest_homeassistant_custom_component.common import async_fire_mqtt_message
 
 from custom_components.frigate.api import FrigateApiClientError
 from homeassistant.core import HomeAssistant
@@ -19,7 +25,9 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 TEST_CAMERA = "front_door"
 TEST_EVENT_ID = "1656282822.206673-bovnfg"
 TEST_LABEL = "person"
+TEST_SUB_LABEL = "mr-frigate"
 TEST_ZONE = "steps"
+TEST_EVENT_DATA = "EVENT_DATA"
 
 
 async def test_retain_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
@@ -131,7 +139,7 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
     await setup_mock_frigate_config_entry(hass, client=mock_client)
 
     ws_client = await hass_ws_client()
-    recording_json = {
+    recording_json: dict[str, Any] = {
         "id": 1,
         "type": "frigate/recordings/summary",
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
@@ -140,11 +148,11 @@ async def test_get_recordings_success(hass: HomeAssistant, hass_ws_client: Any) 
 
     recording_success = {"recording": "summary"}
     mock_client.async_get_recordings_summary = AsyncMock(return_value=recording_success)
-    await ws_client.send_json(recording_json)
+    await ws_client.send_json({**recording_json, "timezone": "Europe/Dublin"})
 
     response = await ws_client.receive_json()
     mock_client.async_get_recordings_summary.assert_called_with(
-        TEST_CAMERA, decode_json=False
+        TEST_CAMERA, "Europe/Dublin", decode_json=False
     )
     assert response["success"]
     assert response["result"] == recording_success
@@ -253,14 +261,16 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
         "id": 1,
         "type": "frigate/events/get",
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
-        "camera": TEST_CAMERA,
-        "label": TEST_LABEL,
-        "zone": TEST_ZONE,
+        "cameras": [TEST_CAMERA],
+        "labels": [TEST_LABEL],
+        "sub_labels": [TEST_SUB_LABEL],
+        "zones": [TEST_ZONE],
         "after": 1,
         "before": 2,
         "limit": 3,
         "has_clip": True,
         "has_snapshot": True,
+        "favorites": True,
     }
 
     events_success = {"events": "summary"}
@@ -269,7 +279,17 @@ async def test_get_events_success(hass: HomeAssistant, hass_ws_client: Any) -> N
 
     response = await ws_client.receive_json()
     mock_client.async_get_events.assert_called_with(
-        TEST_CAMERA, TEST_LABEL, TEST_ZONE, 1, 2, 3, True, True, decode_json=False
+        [TEST_CAMERA],
+        [TEST_LABEL],
+        [TEST_SUB_LABEL],
+        [TEST_ZONE],
+        1,
+        2,
+        3,
+        True,
+        True,
+        True,
+        decode_json=False,
     )
     assert response["success"]
     assert response["result"] == events_success
@@ -287,7 +307,7 @@ async def test_get_events_instance_not_found(
         "id": 1,
         "type": "frigate/events/get",
         "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
-        "camera": TEST_CAMERA,
+        "cameras": [TEST_CAMERA],
     }
 
     await ws_client.send_json(events_json)
@@ -307,7 +327,7 @@ async def test_get_events_api_error(hass: HomeAssistant, hass_ws_client: Any) ->
         "id": 1,
         "type": "frigate/events/get",
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
-        "camera": TEST_CAMERA,
+        "cameras": [TEST_CAMERA],
     }
 
     mock_client.async_get_events = AsyncMock(side_effect=FrigateApiClientError)
@@ -333,6 +353,7 @@ async def test_get_events_summary_success(
         "instance_id": TEST_FRIGATE_INSTANCE_ID,
         "has_clip": True,
         "has_snapshot": True,
+        "timezone": "US/Pacific",
     }
 
     events_summary_success = {"events": "summary"}
@@ -341,7 +362,7 @@ async def test_get_events_summary_success(
 
     response = await ws_client.receive_json()
     mock_client.async_get_event_summary.assert_called_with(
-        True, True, decode_json=False
+        True, True, "US/Pacific", decode_json=False
     )
     assert response["success"]
     assert response["result"] == events_summary_success
@@ -388,3 +409,249 @@ async def test_get_events_summary_api_error(
     response = await ws_client.receive_json()
     assert not response["success"]
     assert response["error"]["code"] == "frigate_error"
+
+
+async def test_get_ptz_info_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving PTZ info successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    ptz_info_json = {
+        "id": 1,
+        "type": "frigate/ptz/info",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": "master_bedroom",
+    }
+    ptz_info_success = {
+        "features": ["pt", "zoom", "pt-r", "zoom-r"],
+        "name": "master_bedroom",
+        "presets": [
+            "preset01",
+            "preset02",
+        ],
+    }
+    mock_client.async_get_ptz_info = AsyncMock(return_value=ptz_info_success)
+    await ws_client.send_json(ptz_info_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_ptz_info.assert_called_with(
+        "master_bedroom", decode_json=False
+    )
+    assert response["success"]
+    assert response["result"] == ptz_info_success
+
+
+async def test_get_ptz_info_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving PTZ info from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    ptz_info_json = {
+        "id": 1,
+        "type": "frigate/ptz/info",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+        "camera": "master_bedroom",
+    }
+
+    await ws_client.send_json(ptz_info_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_get_ptz_info_api_error(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving PTZ info when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    ptz_info_json = {
+        "id": 1,
+        "type": "frigate/ptz/info",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "camera": "master_bedroom",
+    }
+
+    mock_client.async_get_ptz_info = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(ptz_info_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+
+async def test_subscribe_events(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test subscribing to events."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client_1 = await hass_ws_client()
+    await ws_client_1.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client_1.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    ws_client_2 = await hass_ws_client()
+    await ws_client_2.send_json(
+        {
+            "id": 2,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client_2.receive_json()
+    assert response["success"]
+    assert response["result"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/events", TEST_EVENT_DATA)
+    await hass.async_block_till_done()
+
+    response = await ws_client_1.receive_json()
+    assert response["event"] == TEST_EVENT_DATA
+
+    response = await ws_client_2.receive_json()
+    assert response["event"] == TEST_EVENT_DATA
+
+
+async def test_subscribe_events_invalid_instance_id(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test subscribing to events with an invalid instance id"""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": "DOES_NOT_EXIST",
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unsubscribe_events(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test unsubscribing from events."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    await ws_client.send_json(
+        {
+            "id": 2,
+            "type": "frigate/events/unsubscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+            "subscription_id": 1,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+
+    async_fire_mqtt_message(hass, "frigate/events", TEST_EVENT_DATA)
+    await hass.async_block_till_done()
+
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        async with async_timeout.timeout(0):
+            response = await ws_client.receive_json()
+
+
+async def test_unsubscribe_events_invalid_instance_id(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test unsubscribing events from an invalid instance id."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/unsubscribe",
+            "instance_id": "DOES_NOT_EXIST",
+            "subscription_id": 1,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unsubscribe_events_from_invalid_subscription(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test unsubscribing events from a subscription that does not exist."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/unsubscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+            "subscription_id": 20000,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unload_unsubscribes_from_events(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test to verify unload unsubscribes from events."""
+
+    config_entry = await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/events/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    await hass.config_entries.async_unload(config_entry.entry_id)
+
+    async_fire_mqtt_message(hass, "frigate/events", TEST_EVENT_DATA)
+    await hass.async_block_till_done()
+
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        async with async_timeout.timeout(0):
+            response = await ws_client.receive_json()

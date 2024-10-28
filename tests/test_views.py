@@ -1,4 +1,5 @@
 """Test the frigate binary sensor."""
+
 from __future__ import annotations
 
 import asyncio
@@ -155,11 +156,17 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/api/events/event_id/thumbnail.jpg", handler),
             web.get("/api/events/event_id/snapshot.jpg", handler),
             web.get("/api/events/event_id/clip.mp4", handler),
+            web.get("/api/events/event_id/preview.gif", handler),
+            web.get("/api/review/event_id/preview", handler),
             web.get("/api/events/1577854800.123456-random/snapshot.jpg", handler),
             web.get("/api/events/1635807600.123456-random/snapshot.jpg", handler),
             web.get("/api/events/1635807359.123456-random/snapshot.jpg", handler),
-            web.get("/live/front_door", ws_echo_handler),
-            web.get("/live/querystring", ws_qs_echo_handler),
+            web.get("/live/jsmpeg/front_door", ws_echo_handler),
+            web.get("/live/jsmpeg/querystring", ws_qs_echo_handler),
+            web.get("/live/mse/front_door", ws_echo_handler),
+            web.get("/live/mse/querystring", ws_qs_echo_handler),
+            web.get("/live/webrtc/front_door", ws_echo_handler),
+            web.get("/live/webrtc/querystring", ws_qs_echo_handler),
             web.get(
                 "/api/front_door/start/1664067600.02/end/1664068200.03/clip.mp4",
                 handler,
@@ -197,7 +204,9 @@ async def test_vod_segment_proxy(
 
     await async_setup_auth(hass, app)
 
-    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
     signed_path = async_sign_path(
         hass,
         "/api/frigate/vod/present/segment.ts",
@@ -227,7 +236,9 @@ async def test_vod_segment_proxy_unauthorized(
 
     await async_setup_auth(hass, app)
 
-    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
     signed_path = async_sign_path(
         hass,
         "/api/frigate/vod/present/segment.ts",
@@ -356,6 +367,34 @@ async def test_notifications_proxy_view_snapshot(
 
     resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/snapshot.jpg"
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_notifications_proxy_view_event_preview(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test notification clip."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        "/api/frigate/notifications/event_id/event_preview.gif"
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_notifications_proxy_view_review_preview(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test notification clip."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        "/api/frigate/notifications/event_id/review_preview.gif"
     )
     assert resp.status == HTTPStatus.OK
 
@@ -510,7 +549,9 @@ async def test_vod_segment_with_frigate_instance_id(
 
     await async_setup_auth(hass, app)
 
-    refresh_token = await hass.auth.async_validate_access_token(hass_access_token)
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
     signed_path = async_sign_path(
         hass,
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/present/segment.ts",
@@ -797,6 +838,209 @@ async def test_jsmpeg_frame_type_ping_pong(
         assert result[1].data == b"\x00\x01"
 
 
+async def test_jsmpeg_connection_reset(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying handles connection resets."""
+
+    # Tricky: This test is intended to test a ConnectionResetError to the
+    # Frigate server, which is the _second_ call to send*. The first call (from
+    # this test) needs to succeed.
+    real_send_str = views.aiohttp.web.WebSocketResponse.send_str
+
+    called_once = False
+
+    async def send_str(*args: Any, **kwargs: Any) -> None:
+        nonlocal called_once
+        if called_once:
+            raise ConnectionResetError
+        else:
+            called_once = True
+            return await real_send_str(*args, **kwargs)
+
+    authenticated_hass_client = await hass_client()
+
+    with patch(
+        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.send_str",
+        new=send_str,
+    ):
+        async with authenticated_hass_client.ws_connect(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
+        ) as ws:
+            await ws.send_str("data")
+
+
+async def test_mse_text_binary(
+    local_frigate: Any,
+    hass: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying text/binary data."""
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/mse/front_door"
+    ) as ws:
+        # Test sending text data.
+        result = await asyncio.gather(
+            ws.send_str("hello!"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.TEXT
+        assert result[1].data == "hello!"
+
+        # Test sending binary data.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
+
+
+async def test_mse_frame_type_ping_pong(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying handles ping-pong."""
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/mse/front_door"
+    ) as ws:
+        await ws.ping()
+
+        # Push some data through after the ping.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
+
+
+async def test_mse_connection_reset(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying handles connection resets."""
+
+    # Tricky: This test is intended to test a ConnectionResetError to the
+    # Frigate server, which is the _second_ call to send*. The first call (from
+    # this test) needs to succeed.
+    real_send_str = views.aiohttp.web.WebSocketResponse.send_str
+
+    called_once = False
+
+    async def send_str(*args: Any, **kwargs: Any) -> None:
+        nonlocal called_once
+        if called_once:
+            raise ConnectionResetError
+        else:
+            called_once = True
+            return await real_send_str(*args, **kwargs)
+
+    authenticated_hass_client = await hass_client()
+
+    with patch(
+        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.send_str",
+        new=send_str,
+    ):
+        async with authenticated_hass_client.ws_connect(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/mse/front_door"
+        ) as ws:
+            await ws.send_str("data")
+
+
+async def test_webrtc_text_binary(
+    local_frigate: Any,
+    hass: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying text/binary data."""
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/webrtc/front_door"
+    ) as ws:
+        # Test sending text data.
+        result = await asyncio.gather(
+            ws.send_str("hello!"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.TEXT
+        assert result[1].data == "hello!"
+
+        # Test sending binary data.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
+
+
+async def test_webrtc_frame_type_ping_pong(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying handles ping-pong."""
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/webrtc/front_door"
+    ) as ws:
+        await ws.ping()
+
+        # Push some data through after the ping.
+        result = await asyncio.gather(
+            ws.send_bytes(b"\x00\x01"),
+            ws.receive(),
+        )
+        assert result[1].type == aiohttp.WSMsgType.BINARY
+        assert result[1].data == b"\x00\x01"
+
+
+async def test_webrtc_connection_reset(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test JSMPEG proxying handles connection resets."""
+
+    # Tricky: This test is intended to test a ConnectionResetError to the
+    # Frigate server, which is the _second_ call to send*. The first call (from
+    # this test) needs to succeed.
+    real_send_str = views.aiohttp.web.WebSocketResponse.send_str
+
+    called_once = False
+
+    async def send_str(*args: Any, **kwargs: Any) -> None:
+        nonlocal called_once
+        if called_once:
+            raise ConnectionResetError
+        else:
+            called_once = True
+            return await real_send_str(*args, **kwargs)
+
+    authenticated_hass_client = await hass_client()
+
+    with patch(
+        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.send_str",
+        new=send_str,
+    ):
+        async with authenticated_hass_client.ws_connect(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/webrtc/front_door"
+        ) as ws:
+            await ws.send_str("data")
+
+
 async def test_ws_proxy_specify_protocol(
     local_frigate: Any,
     hass_client: Any,
@@ -830,39 +1074,6 @@ async def test_ws_proxy_query_string(
         )
         assert result[1].type == aiohttp.WSMsgType.TEXT
         assert result[1].data == "hello!"
-
-
-async def test_jsmpeg_connection_reset(
-    local_frigate: Any,
-    hass_client: Any,
-) -> None:
-    """Test JSMPEG proxying handles connection resets."""
-
-    # Tricky: This test is intended to test a ConnectionResetError to the
-    # Frigate server, which is the _second_ call to send*. The first call (from
-    # this test) needs to succeed.
-    real_send_str = views.aiohttp.web.WebSocketResponse.send_str
-
-    called_once = False
-
-    async def send_str(*args: Any, **kwargs: Any) -> None:
-        nonlocal called_once
-        if called_once:
-            raise ConnectionResetError
-        else:
-            called_once = True
-            return await real_send_str(*args, **kwargs)
-
-    authenticated_hass_client = await hass_client()
-
-    with patch(
-        "custom_components.frigate.views.aiohttp.ClientWebSocketResponse.send_str",
-        new=send_str,
-    ):
-        async with authenticated_hass_client.ws_connect(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/jsmpeg/front_door"
-        ) as ws:
-            await ws.send_str("data")
 
 
 async def test_ws_proxy_bad_instance_id(

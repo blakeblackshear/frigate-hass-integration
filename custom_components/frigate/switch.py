@@ -1,4 +1,5 @@
 """Sensor platform for frigate."""
+
 from __future__ import annotations
 
 import logging
@@ -15,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
+    decode_if_necessary,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
@@ -42,10 +44,39 @@ async def async_setup_entry(
                 FrigateSwitch(entry, frigate_config, camera, "improve_contrast", False),
             ]
         )
+
+        if (
+            frigate_config["cameras"][camera]
+            .get("audio", {})
+            .get("enabled_in_config", False)
+        ):
+            entities.append(
+                FrigateSwitch(
+                    entry, frigate_config, camera, "audio", True, "audio_detection"
+                ),
+            )
+
+        if (
+            frigate_config["cameras"][camera]
+            .get("onvif", {})
+            .get("autotracking", {})
+            .get("enabled_in_config", False)
+        ):
+            entities.append(
+                FrigateSwitch(
+                    entry,
+                    frigate_config,
+                    camera,
+                    "ptz_autotracker",
+                    True,
+                    "ptz_autotracker",
+                ),
+            )
+
     async_add_entities(entities)
 
 
-class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
+class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
     """Frigate Switch class."""
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -57,6 +88,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
         cam_name: str,
         switch_name: str,
         default_enabled: bool,
+        descriptive_name: str = "",
     ) -> None:
         """Construct a FrigateSwitch."""
         self._frigate_config = frigate_config
@@ -67,6 +99,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             f"{frigate_config['mqtt']['topic_prefix']}"
             f"/{self._cam_name}/{self._switch_name}/set"
         )
+        self._descriptive_name = descriptive_name if descriptive_name else switch_name
 
         self._attr_entity_registry_enabled_default = default_enabled
         self._icon = get_icon_from_switch(self._switch_name)
@@ -85,10 +118,10 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
-        self._is_on = msg.payload == "ON"
+        self._is_on = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
     @property
@@ -117,7 +150,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):  # type: ignore[misc]
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._switch_name)}".title()
+        return f"{get_friendly_name(self._descriptive_name)}".title()
 
     @property
     def is_on(self) -> bool:

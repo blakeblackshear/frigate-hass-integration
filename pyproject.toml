@@ -16,7 +16,7 @@ forced_separate = [
     "tests",
 ]
 combine_as_imports = true
-default_section = "THIRDPARTY"
+default_section = "THIRDPARTY"  # codespell:ignore
 
 [tool.pylint.MASTER]
 ignore = [
@@ -27,7 +27,6 @@ ignore = [
 jobs = 2
 load-plugins = [
     "pylint.extensions.typing",
-    "pylint_strict_informational",
     "pylint_pytest",
 ]
 persistent = false
@@ -57,7 +56,6 @@ good-names = [
 # locally-disabled - it spams too much
 # duplicate-code - unavoidable
 # cyclic-import - doesn't test if both import on load
-# abstract-class-little-used - prevents from setting right foundation
 # unused-argument - generic callbacks and setup methods create a lot of warnings
 # too-many-* - are not enforced for the sake of readability
 # too-few-* - same as too-many-*
@@ -67,7 +65,6 @@ good-names = [
 # wrong-import-order - isort guards this
 disable = [
     "format",
-    "abstract-class-little-used",
     "abstract-method",
     "cyclic-import",
     "duplicate-code",
@@ -106,9 +103,9 @@ expected-line-ending-format = "LF"
 
 [tool.pylint.EXCEPTIONS]
 overgeneral-exceptions = [
-    "BaseException",
-    "Exception",
-    "HomeAssistantError",
+    "builtins.BaseException",
+    "builtins.Exception",
+    "homeassistant.HomeAssistantError",
 ]
 
 [tool.pylint.TYPING]
@@ -117,6 +114,7 @@ runtime-typing = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = [
     "tests",
 ]
@@ -139,7 +137,7 @@ addopts = "--timeout=10 --cov-report=xml:coverage.xml --cov-report=term-missing 
 [tool.mypy]
 # Stock HomeAssistant mypy configuration.
 ignore_missing_imports = true
-python_version = "3.8"
+python_version = "3.12"
 follow_imports = "silent"
 strict_equality = true
 warn_incomplete_stub = true

@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "URL, die Sie für den Zugriff auf Frigate verwenden (z. B. \"http://frigate:5000/\")\n\nWenn Sie HassOS mit dem Addon verwenden, sollte die URL „http://ccab4aaf-frigate:5000/“ lauten\n\nHome Assistant benötigt für alle Funktionen Zugriff auf Port 5000 (api) und 1935 (rtmp).\n\nDie Integration richtet Sensoren, Kameras und Medienbrowser-Funktionen ein.\n\nSensoren:\n- Statistiken zur Überwachung der Frigate-Leistung\n- Objektzählungen für alle Zonen und Kameras\n\nKameras:\n- Kameras für Bild des zuletzt erkannten Objekts für jede Kamera\n- Kameraeinheiten mit Stream-Unterstützung (erfordert RTMP)\n\nMedienbrowser:\n- Umfangreiche Benutzeroberfläche mit Vorschaubildern zum Durchsuchen von Event-Clips\n- Umfangreiche Benutzeroberfläche zum Durchsuchen von 24/7-Aufzeichnungen nach Monat, Tag, Kamera und Uhrzeit\n\nAPI:\n- Benachrichtigungs-API mit öffentlich zugänglichen Endpunkten für Bilder in Benachrichtigungen",
+        "data": {
+          "url": "URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen",
+      "invalid_url": "Ungültige URL"
+    },
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "rtmp_url_template": "RTMP-URL-Vorlage (siehe Dokumentation)",
+          "rtsp_url_template": "RTSP-URL-Vorlage (siehe Dokumentation)",
+          "media_browser_enable": "Aktivieren Sie den Medienbrowser",
+          "notification_proxy_enable": "Aktivieren Sie den Proxy für nicht authentifizierte Benachrichtigungsereignisse",
+          "notification_proxy_expire_after_seconds": "Zugriff auf nicht authentifizierte Benachrichtigungen nach Sekunden verbieten (0=nie)"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "Der erweiterte Modus ist deaktiviert und es stehen nur erweiterte Optionen zur Verfügung"
+    }
+  }
+}

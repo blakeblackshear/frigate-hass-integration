@@ -1,4 +1,5 @@
 """Test the frigate binary sensor."""
+
 from __future__ import annotations
 
 import logging
@@ -17,6 +18,7 @@ from . import (
     TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID,
     TEST_BINARY_SENSOR_FRONT_DOOR_MOTION_ENTITY_ID,
     TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID,
+    TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID,
     TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID,
     TEST_CONFIG_ENTRY_ID,
@@ -78,6 +80,38 @@ async def test_occupancy_binary_sensor_setup(hass: HomeAssistant) -> None:
     assert entity_state.state == "unavailable"
 
 
+async def test_audio_binary_sensor_setup(hass: HomeAssistant) -> None:
+    """Verify a successful audio binary sensor setup."""
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "off"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/audio/speech", "ON")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "on"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/audio/speech", "not_valid")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "off"
+
+    async_fire_mqtt_message(hass, "frigate/available", "offline")
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_SPEECH_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+
 async def test_motion_binary_sensor_setup(hass: HomeAssistant) -> None:
     """Verify a successful motion binary sensor setup."""
     await setup_mock_frigate_config_entry(hass)
@@ -129,6 +163,7 @@ async def test_binary_sensor_device_info(
     )
     assert device
     assert device.manufacturer == NAME
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = [

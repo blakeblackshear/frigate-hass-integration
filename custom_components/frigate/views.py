@@ -1,4 +1,5 @@
 """Frigate HTTP views."""
+
 from __future__ import annotations
 
 import asyncio
@@ -90,7 +91,7 @@ def get_client_for_frigate_instance_id(
 def get_frigate_instance_id_for_config_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
-) -> ConfigEntry | None:
+) -> str | None:
     """Get a frigate_instance_id for a ConfigEntry."""
 
     config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
@@ -101,6 +102,8 @@ def async_setup(hass: HomeAssistant) -> None:
     """Set up the views."""
     session = async_get_clientsession(hass)
     hass.http.register_view(JSMPEGProxyView(session))
+    hass.http.register_view(MSEProxyView(session))
+    hass.http.register_view(WebRTCProxyView(session))
     hass.http.register_view(NotificationsProxyView(session))
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(RecordingProxyView(session))
@@ -113,7 +116,7 @@ def async_setup(hass: HomeAssistant) -> None:
 #  - https://github.com/home-assistant/supervisor/blob/main/supervisor/api/ingress.py
 
 
-class ProxyView(HomeAssistantView):  # type: ignore[misc]
+class ProxyView(HomeAssistantView):
     """HomeAssistant view."""
 
     requires_auth = True
@@ -274,6 +277,13 @@ class NotificationsProxyView(ProxyView):
 
         if path.endswith("clip.mp4"):
             return f"api/events/{event_id}/clip.mp4"
+
+        if path.endswith("event_preview.gif"):
+            return f"api/events/{event_id}/preview.gif"
+
+        if path.endswith("review_preview.gif"):
+            return f"api/review/{event_id}/preview"
+
         return None
 
     def _permit_request(
@@ -355,7 +365,7 @@ class VodSegmentProxyView(ProxyView):
     async def _async_validate_signed_manifest(self, request: web.Request) -> bool:
         """Validate the signature for the manifest of this segment."""
         hass = request.app[KEY_HASS]
-        secret = hass.data.get(DATA_SIGN_SECRET)
+        secret = str(hass.data.get(DATA_SIGN_SECRET))
         signature = request.query.get(SIGN_QUERY_PARAM)
 
         if signature is None:
@@ -479,7 +489,33 @@ class JSMPEGProxyView(WebsocketProxyView):
 
     def _create_path(self, **kwargs: Any) -> str | None:
         """Create path."""
-        return f"live/{kwargs['path']}"
+        return f"live/jsmpeg/{kwargs['path']}"
+
+
+class MSEProxyView(WebsocketProxyView):
+    """A proxy for MSE websocket."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/mse/{path:.+}"
+    extra_urls = ["/api/frigate/mse/{path:.+}"]
+
+    name = "api:frigate:mse"
+
+    def _create_path(self, **kwargs: Any) -> str | None:
+        """Create path."""
+        return f"live/mse/{kwargs['path']}"
+
+
+class WebRTCProxyView(WebsocketProxyView):
+    """A proxy for WebRTC websocket."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/webrtc/{path:.+}"
+    extra_urls = ["/api/frigate/webrtc/{path:.+}"]
+
+    name = "api:frigate:webrtc"
+
+    def _create_path(self, **kwargs: Any) -> str | None:
+        """Create path."""
+        return f"live/webrtc/{kwargs['path']}"
 
 
 def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
@@ -496,6 +532,7 @@ def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
             hdrs.SEC_WEBSOCKET_VERSION,
             hdrs.SEC_WEBSOCKET_KEY,
             hdrs.HOST,
+            hdrs.AUTHORIZATION,
         ):
             continue
         headers[name] = value

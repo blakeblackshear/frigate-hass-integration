@@ -6,26 +6,23 @@ detectors:
     type: cpu
 mqtt:
   host: mqtt
+go2rtc:
+  streams:
+    big_buck_bunny:
+      # yamllint disable-line rule:line-length
+      - exec:ffmpeg -re -stream_loop -1 -i https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_h264.mov -c copy -rtsp_transport tcp -f rtsp {{output}}
 cameras:
   big_buck_bunny:
     ffmpeg:
       inputs:
-        - path: rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4
+        - path: rtsp://127.0.0.1:8554/big_buck_bunny
+          input_args: preset-rtsp-restream-low-latency
           roles:
-            - rtmp
             - detect
             - record
-      # yamllint disable-line rule:line-length
-      input_args: -avoid_negative_ts make_zero -fflags nobuffer -flags low_delay -strict experimental -fflags +genpts+discardcorrupt -use_wallclock_as_timestamps 1
+            - audio
       output_args:
-        # yamllint disable-line rule:line-length
-        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c:v libx264 -an
-        rtmp: -c:v  libx264 -an -f flv
-    detect:
-      width: 240
-      height: 160
-    live:
-      height: 160
+        record: preset-record-generic-audio-copy
     objects:
       track:
         - cat

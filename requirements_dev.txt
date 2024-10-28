@@ -4,9 +4,10 @@ flake8
 mypy
 pre-commit
 pytest
-pytest-homeassistant-custom-component==0.12.49
+pytest-homeassistant-custom-component==0.13.175
 pylint-pytest
 pylint
 pytest-aiohttp
 pytest-asyncio
 types-python-dateutil
+types-pytz

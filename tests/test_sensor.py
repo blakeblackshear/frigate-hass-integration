@@ -1,4 +1,5 @@
 """Test the frigate sensors."""
+
 from __future__ import annotations
 
 import copy
@@ -28,8 +29,9 @@ from custom_components.frigate.icons import (
     ICON_PERSON,
     ICON_SERVER,
     ICON_SPEEDOMETER,
+    ICON_WAVEFORM,
 )
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
@@ -44,10 +46,15 @@ from . import (
     TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
+    TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID,
+    TEST_SENSOR_GPU_LOAD_ENTITY_ID,
     TEST_SENSOR_STEPS_ALL_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
     TEST_SERVER_VERSION,
@@ -169,6 +176,7 @@ async def test_per_camerazone_device_info(
     )
     assert device
     assert device.manufacturer == NAME
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = {
@@ -230,7 +238,7 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "50.0"
     assert entity_state.attributes["icon"] == ICON_CORAL
-    assert entity_state.attributes["unit_of_measurement"] == TEMP_CELSIUS
+    assert entity_state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
 
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
@@ -280,13 +288,18 @@ async def test_status_sensor_error(hass: HomeAssistant) -> None:
     await setup_mock_frigate_config_entry(hass, client=client)
     await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
 
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
     client.async_get_stats = AsyncMock(side_effect=FrigateApiClientError)
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID)
     assert entity_state
-    assert entity_state.state == "error"
+
+    # The update coordinator will treat the error as unavailability.
+    assert entity_state.state == "unavailable"
     assert entity_state.attributes["icon"] == ICON_SERVER
 
 
@@ -310,6 +323,7 @@ async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = {
@@ -380,7 +394,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
     client.async_get_stats = AsyncMock(return_value=stats)
 
-    stats["front_door"]["camera_fps"] = 3.9
+    stats["cameras"]["front_door"]["camera_fps"] = 3.9
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
@@ -388,7 +402,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "4"
 
-    stats["front_door"]["camera_fps"] = None
+    stats["cameras"]["front_door"]["camera_fps"] = None
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
@@ -396,11 +410,137 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "unknown"
 
-    stats["front_door"]["camera_fps"] = "NOT_A_NUMBER"
+    stats["cameras"]["front_door"]["camera_fps"] = "NOT_A_NUMBER"
     async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
     await hass.async_block_till_done()
 
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
+async def test_camera_audio_sensor(hass: HomeAssistant) -> None:
+    """Test CameraAudioLevel state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "-12"
+    assert entity_state.attributes["icon"] == ICON_WAVEFORM
+    assert entity_state.attributes["unit_of_measurement"] == UnitOfSoundPressure.DECIBEL
+
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["cameras"]["front_door"]["audio_dBFS"] = -3.9
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "-4"
+
+    stats["cameras"]["front_door"]["audio_dBFS"] = None
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["cameras"]["front_door"]["audio_dBFS"] = "NOT_A_NUMBER"
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
+async def test_camera_cpu_usage_sensor(hass: HomeAssistant) -> None:
+    """Test CameraProcessCpuSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "3.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "5.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "15.0"
+    assert entity_state.attributes["icon"] == ICON_CORAL
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["cpu_usages"]["52"] = {"cpu": None, "mem": None}
+    stats["cpu_usages"]["53"] = {"cpu": None, "mem": None}
+    stats["cpu_usages"]["54"] = {"cpu": None, "mem": None}
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+
+async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
+    """Test CameraProcessCpuSensor state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_GPU_LOAD_ENTITY_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_GPU_LOAD_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "19.0"
+    assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
+    assert entity_state.attributes["unit_of_measurement"] == PERCENTAGE
+
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["gpu_usages"]["Nvidia GeForce RTX 3050"] = {"gpu": -1, "mem": -1}
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_GPU_LOAD_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["gpu_usages"]["Nvidia GeForce RTX 3050"] = {
+        "gpu": "not a number",
+        "mem": "not a number",
+    }
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_GPU_LOAD_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
 
@@ -468,7 +608,10 @@ async def test_sensors_setup_correctly_in_registry(
         entities_disabled={
             TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
+            TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
             TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
             TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
             TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,

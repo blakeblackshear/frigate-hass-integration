@@ -20,7 +20,7 @@ async def test_get_binary_sensor_icons() -> None:
     assert get_dynamic_icon_from_type("motorcycle", True) == "mdi:home"
     assert get_dynamic_icon_from_type("motorcycle", False) == "mdi:home-outline"
     assert get_dynamic_icon_from_type("bicycle", True) == "mdi:home"
-    assert get_dynamic_icon_from_type("bycicle", False) == "mdi:home-outline"
+    assert get_dynamic_icon_from_type("bicycle", False) == "mdi:home-outline"
     assert get_dynamic_icon_from_type("cow", True) == "mdi:home"
     assert get_dynamic_icon_from_type("cow", False) == "mdi:home-outline"
     assert get_dynamic_icon_from_type("horse", True) == "mdi:home"
@@ -48,3 +48,4 @@ async def test_get_switch_icons() -> None:
     assert get_icon_from_switch("snapshots") == "mdi:image-multiple"
     assert get_icon_from_switch("recordings") == "mdi:filmstrip-box-multiple"
     assert get_icon_from_switch("motion") == "mdi:motion-sensor"
+    assert get_icon_from_switch("ptz_autotracker") == "mdi:cctv"

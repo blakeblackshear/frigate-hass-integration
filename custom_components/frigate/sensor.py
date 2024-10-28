@@ -1,11 +1,17 @@
 """Sensor platform for frigate."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL, TEMP_CELSIUS
+from homeassistant.const import (
+    CONF_URL,
+    PERCENTAGE,
+    UnitOfSoundPressure,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -16,6 +22,7 @@ from . import (
     FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
+    get_cameras,
     get_cameras_zones_and_objects,
     get_friendly_name,
     get_frigate_device_identifier,
@@ -23,7 +30,13 @@ from . import (
     get_zones,
 )
 from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
-from .icons import ICON_CORAL, ICON_SERVER, ICON_SPEEDOMETER, get_icon_from_type
+from .icons import (
+    ICON_CORAL,
+    ICON_SERVER,
+    ICON_SPEEDOMETER,
+    ICON_WAVEFORM,
+    get_icon_from_type,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -34,23 +47,48 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Sensor entry setup."""
+    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
-    entities = []
+    entities: list[FrigateEntity] = []
     for key, value in coordinator.data.items():
         if key == "detection_fps":
             entities.append(FrigateFpsSensor(coordinator, entry))
         elif key == "detectors":
             for name in value.keys():
                 entities.append(DetectorSpeedSensor(coordinator, entry, name))
+        elif key == "gpu_usages":
+            for name in value.keys():
+                entities.append(GpuLoadSensor(coordinator, entry, name))
+        elif key == "processes":
+            # don't create sensor for other processes
+            continue
         elif key == "service":
             # Temperature is only supported on PCIe Coral.
             for name in value.get("temperatures", {}):
                 entities.append(DeviceTempSensor(coordinator, entry, name))
-        else:
-            entities.extend(
-                [CameraFpsSensor(coordinator, entry, key, t) for t in CAMERA_FPS_TYPES]
-            )
+        elif key == "cpu_usages":
+            for camera in get_cameras(frigate_config):
+                entities.append(
+                    CameraProcessCpuSensor(coordinator, entry, camera, "capture")
+                )
+                entities.append(
+                    CameraProcessCpuSensor(coordinator, entry, camera, "detect")
+                )
+                entities.append(
+                    CameraProcessCpuSensor(coordinator, entry, camera, "ffmpeg")
+                )
+        elif key == "cameras":
+            for name in value.keys():
+                entities.extend(
+                    [
+                        CameraFpsSensor(coordinator, entry, name, t)
+                        for t in CAMERA_FPS_TYPES
+                    ]
+                )
+
+                if frigate_config["cameras"][name]["audio"]["enabled_in_config"]:
+                    entities.append(CameraSoundSensor(coordinator, entry, name))
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     entities.extend(
@@ -63,7 +101,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class FrigateFpsSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -118,7 +156,9 @@ class FrigateFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         return ICON_SPEEDOMETER
 
 
-class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class FrigateStatusSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
     """Frigate Status Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -161,7 +201,9 @@ class FrigateStatusSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         return ICON_SERVER
 
 
-class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class DetectorSpeedSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
     """Frigate Detector Speed class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -228,7 +270,74 @@ class DetectorSpeedSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[mis
         return ICON_SPEEDOMETER
 
 
-class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class GpuLoadSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
+    """Frigate GPU Load class."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: FrigateDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        gpu_name: str,
+    ) -> None:
+        """Construct a GpuLoadSensor."""
+        self._gpu_name = gpu_name
+        self._attr_name = f"{get_friendly_name(self._gpu_name)} gpu load"
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._attr_entity_registry_enabled_default = False
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, "gpu_load", self._gpu_name
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {get_frigate_device_identifier(self._config_entry)},
+            "name": NAME,
+            "model": self._get_model(),
+            "configuration_url": self._config_entry.data.get(CONF_URL),
+            "manufacturer": NAME,
+        }
+
+    @property
+    def state(self) -> float | None:
+        """Return the state of the sensor."""
+        if self.coordinator.data:
+            data = (
+                self.coordinator.data.get("gpu_usages", {})
+                .get(self._gpu_name, {})
+                .get("gpu")
+            )
+
+            if data is None or not isinstance(data, str):
+                return None
+
+            try:
+                return float(data.replace("%", "").strip())
+            except ValueError:
+                pass
+
+        return None
+
+    @property
+    def unit_of_measurement(self) -> str:
+        """Return the unit of measurement of the sensor."""
+        return "%"
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_SPEEDOMETER
+
+
+class CameraFpsSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Camera Fps class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -285,9 +394,12 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
         """Return the state of the sensor."""
 
         if self.coordinator.data:
-            data = self.coordinator.data.get(self._cam_name, {}).get(
-                f"{self._fps_type}_fps"
+            data = (
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get(f"{self._fps_type}_fps")
             )
+
             if data is not None:
                 try:
                     return round(float(data))
@@ -299,6 +411,78 @@ class CameraFpsSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SPEEDOMETER
+
+
+class CameraSoundSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
+    """Frigate Camera Sound Level class."""
+
+    def __init__(
+        self,
+        coordinator: FrigateDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        cam_name: str,
+    ) -> None:
+        """Construct a CameraSoundSensor."""
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._cam_name = cam_name
+        self._attr_entity_registry_enabled_default = True
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_sound_level",
+            f"{self._cam_name}_dB",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "sound level"
+
+    @property
+    def unit_of_measurement(self) -> Any:
+        """Return the unit of measurement of the sensor."""
+        return UnitOfSoundPressure.DECIBEL
+
+    @property
+    def state(self) -> int | None:
+        """Return the state of the sensor."""
+
+        if self.coordinator.data:
+            data = (
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get("audio_dBFS")
+            )
+
+            if data is not None:
+                try:
+                    return round(float(data))
+                except ValueError:
+                    pass
+        return None
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_WAVEFORM
 
 
 class FrigateObjectCountSensor(FrigateMQTTEntity):
@@ -334,7 +518,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
@@ -387,7 +571,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
         return self._icon
 
 
-class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
+class DeviceTempSensor(FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]):
     """Frigate Coral Temperature Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -445,7 +629,89 @@ class DeviceTempSensor(FrigateEntity, CoordinatorEntity):  # type: ignore[misc]
     @property
     def unit_of_measurement(self) -> Any:
         """Return the unit of measurement of the sensor."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_CORAL
+
+
+class CameraProcessCpuSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
+    """Cpu usage for camera processes class."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: FrigateDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        cam_name: str,
+        process_type: str,
+    ) -> None:
+        """Construct a CoralTempSensor."""
+        self._cam_name = cam_name
+        self._process_type = process_type
+        self._attr_name = f"{self._process_type} cpu usage"
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._attr_entity_registry_enabled_default = False
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            f"{self._process_type}_cpu_usage",
+            self._cam_name,
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def state(self) -> float | None:
+        """Return the state of the sensor."""
+        if self.coordinator.data:
+            pid_key = (
+                "pid" if self._process_type == "detect" else f"{self._process_type}_pid"
+            )
+
+            pid = str(
+                self.coordinator.data.get("cameras", {})
+                .get(self._cam_name, {})
+                .get(pid_key, "-1")
+            )
+
+            data = (
+                self.coordinator.data.get("cpu_usages", {})
+                .get(pid, {})
+                .get("cpu", None)
+            )
+
+            try:
+                return float(data)
+            except (TypeError, ValueError):
+                pass
+        return None
+
+    @property
+    def unit_of_measurement(self) -> Any:
+        """Return the unit of measurement of the sensor."""
+        return PERCENTAGE
 
     @property
     def icon(self) -> str:

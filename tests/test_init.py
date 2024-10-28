@@ -1,4 +1,5 @@
 """Test the frigate binary sensor."""
+
 from __future__ import annotations
 
 import copy
@@ -38,12 +39,14 @@ async def test_entry_unload(hass: HomeAssistant) -> None:
 
     config_entries = hass.config_entries.async_entries(DOMAIN)
     assert len(config_entries) == 1
-    assert config_entries[0] is config_entry
-    assert config_entry.state == ConfigEntryState.LOADED
+    assert config_entries[0].state == ConfigEntryState.LOADED
 
     await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
-    assert config_entry.state == ConfigEntryState.NOT_LOADED
+
+    config_entries = hass.config_entries.async_entries(DOMAIN)
+    assert len(config_entries) == 1
+    assert config_entries[0].state == ConfigEntryState.NOT_LOADED
 
 
 async def test_entry_update(hass: HomeAssistant) -> None:
@@ -87,6 +90,19 @@ async def test_entry_async_get_version_incompatible(hass: HomeAssistant) -> None
     config_entry = await setup_mock_frigate_config_entry(hass, client=client)
     print(config_entry.state)
     assert config_entry.state == ConfigEntryState.SETUP_ERROR
+
+
+async def test_entry_async_get_version_compatible_leading_zero(
+    hass: HomeAssistant,
+) -> None:
+    """Test running an incompatible server version."""
+
+    client = create_mock_frigate_client()
+    client.async_get_version = AsyncMock(return_value="0.13.0-0858859")
+
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    print(config_entry.state)
+    assert config_entry.state == ConfigEntryState.LOADED
 
 
 async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
@@ -155,7 +171,6 @@ async def test_entry_migration_v1_to_v2(hass: HomeAssistant) -> None:
     new_unique_ids = [
         ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:front_door_person"),
         ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
-        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
@@ -183,7 +198,7 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -193,7 +208,6 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
     old_unique_ids = [
         ("binary_sensor", f"{TEST_CONFIG_ENTRY_ID}:occupancy_sensor:front_door_person"),
         ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
-        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person"),
         ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
@@ -246,7 +260,7 @@ async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -296,7 +310,7 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -353,6 +367,55 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
         )
 
 
+async def test_entry_cleanup_old_camera_snapshot(hass: HomeAssistant) -> None:
+    """Test cleanup of old camera snapshot."""
+    entity_registry = er.async_get(hass)
+
+    config_entry: MockConfigEntry = MockConfigEntry(
+        entry_id=TEST_CONFIG_ENTRY_ID,
+        domain=DOMAIN,
+        data={CONF_URL: "http://host:456"},
+        title="Frigate",
+        version=2,
+    )
+
+    config_entry.add_to_hass(hass)
+
+    old_unique_ids = {
+        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera:front_door"),
+        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_camera"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_object_count:front_door_person"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:detection"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_process"),
+        ("sensor", f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped"),
+        ("switch", f"{TEST_CONFIG_ENTRY_ID}:switch:front_door_recordings"),
+    }
+
+    # Create fake entries with the old unique_ids.
+    for platform, unique_id in old_unique_ids:
+        assert entity_registry.async_get_or_create(
+            platform, DOMAIN, unique_id, config_entry=config_entry
+        )
+
+    # Setup the integration.
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry
+    )
+
+    removed_unique_ids = {
+        ("camera", f"{TEST_CONFIG_ENTRY_ID}:camera_snapshots:front_door_person"),
+    }
+
+    for platform, unique_id in removed_unique_ids:
+        assert entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is None
+
+    for platform, unique_id in old_unique_ids - removed_unique_ids:
+        assert (
+            entity_registry.async_get_entity_id(platform, DOMAIN, unique_id) is not None
+        )
+
+
 async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
     """Test the startup message."""
 
@@ -366,16 +429,16 @@ async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
 async def test_entry_remove_old_image_height_option(hass: HomeAssistant) -> None:
     """Test cleanup of old image height option."""
 
-    config_entry = create_mock_frigate_config_entry(
+    mock_config_entry = create_mock_frigate_config_entry(
         hass, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 42}
     )
 
-    await setup_mock_frigate_config_entry(hass, config_entry)
+    await setup_mock_frigate_config_entry(hass, mock_config_entry)
 
-    assert (
-        CONF_CAMERA_STATIC_IMAGE_HEIGHT
-        not in hass.config_entries.async_get_entry(config_entry.entry_id).options
-    )
+    config_entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
+
+    assert config_entry
+    assert CONF_CAMERA_STATIC_IMAGE_HEIGHT not in config_entry.options
 
 
 async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:

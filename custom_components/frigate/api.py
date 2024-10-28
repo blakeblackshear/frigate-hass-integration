@@ -1,4 +1,5 @@
 """Frigate API client."""
+
 from __future__ import annotations
 
 import asyncio
@@ -53,27 +54,31 @@ class FrigateApiClient:
 
     async def async_get_events(
         self,
-        camera: str | None = None,
-        label: str | None = None,
-        zone: str | None = None,
+        cameras: list[str] | None = None,
+        labels: list[str] | None = None,
+        sub_labels: list[str] | None = None,
+        zones: list[str] | None = None,
         after: int | None = None,
         before: int | None = None,
         limit: int | None = None,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        favorites: bool | None = None,
         decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
-            "camera": camera,
-            "label": label,
-            "zone": zone,
+            "cameras": ",".join(cameras) if cameras else None,
+            "labels": ",".join(labels) if labels else None,
+            "sub_labels": ",".join(sub_labels) if sub_labels else None,
+            "zones": ",".join(zones) if zones else None,
             "after": after,
             "before": before,
             "limit": limit,
             "has_clip": int(has_clip) if has_clip is not None else None,
             "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
             "include_thumbnails": 0,
+            "favorites": int(favorites) if favorites is not None else None,
         }
 
         return cast(
@@ -93,12 +98,14 @@ class FrigateApiClient:
         self,
         has_clip: bool | None = None,
         has_snapshot: bool | None = None,
+        timezone: str | None = None,
         decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get data from the API."""
         params = {
             "has_clip": int(has_clip) if has_clip is not None else None,
             "has_snapshot": int(has_snapshot) if has_snapshot is not None else None,
+            "timezone": str(timezone) if timezone is not None else None,
         }
 
         return cast(
@@ -121,6 +128,18 @@ class FrigateApiClient:
             await self.api_wrapper("get", str(URL(self._host) / "api/config")),
         )
 
+    async def async_get_ptz_info(
+        self,
+        camera: str,
+        decode_json: bool = True,
+    ) -> Any:
+        """Get PTZ info."""
+        return await self.api_wrapper(
+            "get",
+            str(URL(self._host) / "api" / camera / "ptz/info"),
+            decode_json=decode_json,
+        )
+
     async def async_get_path(self, path: str) -> Any:
         """Get data from the API."""
         return await self.api_wrapper("get", str(URL(self._host) / f"{path}/"))
@@ -136,16 +155,42 @@ class FrigateApiClient:
         )
         return cast(dict[str, Any], result) if decode_json else result
 
-    async def async_get_recordings_summary(
-        self, camera: str, decode_json: bool = True
+    async def async_export_recording(
+        self,
+        camera: str,
+        playback_factor: str,
+        start_time: float,
+        end_time: float,
+        decode_json: bool = True,
     ) -> dict[str, Any] | str:
-        """Get recordings summary."""
+        """Export recording."""
         result = await self.api_wrapper(
-            "get",
-            str(URL(self._host) / f"api/{camera}/recordings/summary"),
+            "post",
+            str(
+                URL(self._host)
+                / f"api/export/{camera}/start/{start_time}/end/{end_time}"
+            ),
+            data={"playback": playback_factor},
             decode_json=decode_json,
         )
         return cast(dict[str, Any], result) if decode_json else result
+
+    async def async_get_recordings_summary(
+        self, camera: str, timezone: str, decode_json: bool = True
+    ) -> list[dict[str, Any]] | str:
+        """Get recordings summary."""
+        params = {"timezone": timezone}
+
+        result = await self.api_wrapper(
+            "get",
+            str(
+                URL(self._host)
+                / f"api/{camera}/recordings/summary"
+                % {k: v for k, v in params.items() if v is not None}
+            ),
+            decode_json=decode_json,
+        )
+        return cast(list[dict[str, Any]], result) if decode_json else result
 
     async def async_get_recordings(
         self,
