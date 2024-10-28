@@ -1,4 +1,5 @@
 """Test the frigate binary sensor."""
+
 from __future__ import annotations
 
 import copy
@@ -38,12 +39,14 @@ async def test_entry_unload(hass: HomeAssistant) -> None:
 
     config_entries = hass.config_entries.async_entries(DOMAIN)
     assert len(config_entries) == 1
-    assert config_entries[0] is config_entry
-    assert config_entry.state == ConfigEntryState.LOADED
+    assert config_entries[0].state == ConfigEntryState.LOADED
 
     await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
-    assert config_entry.state == ConfigEntryState.NOT_LOADED
+
+    config_entries = hass.config_entries.async_entries(DOMAIN)
+    assert len(config_entries) == 1
+    assert config_entries[0].state == ConfigEntryState.NOT_LOADED
 
 
 async def test_entry_update(hass: HomeAssistant) -> None:
@@ -195,7 +198,7 @@ async def test_entry_cleanup_old_clips_switch(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -257,7 +260,7 @@ async def test_entry_cleanup_old_motion_sensor(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -307,7 +310,7 @@ async def test_entry_rename_object_count_sensor(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -371,7 +374,7 @@ async def test_entry_cleanup_old_camera_snapshot(hass: HomeAssistant) -> None:
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=TEST_CONFIG_ENTRY_ID,
         domain=DOMAIN,
-        data={CONF_HOST: "http://host:456"},
+        data={CONF_URL: "http://host:456"},
         title="Frigate",
         version=2,
     )
@@ -426,16 +429,16 @@ async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
 async def test_entry_remove_old_image_height_option(hass: HomeAssistant) -> None:
     """Test cleanup of old image height option."""
 
-    config_entry = create_mock_frigate_config_entry(
+    mock_config_entry = create_mock_frigate_config_entry(
         hass, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 42}
     )
 
-    await setup_mock_frigate_config_entry(hass, config_entry)
+    await setup_mock_frigate_config_entry(hass, mock_config_entry)
 
-    assert (
-        CONF_CAMERA_STATIC_IMAGE_HEIGHT
-        not in hass.config_entries.async_get_entry(config_entry.entry_id).options
-    )
+    config_entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
+
+    assert config_entry
+    assert CONF_CAMERA_STATIC_IMAGE_HEIGHT not in config_entry.options
 
 
 async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:

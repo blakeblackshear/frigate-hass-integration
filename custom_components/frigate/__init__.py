@@ -4,6 +4,7 @@ Custom integration to integrate frigate with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/blakeblackshear/frigate-hass-integration
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -17,6 +18,7 @@ from awesomeversion import AwesomeVersion
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.subscription import (
+    EntitySubscription,
     async_prepare_subscribe_topics,
     async_subscribe_topics,
     async_unsubscribe_topics,
@@ -190,7 +192,7 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     client = FrigateApiClient(
-        entry.data.get(CONF_URL),
+        str(entry.data.get(CONF_URL)),
         async_get_clientsession(hass),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
@@ -217,7 +219,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
 
-    ws_event_proxy = WSEventProxy(config["mqtt"]["topic_prefix"])
+    ws_event_proxy = WSEventProxy(hass, config["mqtt"]["topic_prefix"])
     entry.async_on_unload(lambda: ws_event_proxy.unsubscribe_all(hass))
 
     hass.data[DOMAIN][entry.entry_id] = {
@@ -319,7 +321,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-class FrigateDataUpdateCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
+class FrigateDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
     def __init__(self, hass: HomeAssistant, client: FrigateApiClient):
@@ -345,6 +347,11 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
     )
     if unload_ok:
+        await (
+            hass.data[DOMAIN][config_entry.entry_id]
+            .get(ATTR_COORDINATOR)
+            .async_shutdown()
+        )
         hass.data[DOMAIN].pop(config_entry.entry_id)
 
     return unload_ok
@@ -364,11 +371,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         data = {**config_entry.data}
         data[CONF_URL] = data.pop(CONF_HOST)
         hass.config_entries.async_update_entry(
-            config_entry, data=data, title=get_config_entry_title(data[CONF_URL])
+            config_entry,
+            data=data,
+            title=get_config_entry_title(data[CONF_URL]),
+            version=2,
         )
-        config_entry.version = 2
 
-        @callback  # type: ignore[misc]
+        @callback
         def update_unique_id(entity_entry: er.RegistryEntry) -> dict[str, str] | None:
             """Update unique ID of entity entry."""
 
@@ -422,7 +431,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     return True
 
 
-class FrigateEntity(Entity):  # type: ignore[misc]
+class FrigateEntity(Entity):
     """Base class for Frigate entities."""
 
     _attr_has_entity_name = True
@@ -456,7 +465,7 @@ class FrigateMQTTEntity(FrigateEntity):
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
         self._frigate_config = frigate_config
-        self._sub_state = None
+        self._sub_state: dict[str, EntitySubscription] | None = None
         self._available = False
         self._topic_map = topic_map
 
@@ -468,21 +477,20 @@ class FrigateMQTTEntity(FrigateEntity):
             "qos": 0,
         }
 
-        state = async_prepare_subscribe_topics(
+        self._sub_state = async_prepare_subscribe_topics(
             self.hass,
             self._sub_state,
             self._topic_map,
         )
-        self._sub_state = await async_subscribe_topics(self.hass, state)
+        await async_subscribe_topics(self.hass, self._sub_state)
         await super().async_added_to_hass()
 
     async def async_will_remove_from_hass(self) -> None:
         """Cleanup prior to hass removal."""
-        async_unsubscribe_topics(self.hass, self._sub_state)
-        self._sub_state = None
+        self._sub_state = async_unsubscribe_topics(self.hass, self._sub_state)
         await super().async_will_remove_from_hass()
 
-    @callback  # type: ignore[misc]
+    @callback
     def _availability_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT availability message."""
         self._available = decode_if_necessary(msg.payload) == "online"

@@ -1,4 +1,5 @@
 """Test Frigate Media Source."""
+
 from __future__ import annotations
 
 from collections.abc import Generator
@@ -7,7 +8,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
@@ -23,6 +24,7 @@ from custom_components.frigate.const import (
 from custom_components.frigate.media_source import (
     EventIdentifier,
     EventSearchIdentifier,
+    FrigateMediaSource,
     FrigateMediaType,
     Identifier,
     RecordingIdentifier,
@@ -72,7 +74,7 @@ EVENTS_FIXTURE_FILE = "events_front_door.json"
 
 
 @pytest.fixture(name="frigate_client")
-def fixture_frigate_client() -> Generator[FrigateApiClient, None, None]:
+def fixture_frigate_client() -> Generator[FrigateApiClient]:
     """Fixture that creates a frigate client."""
 
     def load_json(filename: str) -> Any:
@@ -630,6 +632,7 @@ async def test_async_resolve_media(
     media = await media_source.async_resolve_media(
         hass,
         f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/CLIP-FOO",
+        target_media_player="media_player.kitchen",
     )
     assert media == PlayMedia(
         url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/event/CLIP-FOO/index.m3u8",
@@ -643,6 +646,7 @@ async def test_async_resolve_media(
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
             "/recordings/front_door/2021-05-30/15/46.08.mp4"
         ),
+        target_media_player="media_player.kitchen",
     )
 
     # Convert from HA local timezone to UTC.
@@ -668,6 +672,7 @@ async def test_async_resolve_media(
             f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
             "/event/snapshots/camera/event_id"
         ),
+        target_media_player="media_player.kitchen",
     )
     assert media == PlayMedia(
         url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/snapshot/event_id",
@@ -676,7 +681,9 @@ async def test_async_resolve_media(
 
     with pytest.raises(Unresolvable):
         media = await media_source.async_resolve_media(
-            hass, f"{const.URI_SCHEME}{DOMAIN}/UNKNOWN"
+            hass,
+            f"{const.URI_SCHEME}{DOMAIN}/UNKNOWN",
+            target_media_player="media_player.kitchen",
         )
 
 
@@ -1128,16 +1135,20 @@ async def test_get_client_non_existent(hass: HomeAssistant) -> None:
     # on an invalid instance_id since it is used inline in many places. There's
     # no public way to trigger this since there'll always be an earlier call to
     # _is_allowed_as_media_source will always have caught this issue upstream.
-    source = await async_get_media_source(hass)
+    source: FrigateMediaSource = cast(
+        FrigateMediaSource, await async_get_media_source(hass)
+    )
+
+    identifier = Identifier.from_str(
+        "NOT_A_REAL_CONFIG_ENTRY_ID/event-search"
+        "/clips/.this_month.2021-06-04.front_door.person"
+        "/1622764800/1622851200/front_door/person/zone"
+    )
+    assert identifier
+
     with pytest.raises(MediaSourceError):
         # pylint: disable=protected-access
-        source._get_client(
-            Identifier.from_str(
-                "NOT_A_REAL_CONFIG_ENTRY_ID/event-search"
-                "/clips/.this_month.2021-06-04.front_door.person"
-                "/1622764800/1622851200/front_door/person/zone"
-            )
-        )
+        source._get_client(identifier)
 
 
 async def test_backwards_compatability_identifier_without_frigate_instance_id(
