@@ -10,7 +10,7 @@ from voluptuous.validators import All, Range
 from yarl import URL
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_URL, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -62,12 +62,17 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             session = async_create_clientsession(self.hass)
-            client = FrigateApiClient(user_input[CONF_URL], session)
+            client = FrigateApiClient(
+                user_input[CONF_URL],
+                session,
+                user_input.get(CONF_USERNAME),
+                user_input.get(CONF_PASSWORD),
+            )
             await client.async_get_stats()
         except FrigateApiClientError:
             return self._show_config_form(user_input, errors={"base": "cannot_connect"})
 
-        # Search for duplicates with the same Frigate CONF_HOST value.
+        # Search for duplicates with the same Frigate CONF_URL value.
         for existing_entry in self._async_current_entries(include_ignore=False):
             if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
                 return self.async_abort(reason="already_configured")
@@ -89,9 +94,9 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
-                    ): str
+                    vol.Required(CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)): str,
+                    vol.Optional(CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")): str,
+                    vol.Optional(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")): str,
                 }
             ),
             errors=errors,
@@ -122,13 +127,13 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
 
         if not self.show_advanced_options:
             return self.async_abort(reason="only_advanced_options")
-
+        
         schema: dict[Any, Any] = {
             # Whether to enable webrtc as the medium for camera streaming
             vol.Optional(
                 CONF_ENABLE_WEBRTC,
                 default=self._config_entry.options.get(
-                    CONF_ENABLE_WEBRTC,
+                    CONF_ENABLE_WEBRTC, 
                     False,
                 ),
             ): bool,
@@ -149,7 +154,7 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_RTSP_URL_TEMPLATE,
                 default=self._config_entry.options.get(
                     CONF_RTSP_URL_TEMPLATE,
-                    "",
+                   "",
                 ),
             ): str,
             vol.Optional(

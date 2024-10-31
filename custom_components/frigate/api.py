@@ -9,6 +9,7 @@ from typing import Any, cast
 
 import aiohttp
 import async_timeout
+import datetime
 from yarl import URL
 
 TIMEOUT = 10
@@ -31,10 +32,15 @@ class FrigateApiClientError(Exception):
 class FrigateApiClient:
     """Frigate API client."""
 
-    def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
+    def __init__(
+        self, host: str, session: aiohttp.ClientSession, username: str | None = None, password: str | None = None
+    ) -> None:
         """Construct API Client."""
         self._host = host
         self._session = session
+        self._username = username
+        self._password = password
+        self._token_data = {}
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
@@ -216,6 +222,40 @@ class FrigateApiClient:
         )
         return cast(dict[str, Any], result) if decode_json else result
 
+    async def _get_token(self) -> None:
+        """Obtain a new JWT token using the provided username and password."""
+        response = await self.api_wrapper(
+            "post",
+            str(URL(self._host) / "api/login"),
+            { "user": self._username, "password": self._password },
+            decode_json=False,
+            include_auth_headers=False,
+            return_full_response=True,
+        )
+
+        for cookie_prop in response.headers.get("Set-Cookie", "").split(";"):
+            if "frigate_token=" in cookie_prop:
+                self._token_data["token"] = cookie_prop.split("=")[1]
+            elif "expires=" in cookie_prop:
+                self._token_data["expires"] = datetime.datetime.strptime(cookie_prop.split("=")[1].strip(), "%a, %d %b %Y %H:%M:%S %Z")
+
+    async def _refresh_token_if_needed(self) -> None:
+        """Refresh the JWT token if it is expired or about to expire."""
+        if ("expires" not in self._token_data or datetime.datetime.now() >= self._token_data["expires"]):
+            await self._get_token()
+
+    async def _get_headers(self) -> dict[str, str]:
+        """Get headers for API requests, including JWT if available."""
+        headers = {}
+
+        if self._username and self._password:
+            await self._refresh_token_if_needed()
+
+            if "token" in self._token_data:
+                headers["Authorization"] = f"Bearer {self._token_data['token']}"        
+        
+        return headers
+
     async def api_wrapper(
         self,
         method: str,
@@ -223,12 +263,24 @@ class FrigateApiClient:
         data: dict | None = None,
         headers: dict | None = None,
         decode_json: bool = True,
+        include_auth_headers: bool = True,
+        return_full_response: bool = False,
     ) -> Any:
         """Get information from the API."""
         if data is None:
             data = {}
+
+        default_headers = {}
+
+        if include_auth_headers:
+            default_headers.update(await self._get_headers())
+
         if headers is None:
-            headers = {}
+            headers = default_headers
+        else:
+            headers.update(default_headers)
+
+        _LOGGER.error(f"Sending request to {url} with headers: {headers}")
 
         try:
             async with async_timeout.timeout(TIMEOUT):
@@ -237,13 +289,29 @@ class FrigateApiClient:
                     response = await func(
                         url, headers=headers, raise_for_status=True, json=data
                     )
+
+                    response.raise_for_status()
+
+                    if return_full_response:
+                        return response
+
                     if decode_json:
                         return await response.json()
+
                     return await response.text()
 
         except asyncio.TimeoutError as exc:
             _LOGGER.error(
                 "Timeout error fetching information from %s: %s",
+                url,
+                exc,
+            )
+            raise FrigateApiClientError from exc
+
+        except aiohttp.ClientResponseError as exc:
+            # Handling errors like 401, 403, etc.
+            _LOGGER.error(
+                "Client response error while fetching information from %s: %s",
                 url,
                 exc,
             )
