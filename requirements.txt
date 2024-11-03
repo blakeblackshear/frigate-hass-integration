@@ -7,3 +7,4 @@ paho-mqtt
 python-dateutil
 yarl
 pytz
+hass-web-proxy-lib==0.0.6
