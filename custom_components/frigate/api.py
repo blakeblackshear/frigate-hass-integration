@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 import socket
 from typing import Any, cast
 
 import aiohttp
 import async_timeout
-import datetime
 from yarl import URL
 
 TIMEOUT = 10
@@ -33,7 +33,11 @@ class FrigateApiClient:
     """Frigate API client."""
 
     def __init__(
-        self, host: str, session: aiohttp.ClientSession, username: str | None = None, password: str | None = None
+        self,
+        host: str,
+        session: aiohttp.ClientSession,
+        username: str | None = None,
+        password: str | None = None,
     ) -> None:
         """Construct API Client."""
         self._host = host
@@ -227,7 +231,7 @@ class FrigateApiClient:
         response = await self.api_wrapper(
             "post",
             str(URL(self._host) / "api/login"),
-            { "user": self._username, "password": self._password },
+            {"user": self._username, "password": self._password},
             decode_json=False,
             include_auth_headers=False,
             return_full_response=True,
@@ -237,11 +241,16 @@ class FrigateApiClient:
             if "frigate_token=" in cookie_prop:
                 self._token_data["token"] = cookie_prop.split("=")[1]
             elif "expires=" in cookie_prop:
-                self._token_data["expires"] = datetime.datetime.strptime(cookie_prop.split("=")[1].strip(), "%a, %d %b %Y %H:%M:%S %Z")
+                self._token_data["expires"] = datetime.datetime.strptime(
+                    cookie_prop.split("=")[1].strip(), "%a, %d %b %Y %H:%M:%S %Z"
+                )
 
     async def _refresh_token_if_needed(self) -> None:
         """Refresh the JWT token if it is expired or about to expire."""
-        if ("expires" not in self._token_data or datetime.datetime.now() >= self._token_data["expires"]):
+        if (
+            "expires" not in self._token_data
+            or datetime.datetime.now() >= self._token_data["expires"]
+        ):
             await self._get_token()
 
     async def _get_headers(self) -> dict[str, str]:
@@ -252,8 +261,8 @@ class FrigateApiClient:
             await self._refresh_token_if_needed()
 
             if "token" in self._token_data:
-                headers["Authorization"] = f"Bearer {self._token_data['token']}"        
-        
+                headers["Authorization"] = f"Bearer {self._token_data['token']}"
+
         return headers
 
     async def api_wrapper(

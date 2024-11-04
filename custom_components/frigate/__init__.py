@@ -25,7 +25,13 @@ from homeassistant.components.mqtt.subscription import (
 )
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.const import (
+    ATTR_MODEL,
+    CONF_HOST,
+    CONF_PASSWORD,
+    CONF_URL,
+    CONF_USERNAME,
+)
 from homeassistant.core import HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er
