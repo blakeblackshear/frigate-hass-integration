@@ -289,8 +289,6 @@ class FrigateApiClient:
         else:
             headers.update(default_headers)
 
-        _LOGGER.error(f"Sending request to {url} with headers: {headers}")
-
         try:
             async with async_timeout.timeout(TIMEOUT):
                 func = getattr(self._session, method)
