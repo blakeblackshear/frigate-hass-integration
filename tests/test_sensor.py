@@ -43,18 +43,22 @@ from . import (
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
+    TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID,
     TEST_SENSOR_GPU_LOAD_ENTITY_ID,
+    TEST_SENSOR_STEPS_ALL_ACTIVE_ENTITY_ID,
     TEST_SENSOR_STEPS_ALL_ENTITY_ID,
+    TEST_SENSOR_STEPS_PERSON_ACTIVE_ENTITY_ID,
     TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
     TEST_SERVER_VERSION,
     TEST_STATS,
@@ -131,6 +135,74 @@ async def test_object_count_icon(
     await setup_mock_frigate_config_entry(hass, client=client)
 
     entity_state = hass.states.get(f"sensor.front_door_{object_name}_count")
+    assert entity_state
+    assert entity_state.attributes["icon"] == icon
+
+
+async def test_active_object_count_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateActiveObjectCountSensor state."""
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "0"
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "0"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/person/active", "42")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "42"
+
+    async_fire_mqtt_message(hass, "frigate/front_door/person/active", "NOT_AN_INT")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "42"
+
+
+@pytest.mark.parametrize(
+    "object_icon",
+    [
+        ("person", ICON_PERSON),
+        ("car", ICON_CAR),
+        ("dog", ICON_DOG),
+        ("cat", ICON_CAT),
+        ("motorcycle", ICON_MOTORCYCLE),
+        ("bicycle", ICON_BICYCLE),
+        ("cow", ICON_COW),
+        ("horse", ICON_HORSE),
+        ("SOMETHING_ELSE", ICON_OTHER),
+    ],
+)
+async def test_active_object_count_icon(
+    object_icon: tuple[str, str], hass: HomeAssistant
+) -> None:
+    """Test FrigateObjectCountSensor car icon."""
+    object_name, icon = object_icon
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["cameras"]["front_door"]["objects"]["track"] = [object_name]
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(f"sensor.front_door_{object_name}_active_count")
     assert entity_state
     assert entity_state.attributes["icon"] == icon
 
@@ -600,7 +672,9 @@ async def test_sensors_setup_correctly_in_registry(
             TEST_SENSOR_STEPS_ALL_ENTITY_ID,
             TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID,
         },
         entities_disabled={
             TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
@@ -616,9 +690,13 @@ async def test_sensors_setup_correctly_in_registry(
         },
         entities_visible={
             TEST_SENSOR_STEPS_ALL_ENTITY_ID,
+            TEST_SENSOR_STEPS_ALL_ACTIVE_ENTITY_ID,
             TEST_SENSOR_STEPS_PERSON_ENTITY_ID,
+            TEST_SENSOR_STEPS_PERSON_ACTIVE_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
+            TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID,
             TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
             TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
