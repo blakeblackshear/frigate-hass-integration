@@ -7,6 +7,7 @@ import logging
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate import (
@@ -17,6 +18,7 @@ from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_ENABLE_WEBRTC,
+    CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
 )
 from homeassistant.config_entries import ConfigEntryState
@@ -102,7 +104,7 @@ async def test_entry_async_get_version_compatible_leading_zero(
     """Test running an incompatible server version."""
 
     client = create_mock_frigate_client()
-    client.async_get_version = AsyncMock(return_value="0.13.0-0858859")
+    client.async_get_version = AsyncMock(return_value="0.14.0-0858859")
 
     config_entry = await setup_mock_frigate_config_entry(hass, client=client)
     print(config_entry.state)
@@ -430,34 +432,25 @@ async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
     assert "This is a custom integration" in caplog.text
 
 
-async def test_entry_remove_old_image_height_option(hass: HomeAssistant) -> None:
-    """Test cleanup of old image height option."""
+@pytest.mark.parametrize(
+    "option",
+    [
+        CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+        CONF_ENABLE_WEBRTC,
+        CONF_RTMP_URL_TEMPLATE,
+    ],
+)
+async def test_remove_old_options(option: Any, hass: HomeAssistant) -> None:
+    """Test cleanup of old options."""
 
-    mock_config_entry = create_mock_frigate_config_entry(
-        hass, options={CONF_CAMERA_STATIC_IMAGE_HEIGHT: 42}
-    )
-
-    await setup_mock_frigate_config_entry(hass, mock_config_entry)
-
-    config_entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
-
-    assert config_entry
-    assert CONF_CAMERA_STATIC_IMAGE_HEIGHT not in config_entry.options
-
-
-async def test_entry_remove_old_enable_webrtc_(hass: HomeAssistant) -> None:
-    """Test cleanup of old enable webrtc option."""
-
-    mock_config_entry = create_mock_frigate_config_entry(
-        hass, options={CONF_ENABLE_WEBRTC: True}
-    )
+    mock_config_entry = create_mock_frigate_config_entry(hass, options={option: 42})
 
     await setup_mock_frigate_config_entry(hass, mock_config_entry)
 
     config_entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
 
     assert config_entry
-    assert CONF_ENABLE_WEBRTC not in config_entry.options
+    assert option not in config_entry.options
 
 
 async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:

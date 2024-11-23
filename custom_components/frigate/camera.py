@@ -44,7 +44,6 @@ from .const import (
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
-    CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
@@ -174,11 +173,7 @@ class FrigateCamera(
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._stream_source = None
-        self._attr_is_streaming = (
-            self._camera_config.get("rtmp", {}).get("enabled")
-            or self._cam_name
-            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
-        )
+        self._attr_is_streaming = True
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
@@ -209,23 +204,6 @@ class FrigateCamera(
             else:
                 self._stream_source = (
                     f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
-                )
-        elif self._camera_config.get("rtmp", {}).get("enabled"):
-            streaming_template = config_entry.options.get(
-                CONF_RTMP_URL_TEMPLATE, ""
-            ).strip()
-
-            if streaming_template:
-                # Can't use homeassistant.helpers.template as it requires hass which
-                # is not available in the constructor, so use direct jinja2
-                # template instead. This means templates cannot access HomeAssistant
-                # state, but rather only the camera config.
-                self._stream_source = Template(streaming_template).render(
-                    **self._camera_config
-                )
-            else:
-                self._stream_source = (
-                    f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
                 )
 
     @callback
@@ -287,9 +265,6 @@ class FrigateCamera(
     @property
     def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
-        if not self._attr_is_streaming:
-            return CameraEntityFeature(0)
-
         return CameraEntityFeature.STREAM
 
     async def async_camera_image(
@@ -310,8 +285,6 @@ class FrigateCamera(
 
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
-        if not self._attr_is_streaming:
-            return None
         return self._stream_source
 
     async def async_enable_motion_detection(self) -> None:
