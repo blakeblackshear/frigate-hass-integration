@@ -44,6 +44,7 @@ from .const import (
     ATTR_WS_EVENT_PROXY,
     ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+    CONF_ENABLE_WEBRTC,
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,
@@ -263,10 +264,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if entity_id:
             entity_registry.async_remove(entity_id)
 
-    # Remove old `camera_image_height` option.
-    if CONF_CAMERA_STATIC_IMAGE_HEIGHT in entry.options:
+    # Remove old options.
+    OLD_OPTIONS = [CONF_CAMERA_STATIC_IMAGE_HEIGHT, CONF_ENABLE_WEBRTC]
+    if any(option in entry.options for option in OLD_OPTIONS):
         new_options = entry.options.copy()
-        new_options.pop(CONF_CAMERA_STATIC_IMAGE_HEIGHT)
+        for option in OLD_OPTIONS:
+            new_options.pop(option, None)
         hass.config_entries.async_update_entry(entry, options=new_options)
 
     # Cleanup object_motion sensors (replaced with occupancy sensors).
