@@ -50,6 +50,7 @@ ATTRIBUTE_LABELS = ["amazon", "face", "fedex", "license_plate", "ups"]
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"
 CONF_MEDIA_BROWSER_ENABLE = "media_browser_enable"
 CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
+CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_PATH = "path"
 CONF_RTMP_URL_TEMPLATE = "rtmp_url_template"
