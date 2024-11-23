@@ -20,7 +20,6 @@
     "step": {
       "init": {
         "data": {
-          "enable_webrtc": "Activa WebRTC per als fluxos de la càmera",
           "rtmp_url_template": "Plantilla de l'URL del RTMP (vegeu la documentació)",
           "rtsp_url_template": "Plantilla de l'URL del RTSP (vegeu la documentació)",
           "media_browser_enable": "Habiliteu el navegador multimèdia",
