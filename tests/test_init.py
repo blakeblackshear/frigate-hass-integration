@@ -14,7 +14,11 @@ from custom_components.frigate import (
     get_frigate_entity_unique_id,
 )
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import CONF_CAMERA_STATIC_IMAGE_HEIGHT, DOMAIN
+from custom_components.frigate.const import (
+    CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+    CONF_ENABLE_WEBRTC,
+    DOMAIN,
+)
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant
@@ -439,6 +443,21 @@ async def test_entry_remove_old_image_height_option(hass: HomeAssistant) -> None
 
     assert config_entry
     assert CONF_CAMERA_STATIC_IMAGE_HEIGHT not in config_entry.options
+
+
+async def test_entry_remove_old_enable_webrtc_(hass: HomeAssistant) -> None:
+    """Test cleanup of old enable webrtc option."""
+
+    mock_config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_ENABLE_WEBRTC: True}
+    )
+
+    await setup_mock_frigate_config_entry(hass, mock_config_entry)
+
+    config_entry = hass.config_entries.async_get_entry(mock_config_entry.entry_id)
+
+    assert config_entry
+    assert CONF_ENABLE_WEBRTC not in config_entry.options
 
 
 async def test_entry_remove_old_devices(hass: HomeAssistant) -> None:

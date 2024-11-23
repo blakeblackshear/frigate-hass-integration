@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any, cast
+from typing import Any
 
 import async_timeout
 from jinja2 import Template
@@ -12,7 +12,7 @@ import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
-from homeassistant.components.camera import Camera, CameraEntityFeature, StreamType
+from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
@@ -44,7 +44,6 @@ from .const import (
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
-    CONF_ENABLE_WEBRTC,
     CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
@@ -121,7 +120,7 @@ async def async_setup_entry(
 class FrigateCamera(
     FrigateMQTTEntity, CoordinatorEntity[FrigateDataUpdateCoordinator], Camera
 ):
-    """Representation of a Frigate camera."""
+    """A Frigate camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
     _attr_name = None
@@ -195,13 +194,6 @@ class FrigateCamera(
             self._cam_name
             in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
         ):
-            if config_entry.options.get(CONF_ENABLE_WEBRTC, False):
-                self._restream_type = "webrtc"
-                self._attr_frontend_stream_type = StreamType.WEB_RTC
-            else:
-                self._restream_type = "rtsp"
-                self._attr_frontend_stream_type = StreamType.HLS
-
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -219,7 +211,6 @@ class FrigateCamera(
                     f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
                 )
         elif self._camera_config.get("rtmp", {}).get("enabled"):
-            self._restream_type = "rtmp"
             streaming_template = config_entry.options.get(
                 CONF_RTMP_URL_TEMPLATE, ""
             ).strip()
@@ -236,8 +227,6 @@ class FrigateCamera(
                 self._stream_source = (
                     f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
                 )
-        else:
-            self._restream_type = "none"
 
     @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
@@ -293,7 +282,6 @@ class FrigateCamera(
         return {
             "client_id": str(self._client_id),
             "camera_name": self._cam_name,
-            "restream_type": self._restream_type,
         }
 
     @property
@@ -325,15 +313,6 @@ class FrigateCamera(
         if not self._attr_is_streaming:
             return None
         return self._stream_source
-
-    async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
-        """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(self.hass)
-        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
-        payload = {"type": "offer", "sdp": offer_sdp}
-        async with websession.post(url, json=payload) as resp:
-            answer = await resp.json()
-            return cast(str, answer["sdp"])
 
     async def async_enable_motion_detection(self) -> None:
         """Enable motion detection for this camera."""
