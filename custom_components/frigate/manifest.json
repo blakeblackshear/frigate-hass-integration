@@ -2,7 +2,9 @@
     "domain": "frigate",
     "name": "Frigate",
     "codeowners": [
-        "@blakeblackshear"
+        "@blakeblackshear",
+        "@dermotduffy",
+        "@NickM-27"
     ],
     "config_flow": true,
     "dependencies": [
