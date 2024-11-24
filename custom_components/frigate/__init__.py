@@ -45,6 +45,7 @@ from .const import (
     ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_ENABLE_WEBRTC,
+    CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,
@@ -206,11 +207,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
 
-    if AwesomeVersion(server_version.split("-")[0]) <= AwesomeVersion(
+    if AwesomeVersion(server_version.split("-")[0]) < AwesomeVersion(
         FRIGATE_VERSION_ERROR_CUTOFF
     ):
         _LOGGER.error(
-            "Using a Frigate server (%s) with version %s <= %s which is not "
+            "Using a Frigate server (%s) with version %s < %s which is not "
             "compatible -- you must upgrade: %s",
             entry.data[CONF_URL],
             server_version,
@@ -265,7 +266,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entity_registry.async_remove(entity_id)
 
     # Remove old options.
-    OLD_OPTIONS = [CONF_CAMERA_STATIC_IMAGE_HEIGHT, CONF_ENABLE_WEBRTC]
+    OLD_OPTIONS = [
+        CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+        CONF_ENABLE_WEBRTC,
+        CONF_RTMP_URL_TEMPLATE,
+    ]
     if any(option in entry.options for option in OLD_OPTIONS):
         new_options = entry.options.copy()
         for option in OLD_OPTIONS:

@@ -20,7 +20,6 @@ from .const import (
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
-    CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEFAULT_HOST,
     DOMAIN,
@@ -123,16 +122,6 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_abort(reason="only_advanced_options")
 
         schema: dict[Any, Any] = {
-            # The input URL is not validated as being a URL to allow for the
-            # possibility the template input won't be a valid URL until after
-            # it's rendered.
-            vol.Optional(
-                CONF_RTMP_URL_TEMPLATE,
-                default=self._config_entry.options.get(
-                    CONF_RTMP_URL_TEMPLATE,
-                    "",
-                ),
-            ): str,
             # The input URL is not validated as being a URL to allow for the
             # possibility the template input won't be a valid URL until after
             # it's rendered.
