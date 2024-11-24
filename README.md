@@ -57,3 +57,9 @@ There is also a [companion Lovelace card](https://github.com/dermotduffy/frigate
 ## Documentation
 
 For full usage instructions, please see the [central Frigate documentation](https://docs.frigate.video/integrations/home-assistant/).
+
+## Maintainers
+
+- [Blake Blackshear](https://github.com/blakeblackshear/)
+- [Dermot Duffy](https://github.com/dermotduffy/)
+- [Nick Mowan](https://github.com/NickM-27)
