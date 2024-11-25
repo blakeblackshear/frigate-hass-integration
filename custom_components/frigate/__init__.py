@@ -4,6 +4,7 @@ Custom integration to integrate frigate with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/blakeblackshear/frigate-hass-integration
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -17,6 +18,7 @@ from awesomeversion import AwesomeVersion
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.subscription import (
+    EntitySubscription,
     async_prepare_subscribe_topics,
     async_subscribe_topics,
     async_unsubscribe_topics,
@@ -24,11 +26,12 @@ from homeassistant.components.mqtt.subscription import (
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
-from homeassistant.core import Config, HomeAssistant, callback, valid_entity_id
+from homeassistant.core import HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
@@ -41,6 +44,8 @@ from .const import (
     ATTR_WS_EVENT_PROXY,
     ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+    CONF_ENABLE_WEBRTC,
+    CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,
@@ -171,7 +176,7 @@ def decode_if_necessary(data: str | bytes) -> str:
     return data.decode("utf-8") if isinstance(data, bytes) else data
 
 
-async def async_setup(hass: HomeAssistant, config: Config) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up this integration using YAML is not supported."""
     integration = await async_get_integration(hass, DOMAIN)
     _LOGGER.info(
@@ -190,7 +195,7 @@ async def async_setup(hass: HomeAssistant, config: Config) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     client = FrigateApiClient(
-        entry.data.get(CONF_URL),
+        str(entry.data.get(CONF_URL)),
         async_get_clientsession(hass),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
@@ -202,11 +207,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except FrigateApiClientError as exc:
         raise ConfigEntryNotReady from exc
 
-    if AwesomeVersion(server_version.split("-")[0]) <= AwesomeVersion(
+    if AwesomeVersion(server_version.split("-")[0]) < AwesomeVersion(
         FRIGATE_VERSION_ERROR_CUTOFF
     ):
         _LOGGER.error(
-            "Using a Frigate server (%s) with version %s <= %s which is not "
+            "Using a Frigate server (%s) with version %s < %s which is not "
             "compatible -- you must upgrade: %s",
             entry.data[CONF_URL],
             server_version,
@@ -217,7 +222,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     model = f"{(await async_get_integration(hass, DOMAIN)).version}/{server_version}"
 
-    ws_event_proxy = WSEventProxy(config["mqtt"]["topic_prefix"])
+    ws_event_proxy = WSEventProxy(hass, config["mqtt"]["topic_prefix"])
     entry.async_on_unload(lambda: ws_event_proxy.unsubscribe_all(hass))
 
     hass.data[DOMAIN][entry.entry_id] = {
@@ -260,10 +265,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if entity_id:
             entity_registry.async_remove(entity_id)
 
-    # Remove old `camera_image_height` option.
-    if CONF_CAMERA_STATIC_IMAGE_HEIGHT in entry.options:
+    # Remove old options.
+    OLD_OPTIONS = [
+        CONF_CAMERA_STATIC_IMAGE_HEIGHT,
+        CONF_ENABLE_WEBRTC,
+        CONF_RTMP_URL_TEMPLATE,
+    ]
+    if any(option in entry.options for option in OLD_OPTIONS):
         new_options = entry.options.copy()
-        new_options.pop(CONF_CAMERA_STATIC_IMAGE_HEIGHT)
+        for option in OLD_OPTIONS:
+            new_options.pop(option, None)
         hass.config_entries.async_update_entry(entry, options=new_options)
 
     # Cleanup object_motion sensors (replaced with occupancy sensors).
@@ -319,7 +330,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-class FrigateDataUpdateCoordinator(DataUpdateCoordinator):  # type: ignore[misc]
+class FrigateDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
     def __init__(self, hass: HomeAssistant, client: FrigateApiClient):
@@ -345,6 +356,11 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
     )
     if unload_ok:
+        await (
+            hass.data[DOMAIN][config_entry.entry_id]
+            .get(ATTR_COORDINATOR)
+            .async_shutdown()
+        )
         hass.data[DOMAIN].pop(config_entry.entry_id)
 
     return unload_ok
@@ -364,11 +380,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         data = {**config_entry.data}
         data[CONF_URL] = data.pop(CONF_HOST)
         hass.config_entries.async_update_entry(
-            config_entry, data=data, title=get_config_entry_title(data[CONF_URL])
+            config_entry,
+            data=data,
+            title=get_config_entry_title(data[CONF_URL]),
+            version=2,
         )
-        config_entry.version = 2
 
-        @callback  # type: ignore[misc]
+        @callback
         def update_unique_id(entity_entry: er.RegistryEntry) -> dict[str, str] | None:
             """Update unique ID of entity entry."""
 
@@ -422,7 +440,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     return True
 
 
-class FrigateEntity(Entity):  # type: ignore[misc]
+class FrigateEntity(Entity):
     """Base class for Frigate entities."""
 
     _attr_has_entity_name = True
@@ -456,7 +474,7 @@ class FrigateMQTTEntity(FrigateEntity):
         """Construct a FrigateMQTTEntity."""
         super().__init__(config_entry)
         self._frigate_config = frigate_config
-        self._sub_state = None
+        self._sub_state: dict[str, EntitySubscription] | None = None
         self._available = False
         self._topic_map = topic_map
 
@@ -468,21 +486,20 @@ class FrigateMQTTEntity(FrigateEntity):
             "qos": 0,
         }
 
-        state = async_prepare_subscribe_topics(
+        self._sub_state = async_prepare_subscribe_topics(
             self.hass,
             self._sub_state,
             self._topic_map,
         )
-        self._sub_state = await async_subscribe_topics(self.hass, state)
+        await async_subscribe_topics(self.hass, self._sub_state)
         await super().async_added_to_hass()
 
     async def async_will_remove_from_hass(self) -> None:
         """Cleanup prior to hass removal."""
-        async_unsubscribe_topics(self.hass, self._sub_state)
-        self._sub_state = None
+        self._sub_state = async_unsubscribe_topics(self.hass, self._sub_state)
         await super().async_will_remove_from_hass()
 
-    @callback  # type: ignore[misc]
+    @callback
     def _availability_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT availability message."""
         self._available = decode_if_necessary(msg.payload) == "online"

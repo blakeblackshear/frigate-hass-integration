@@ -18,6 +18,21 @@
         "disabled_by": null
       },
       {
+        "entry_id": "8b281b7667ce4609b26a74ea5e6d7221",
+        "version": 1,
+        "domain": "downloader",
+        "title": "Downloader",
+        "data": {
+          "download_dir": "www"
+        },
+        "options": {},
+        "pref_disable_new_entities": false,
+        "pref_disable_polling": false,
+        "source": "import",
+        "unique_id": null,
+        "disabled_by": null
+      },
+      {
         "entry_id": "77b4c17dc9f77ba49cea06fb3f517b59",
         "version": 1,
         "domain": "mqtt",

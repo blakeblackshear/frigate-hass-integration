@@ -1,4 +1,5 @@
 """Test the frigate API client."""
+
 from __future__ import annotations
 
 import asyncio
@@ -26,7 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture
-async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession, None]:
+async def aiohttp_session() -> AsyncGenerator[aiohttp.ClientSession]:
     """Test fixture for aiohttp.ClientSerssion."""
     async with aiohttp.ClientSession() as session:
         yield session
@@ -176,7 +177,7 @@ async def test_async_get_path(
     recordings_handler = AsyncMock(return_value=web.json_response(recordings_in))
 
     server = await start_frigate_server(
-        aiohttp_server, [web.get("/recordings/moo", recordings_handler)]
+        aiohttp_server, [web.get("/recordings/moo/", recordings_handler)]
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)

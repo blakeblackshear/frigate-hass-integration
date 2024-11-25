@@ -1,24 +1,25 @@
 """Support for Frigate cameras."""
+
 from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any, cast
+from typing import Any
 
-import aiohttp
 import async_timeout
 from jinja2 import Template
 import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
-from homeassistant.components.camera import Camera, CameraEntityFeature, StreamType
+from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -43,8 +44,6 @@ from .const import (
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
-    CONF_ENABLE_WEBRTC,
-    CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
@@ -117,8 +116,10 @@ async def async_setup_entry(
     )
 
 
-class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: ignore[misc]
-    """Representation of a Frigate camera."""
+class FrigateCamera(
+    FrigateMQTTEntity, CoordinatorEntity[FrigateDataUpdateCoordinator], Camera
+):
+    """A Frigate camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
     _attr_name = None
@@ -172,11 +173,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._stream_source = None
-        self._attr_is_streaming = (
-            self._camera_config.get("rtmp", {}).get("enabled")
-            or self._cam_name
-            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
-        )
+        self._attr_is_streaming = True
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
@@ -192,13 +189,6 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
             self._cam_name
             in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
         ):
-            if config_entry.options.get(CONF_ENABLE_WEBRTC, False):
-                self._restream_type = "webrtc"
-                self._attr_frontend_stream_type = StreamType.WEB_RTC
-            else:
-                self._restream_type = "rtsp"
-                self._attr_frontend_stream_type = StreamType.HLS
-
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -215,34 +205,14 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
                 self._stream_source = (
                     f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
                 )
-        elif self._camera_config.get("rtmp", {}).get("enabled"):
-            self._restream_type = "rtmp"
-            streaming_template = config_entry.options.get(
-                CONF_RTMP_URL_TEMPLATE, ""
-            ).strip()
 
-            if streaming_template:
-                # Can't use homeassistant.helpers.template as it requires hass which
-                # is not available in the constructor, so use direct jinja2
-                # template instead. This means templates cannot access HomeAssistant
-                # state, but rather only the camera config.
-                self._stream_source = Template(streaming_template).render(
-                    **self._camera_config
-                )
-            else:
-                self._stream_source = (
-                    f"rtmp://{URL(self._url).host}/live/{self._cam_name}"
-                )
-        else:
-            self._restream_type = "none"
-
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._attr_is_recording = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
-    @callback  # type: ignore[misc]
+    @callback
     def _motion_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT extra message."""
         self._attr_motion_detection_enabled = decode_if_necessary(msg.payload) == "ON"
@@ -271,7 +241,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return the device information."""
         return {
             "identifiers": {
@@ -290,22 +260,18 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         return {
             "client_id": str(self._client_id),
             "camera_name": self._cam_name,
-            "restream_type": self._restream_type,
         }
 
     @property
     def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
-        if not self._attr_is_streaming:
-            return CameraEntityFeature(0)
-
         return CameraEntityFeature.STREAM
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+        websession = async_get_clientsession(self.hass)
 
         image_url = str(
             URL(self._url)
@@ -319,18 +285,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
 
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
-        if not self._attr_is_streaming:
-            return None
         return self._stream_source
-
-    async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
-        """Handle the WebRTC offer and return an answer."""
-        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
-        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
-        payload = {"type": "offer", "sdp": offer_sdp}
-        async with websession.post(url, json=payload) as resp:
-            answer = await resp.json()
-            return cast(str, answer["sdp"])
 
     async def async_enable_motion_detection(self) -> None:
         """Enable motion detection for this camera."""
@@ -378,7 +333,7 @@ class FrigateCamera(FrigateMQTTEntity, CoordinatorEntity, Camera):  # type: igno
         )
 
 
-class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
+class BirdseyeCamera(FrigateEntity, Camera):
     """Representation of the Frigate birdseye camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
@@ -426,7 +381,7 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return the device information."""
         return {
             "identifiers": {
@@ -448,7 +403,7 @@ class BirdseyeCamera(FrigateEntity, Camera):  # type: ignore[misc]
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = cast(aiohttp.ClientSession, async_get_clientsession(self.hass))
+        websession = async_get_clientsession(self.hass)
 
         image_url = str(
             URL(self._url)

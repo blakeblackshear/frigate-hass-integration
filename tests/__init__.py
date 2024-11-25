@@ -1,4 +1,5 @@
 """Tests for the Frigate integration."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -70,7 +71,7 @@ TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID = "sensor.front_door_sound_level"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
-TEST_SERVER_VERSION = "0.13.0-0858859"
+TEST_SERVER_VERSION = "0.14.1-f4f3cfa"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
@@ -93,12 +94,6 @@ TEST_CONFIG = {
                 "listen": ["bark", "speech"],
                 "enabled_in_config": True,
             },
-            "ffmpeg_cmds": [
-                {
-                    "cmd": "ffmpeg -hide_banner -loglevel warning -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -stimeout 5000000 -use_wallclock_as_timestamps 1 -i rtsp://rtsp:password@cam-front-door/live -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy -an /tmp/cache/front_door-%Y%m%d%H%M%S.mp4 -c copy -f flv rtmp://127.0.0.1/live/front_door -r 4 -f rawvideo -pix_fmt yuv420p pipe:",
-                    "roles": ["detect", "rtmp", "restream", "clips"],
-                }
-            ],
             "fps": 4,
             "frame_shape": [1080, 1920],
             "height": 1080,
@@ -139,7 +134,6 @@ TEST_CONFIG = {
                 },
             },
             "record": {"enabled": False, "retain_days": 30},
-            "rtmp": {"enabled": True},
             "snapshots": {
                 "bounding_box": False,
                 "crop": False,
@@ -344,7 +338,7 @@ def create_mock_frigate_config_entry(
     options: dict[str, Any] | None = None,
     entry_id: str | None = TEST_CONFIG_ENTRY_ID,
     title: str | None = TEST_URL,
-) -> ConfigEntry:
+) -> MockConfigEntry:
     """Add a test config entry."""
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=entry_id,

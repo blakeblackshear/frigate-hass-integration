@@ -1,0 +1,31 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "URL que usa para aceder ao Frigate (ou seja, `http://frigate:5000/`)\n\nSe estiver usar HassOS com o complemento, o URL deve ser `http://ccab4aaf-frigate:5000/`\n\nO Home Assistant precisa de acesso à porta 5000 (api) e 8554/8555 (rtsp, webrtc) para ter todos os recursos.\n\nA integração configurará sensores, câmeras e funcionalidades do navegador de mídia.\n\nSensores:\n- Estatísticas para monitorar o desempenho do frigate \n- Contagem de objetos para todas as zonas e câmeras\n\nCâmeras:\n- Câmeras para imagem do último objeto detectado para cada câmera\n- Entidades da câmera com suporte a stream\n\nNavegador de mídia:\n- UI avançada com miniaturas para navegar em clipes de eventos\n- UI avançada para navegar 24 horas por dia, 7 dias por semana e por mês, dia, câmera, hora\n\nAPI:\n- API de notificação com endpoints voltados para o público para imagens em notificações",
+                "data": {
+                    "url": "URL"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Falhou a ligar",
+            "invalid_url": "Link inválido"
+        },
+        "abort": {
+            "already_configured": "O dispositivo já está configurado"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "notification_proxy_enable": "Activar o proxy de evento de notificação não autenticado"
+                }
+            }
+        },
+        "abort": {
+            "only_advanced_options": "O modo avançado está desativado e existem apenas opções avançadas"
+        }
+    }
+}

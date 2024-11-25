@@ -21,4 +21,3 @@ Use of a [Google Coral Accelerator](https://coral.ai/products/) is optional, but
 - Object detection with TensorFlow runs in separate processes for maximum FPS
 - Communicates over MQTT for easy integration into other systems
 - Optional 24/7 recording
-- Re-streaming via RTMP to reduce the number of connections to your camera

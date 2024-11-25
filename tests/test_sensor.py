@@ -1,4 +1,5 @@
 """Test the frigate sensors."""
+
 from __future__ import annotations
 
 import copy
@@ -247,6 +248,7 @@ async def test_per_camerazone_device_info(
     )
     assert device
     assert device.manufacturer == NAME
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = {
@@ -393,6 +395,7 @@ async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     )
     assert device
     assert device.manufacturer == NAME
+    assert device.model
     assert device.model.endswith(f"/{TEST_SERVER_VERSION}")
 
     entities_from_device = {

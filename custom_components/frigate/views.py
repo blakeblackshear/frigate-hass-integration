@@ -1,19 +1,22 @@
 """Frigate HTTP views."""
+
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Mapping
 import datetime
-from http import HTTPStatus
-from ipaddress import ip_address
 import logging
 from typing import Any, Optional, cast
 
-import aiohttp
-from aiohttp import hdrs, web
-from aiohttp.web_exceptions import HTTPBadGateway, HTTPUnauthorized
+from aiohttp import web
+from hass_web_proxy_lib import (
+    HASSWebProxyLibForbiddenRequestError,
+    HASSWebProxyLibNotFoundRequestError,
+    HASSWebProxyLibUnauthorizedRequestError,
+    ProxiedURL,
+    ProxyView,
+    WebsocketProxyView,
+)
 import jwt
-from multidict import CIMultiDict
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
@@ -26,7 +29,7 @@ from custom_components.frigate.const import (
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     DOMAIN,
 )
-from homeassistant.components.http import KEY_AUTHENTICATED, HomeAssistantView
+from homeassistant.components.http import KEY_AUTHENTICATED
 from homeassistant.components.http.auth import DATA_SIGN_SECRET, SIGN_QUERY_PARAM
 from homeassistant.components.http.const import KEY_HASS
 from homeassistant.config_entries import ConfigEntry
@@ -90,7 +93,7 @@ def get_client_for_frigate_instance_id(
 def get_frigate_instance_id_for_config_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
-) -> ConfigEntry | None:
+) -> str | None:
     """Get a frigate_instance_id for a ConfigEntry."""
 
     config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
@@ -111,21 +114,15 @@ def async_setup(hass: HomeAssistant) -> None:
     hass.http.register_view(VodSegmentProxyView(session))
 
 
-# These proxies are inspired by:
-#  - https://github.com/home-assistant/supervisor/blob/main/supervisor/api/ingress.py
+class FrigateProxyViewMixin:
+    """A mixin for proxying Frigate."""
 
-
-class ProxyView(HomeAssistantView):  # type: ignore[misc]
-    """HomeAssistant view."""
-
-    requires_auth = True
-
-    def __init__(self, websession: aiohttp.ClientSession):
-        """Initialize the frigate clips proxy view."""
-        self._websession = websession
+    def _get_query_params(self, request: web.Request) -> Mapping[str, str]:
+        """Get the query params to send upstream."""
+        return {k: v for k, v in request.query.items() if k != "authSig"}
 
     def _get_config_entry_for_request(
-        self, request: web.Request, frigate_instance_id: str | None
+        self, request: web.Request, frigate_instance_id: str | None = None
     ) -> ConfigEntry | None:
         """Get a ConfigEntry for a given request."""
         hass = request.app[KEY_HASS]
@@ -134,86 +131,27 @@ class ProxyView(HomeAssistantView):  # type: ignore[misc]
             return get_config_entry_for_frigate_instance_id(hass, frigate_instance_id)
         return get_default_config_entry(hass)
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        raise NotImplementedError  # pragma: no cover
-
-    def _permit_request(
-        self, request: web.Request, config_entry: ConfigEntry, **kwargs: Any
-    ) -> bool:
-        """Determine whether to permit a request."""
-        return True
-
-    async def get(
-        self,
-        request: web.Request,
-        **kwargs: Any,
-    ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
-        """Route data to service."""
-        try:
-            return await self._handle_request(request, **kwargs)
-
-        except aiohttp.ClientError as err:
-            _LOGGER.debug("Reverse proxy error for %s: %s", request.rel_url, err)
-
-        raise HTTPBadGateway() from None
-
-    @staticmethod
-    def _get_query_params(request: web.Request) -> Mapping[str, str]:
-        """Get the query params to send upstream."""
-        return {k: v for k, v in request.query.items() if k != "authSig"}
-
-    async def _handle_request(
-        self,
-        request: web.Request,
-        frigate_instance_id: str | None = None,
-        **kwargs: Any,
-    ) -> web.Response | web.StreamResponse:
-        """Handle route for request."""
-        config_entry = self._get_config_entry_for_request(request, frigate_instance_id)
+    def _get_fqdn_path(
+        self, request: web.Request, path: str, frigate_instance_id: str | None = None
+    ) -> str:
+        """Get the fully qualified domain name path."""
+        config_entry = self._get_config_entry_for_request(
+            request, frigate_instance_id=frigate_instance_id
+        )
         if not config_entry:
-            return web.Response(status=HTTPStatus.BAD_REQUEST)
-
-        if not self._permit_request(request, config_entry, **kwargs):
-            return web.Response(status=HTTPStatus.FORBIDDEN)
-
-        full_path = self._create_path(**kwargs)
-        if not full_path:
-            return web.Response(status=HTTPStatus.NOT_FOUND)
-
-        url = str(URL(config_entry.data[CONF_URL]) / full_path)
-        data = await request.read()
-        source_header = _init_header(request)
-
-        async with self._websession.request(
-            request.method,
-            url,
-            headers=source_header,
-            params=self._get_query_params(request),
-            allow_redirects=False,
-            data=data,
-        ) as result:
-            headers = _response_header(result)
-
-            # Stream response
-            response = web.StreamResponse(status=result.status, headers=headers)
-            response.content_type = result.content_type
-
-            try:
-                await response.prepare(request)
-                async for data in result.content.iter_any():
-                    await response.write(data)
-
-            except (aiohttp.ClientError, aiohttp.ClientPayloadError) as err:
-                _LOGGER.debug("Stream error for %s: %s", request.rel_url, err)
-            except ConnectionResetError:
-                # Connection is reset/closed by peer.
-                pass
-
-            return response
+            raise HASSWebProxyLibNotFoundRequestError()
+        return str(URL(config_entry.data[CONF_URL]) / path)
 
 
-class SnapshotsProxyView(ProxyView):
+class FrigateProxyView(FrigateProxyViewMixin, ProxyView):
+    """A proxy for Frigate."""
+
+
+class FrigateWebsocketProxyView(FrigateProxyViewMixin, WebsocketProxyView):
+    """A websocket proxy for Frigate."""
+
+
+class SnapshotsProxyView(FrigateProxyView):
     """A proxy for snapshots."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/snapshot/{eventid:.*}"
@@ -221,12 +159,19 @@ class SnapshotsProxyView(ProxyView):
 
     name = "api:frigate:snapshots"
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"api/events/{kwargs['eventid']}/snapshot.jpg"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"api/events/{kwargs['eventid']}/snapshot.jpg",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
+        )
 
 
-class RecordingProxyView(ProxyView):
+class RecordingProxyView(FrigateProxyView):
     """A proxy for recordings."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/recording/{camera:.+}/start/{start:[.0-9]+}/end/{end:[.0-9]*}"
@@ -236,57 +181,90 @@ class RecordingProxyView(ProxyView):
 
     name = "api:frigate:recording"
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return (
-            f"api/{kwargs['camera']}/start/{kwargs['start']}"
-            + f"/end/{kwargs['end']}/clip.mp4"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"api/{kwargs['camera']}/start/{kwargs['start']}"
+                + f"/end/{kwargs['end']}/clip.mp4",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
         )
 
 
-class ThumbnailsProxyView(ProxyView):
+class ThumbnailsProxyView(FrigateProxyView):
     """A proxy for snapshots."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/thumbnail/{eventid:.*}"
 
     name = "api:frigate:thumbnails"
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"api/events/{kwargs['eventid']}/thumbnail.jpg"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"api/events/{kwargs['eventid']}/thumbnail.jpg",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
+        )
 
 
-class NotificationsProxyView(ProxyView):
+class NotificationsProxyView(FrigateProxyView):
     """A proxy for notifications."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/notifications/{event_id}/{path:.*}"
     extra_urls = ["/api/frigate/notifications/{event_id}/{path:.*}"]
 
     name = "api:frigate:notification"
-    requires_auth = False
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        path, event_id = kwargs["path"], kwargs["event_id"]
+    def _get_proxied_url(
+        self,
+        request: web.Request,
+        **kwargs: Any,
+    ) -> ProxiedURL:
+        """Create proxied URL."""
+        path: str = kwargs["path"]
+        event_id: str = kwargs["event_id"]
+
+        config_entry = self._get_config_entry_for_request(
+            request, kwargs.get("frigate_instance_id")
+        )
+        if not config_entry:
+            raise HASSWebProxyLibNotFoundRequestError("No Frigate instance found.")
+        if not self._permit_request(request, config_entry, event_id=event_id):
+            raise HASSWebProxyLibForbiddenRequestError("Request not permitted.")
+
+        url_path: str | None = None
         if path == "thumbnail.jpg":
-            return f"api/events/{event_id}/thumbnail.jpg"
+            url_path = f"api/events/{event_id}/thumbnail.jpg"
+        elif path == "snapshot.jpg":
+            url_path = f"api/events/{event_id}/snapshot.jpg"
+        elif path.endswith("clip.mp4"):
+            url_path = f"api/events/{event_id}/clip.mp4"
+        elif path.endswith("event_preview.gif"):
+            url_path = f"api/events/{event_id}/preview.gif"
+        elif path.endswith("review_preview.gif"):
+            url_path = f"api/review/{event_id}/preview"
 
-        if path == "snapshot.jpg":
-            return f"api/events/{event_id}/snapshot.jpg"
+        if not url_path:
+            raise HASSWebProxyLibNotFoundRequestError
 
-        if path.endswith("clip.mp4"):
-            return f"api/events/{event_id}/clip.mp4"
-
-        if path.endswith("event_preview.gif"):
-            return f"api/events/{event_id}/preview.gif"
-
-        if path.endswith("review_preview.gif"):
-            return f"api/review/{event_id}/preview"
-
-        return None
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                url_path,
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            allow_unauthenticated=True,
+            query_params=self._get_query_params(request),
+        )
 
     def _permit_request(
-        self, request: web.Request, config_entry: ConfigEntry, **kwargs: Any
+        self, request: web.Request, config_entry: ConfigEntry, event_id: str
     ) -> bool:
         """Determine whether to permit a request."""
 
@@ -312,7 +290,7 @@ class NotificationsProxyView(ProxyView):
             return True
 
         try:
-            event_id_timestamp = int(kwargs["event_id"].partition(".")[0])
+            event_id_timestamp = int(event_id.partition(".")[0])
             event_datetime = datetime.datetime.fromtimestamp(
                 event_id_timestamp, tz=datetime.timezone.utc
             )
@@ -324,13 +302,11 @@ class NotificationsProxyView(ProxyView):
             # Otherwise, permit only if notification event is not expired
             return now_datetime.timestamp() <= expiration_datetime.timestamp()
         except ValueError:
-            _LOGGER.warning(
-                "The event id %s does not have a valid format.", kwargs["event_id"]
-            )
+            _LOGGER.warning("The event id %s does not have a valid format.", event_id)
             return False
 
 
-class VodProxyView(ProxyView):
+class VodProxyView(FrigateProxyView):
     """A proxy for vod playlists."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{manifest:.+}.m3u8"
@@ -338,33 +314,49 @@ class VodProxyView(ProxyView):
 
     name = "api:frigate:vod:manifest"
 
-    @staticmethod
-    def _get_query_params(request: web.Request) -> Mapping[str, str]:
+    def _get_query_params(self, request: web.Request) -> Mapping[str, str]:
         """Get the query params to send upstream."""
         return request.query
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"vod/{kwargs['path']}/{kwargs['manifest']}.m3u8"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"vod/{kwargs['path']}/{kwargs['manifest']}.m3u8",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
+        )
 
 
-class VodSegmentProxyView(ProxyView):
+class VodSegmentProxyView(FrigateProxyView):
     """A proxy for vod segments."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/vod/{path:.+}/{segment:.+}.{extension:(ts|m4s|mp4)}"
     extra_urls = ["/api/frigate/vod/{path:.+}/{segment:.+}.{extension:(ts|m4s|mp4)}"]
 
     name = "api:frigate:vod:segment"
-    requires_auth = False
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"vod/{kwargs['path']}/{kwargs['segment']}.{kwargs['extension']}"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        if not self._async_validate_signed_manifest(request):
+            raise HASSWebProxyLibUnauthorizedRequestError()
 
-    async def _async_validate_signed_manifest(self, request: web.Request) -> bool:
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"vod/{kwargs['path']}/{kwargs['segment']}.{kwargs['extension']}",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            allow_unauthenticated=True,
+            query_params=self._get_query_params(request),
+        )
+
+    def _async_validate_signed_manifest(self, request: web.Request) -> bool:
         """Validate the signature for the manifest of this segment."""
         hass = request.app[KEY_HASS]
-        secret = hass.data.get(DATA_SIGN_SECRET)
+        secret = str(hass.data.get(DATA_SIGN_SECRET))
         signature = request.query.get(SIGN_QUERY_PARAM)
 
         if signature is None:
@@ -387,98 +379,8 @@ class VodSegmentProxyView(ProxyView):
 
         return True
 
-    async def get(
-        self,
-        request: web.Request,
-        **kwargs: Any,
-    ) -> web.Response | web.StreamResponse | web.WebSocketResponse:
-        """Route data to service."""
 
-        if not await self._async_validate_signed_manifest(request):
-            raise HTTPUnauthorized()
-
-        return await super().get(request, **kwargs)
-
-
-class WebsocketProxyView(ProxyView):
-    """A simple proxy for websockets."""
-
-    async def _proxy_msgs(
-        self,
-        ws_in: aiohttp.ClientWebSocketResponse | web.WebSocketResponse,
-        ws_out: aiohttp.ClientWebSocketResponse | web.WebSocketResponse,
-    ) -> None:
-
-        async for msg in ws_in:
-            try:
-                if msg.type == aiohttp.WSMsgType.TEXT:
-                    await ws_out.send_str(msg.data)
-                elif msg.type == aiohttp.WSMsgType.BINARY:
-                    await ws_out.send_bytes(msg.data)
-                elif msg.type == aiohttp.WSMsgType.PING:
-                    await ws_out.ping()
-                elif msg.type == aiohttp.WSMsgType.PONG:
-                    await ws_out.pong()
-            except ConnectionResetError:
-                return
-
-    async def _handle_request(
-        self,
-        request: web.Request,
-        frigate_instance_id: str | None = None,
-        **kwargs: Any,
-    ) -> web.Response | web.StreamResponse:
-        """Handle route for request."""
-
-        config_entry = self._get_config_entry_for_request(request, frigate_instance_id)
-        if not config_entry:
-            return web.Response(status=HTTPStatus.BAD_REQUEST)
-
-        if not self._permit_request(request, config_entry, **kwargs):
-            return web.Response(status=HTTPStatus.FORBIDDEN)
-
-        full_path = self._create_path(**kwargs)
-        if not full_path:
-            return web.Response(status=HTTPStatus.NOT_FOUND)
-
-        req_protocols = []
-        if hdrs.SEC_WEBSOCKET_PROTOCOL in request.headers:
-            req_protocols = [
-                str(proto.strip())
-                for proto in request.headers[hdrs.SEC_WEBSOCKET_PROTOCOL].split(",")
-            ]
-
-        ws_to_user = web.WebSocketResponse(
-            protocols=req_protocols, autoclose=False, autoping=False
-        )
-        await ws_to_user.prepare(request)
-
-        # Preparing
-        url = str(URL(config_entry.data[CONF_URL]) / full_path)
-        source_header = _init_header(request)
-
-        # Support GET query
-        if request.query_string:
-            url = f"{url}?{request.query_string}"
-
-        async with self._websession.ws_connect(
-            url,
-            headers=source_header,
-            protocols=req_protocols,
-            autoclose=False,
-            autoping=False,
-        ) as ws_to_frigate:
-            await asyncio.wait(
-                [
-                    asyncio.create_task(self._proxy_msgs(ws_to_frigate, ws_to_user)),
-                    asyncio.create_task(self._proxy_msgs(ws_to_user, ws_to_frigate)),
-                ],
-                return_when=asyncio.tasks.FIRST_COMPLETED,
-            )
-        return ws_to_user
-
-
-class JSMPEGProxyView(WebsocketProxyView):
+class JSMPEGProxyView(FrigateWebsocketProxyView):
     """A proxy for JSMPEG websocket."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/jsmpeg/{path:.+}"
@@ -486,12 +388,19 @@ class JSMPEGProxyView(WebsocketProxyView):
 
     name = "api:frigate:jsmpeg"
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"live/jsmpeg/{kwargs['path']}"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"live/jsmpeg/{kwargs['path']}",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
+        )
 
 
-class MSEProxyView(WebsocketProxyView):
+class MSEProxyView(FrigateWebsocketProxyView):
     """A proxy for MSE websocket."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/mse/{path:.+}"
@@ -499,12 +408,19 @@ class MSEProxyView(WebsocketProxyView):
 
     name = "api:frigate:mse"
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"live/mse/{kwargs['path']}"
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"live/mse/{kwargs['path']}",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
+        )
 
 
-class WebRTCProxyView(WebsocketProxyView):
+class WebRTCProxyView(FrigateWebsocketProxyView):
     """A proxy for WebRTC websocket."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/webrtc/{path:.+}"
@@ -512,75 +428,13 @@ class WebRTCProxyView(WebsocketProxyView):
 
     name = "api:frigate:webrtc"
 
-    def _create_path(self, **kwargs: Any) -> str | None:
-        """Create path."""
-        return f"live/webrtc/{kwargs['path']}"
-
-
-def _init_header(request: web.Request) -> CIMultiDict | dict[str, str]:
-    """Create initial header."""
-    headers = {}
-
-    # filter flags
-    for name, value in request.headers.items():
-        if name in (
-            hdrs.CONTENT_LENGTH,
-            hdrs.CONTENT_ENCODING,
-            hdrs.SEC_WEBSOCKET_EXTENSIONS,
-            hdrs.SEC_WEBSOCKET_PROTOCOL,
-            hdrs.SEC_WEBSOCKET_VERSION,
-            hdrs.SEC_WEBSOCKET_KEY,
-            hdrs.HOST,
-            hdrs.AUTHORIZATION,
-        ):
-            continue
-        headers[name] = value
-
-    # Set X-Forwarded-For
-    forward_for = request.headers.get(hdrs.X_FORWARDED_FOR)
-    assert request.transport
-    connected_ip = ip_address(request.transport.get_extra_info("peername")[0])
-    if forward_for:
-        forward_for = f"{forward_for}, {connected_ip!s}"
-    else:
-        forward_for = f"{connected_ip!s}"
-    headers[hdrs.X_FORWARDED_FOR] = forward_for
-
-    # Set X-Forwarded-Host
-    forward_host = request.headers.get(hdrs.X_FORWARDED_HOST)
-    if not forward_host:
-        forward_host = request.host
-    headers[hdrs.X_FORWARDED_HOST] = forward_host
-
-    # Set X-Forwarded-Proto
-    forward_proto = request.headers.get(hdrs.X_FORWARDED_PROTO)
-    if not forward_proto:
-        forward_proto = request.url.scheme
-    headers[hdrs.X_FORWARDED_PROTO] = forward_proto
-
-    return headers
-
-
-def _response_header(response: aiohttp.ClientResponse) -> dict[str, str]:
-    """Create response header."""
-    headers = {}
-
-    for name, value in response.headers.items():
-        if name in (
-            hdrs.TRANSFER_ENCODING,
-            # Removing Content-Length header for streaming responses
-            #   prevents seeking from working for mp4 files
-            # hdrs.CONTENT_LENGTH,
-            hdrs.CONTENT_TYPE,
-            hdrs.CONTENT_ENCODING,
-            # Strips inbound CORS response headers since the aiohttp_cors
-            # library will assert that they are not already present for CORS
-            # requests.
-            hdrs.ACCESS_CONTROL_ALLOW_ORIGIN,
-            hdrs.ACCESS_CONTROL_ALLOW_CREDENTIALS,
-            hdrs.ACCESS_CONTROL_EXPOSE_HEADERS,
-        ):
-            continue
-        headers[name] = value
-
-    return headers
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"live/webrtc/{kwargs['path']}",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            query_params=self._get_query_params(request),
+        )

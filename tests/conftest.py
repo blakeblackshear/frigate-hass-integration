@@ -1,12 +1,14 @@
 """Global fixtures for frigate component integration."""
+
 from collections.abc import Generator
-from typing import Any
+from typing import Any, AsyncGenerator
 from unittest.mock import MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.plugins import (  # noqa: F401
     enable_custom_integrations,
 )
+from pytest_homeassistant_custom_component.typing import MqttMockHAClientGenerator
 
 from homeassistant.components.http import CONF_TRUSTED_PROXIES, CONF_USE_X_FORWARDED_FOR
 from homeassistant.setup import async_setup_component
@@ -49,6 +51,21 @@ async def allow_proxy(request: Any, hass: Any) -> None:
         )
 
 
+@pytest.fixture()
+async def mqtt_mock_no_linger(
+    mqtt_mock: MqttMockHAClientGenerator,
+) -> AsyncGenerator[MqttMockHAClientGenerator, None]:
+    yield mqtt_mock
+
+    # Hack: Call the on_socket_close method to close the asyncio timers that
+    # MQTT starts (MQTT is automatically started by HA since this integration
+    # depends on it). Without this, HA tests will fail due to "Failed: Lingering
+    # timer after test".
+    mock_socket = mqtt_mock._mqttc.socket()
+    mock_socket.fileno.return_value = -1
+    mqtt_mock._mqttc.on_socket_close(mqtt_mock._mqttc, None, mock_socket)
+
+
 @pytest.fixture(autouse=True)
 def frigate_fixture(
     socket_enabled: Any,
@@ -56,6 +73,6 @@ def frigate_fixture(
     skip_notifications: Any,
     enable_custom_integrations: Any,  # noqa: F811
     hass: Any,
-    mqtt_mock: MagicMock,
+    mqtt_mock_no_linger: MagicMock,
 ) -> None:
     """Automatically use an ordered combination of fixtures."""

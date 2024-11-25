@@ -1,4 +1,5 @@
 """Test the frigate config flow."""
+
 from __future__ import annotations
 
 import logging
@@ -8,11 +9,9 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
-    CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
-    CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
 )
@@ -94,6 +93,7 @@ async def test_user_connection_failure(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result["type"] == "form"
+    assert result["errors"]
     assert result["errors"]["base"] == "cannot_connect"
 
 
@@ -114,6 +114,7 @@ async def test_user_invalid_url(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert result["type"] == "form"
+    assert result["errors"]
     assert result["errors"]["base"] == "invalid_url"
 
 
@@ -176,8 +177,6 @@ async def test_options_advanced(hass: HomeAssistant) -> None:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={
-                CONF_ENABLE_WEBRTC: True,
-                CONF_RTMP_URL_TEMPLATE: "http://moo",
                 CONF_RTSP_URL_TEMPLATE: "http://moo",
                 CONF_NOTIFICATION_PROXY_ENABLE: False,
                 CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS: 60,
@@ -186,8 +185,6 @@ async def test_options_advanced(hass: HomeAssistant) -> None:
         )
         await hass.async_block_till_done()
         assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-        assert result["data"][CONF_ENABLE_WEBRTC] is True
-        assert result["data"][CONF_RTMP_URL_TEMPLATE] == "http://moo"
         assert result["data"][CONF_RTSP_URL_TEMPLATE] == "http://moo"
         assert result["data"][CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS] == 60
         assert not result["data"][CONF_NOTIFICATION_PROXY_ENABLE]

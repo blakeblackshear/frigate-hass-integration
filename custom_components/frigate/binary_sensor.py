@@ -1,8 +1,9 @@
 """Binary sensor platform for Frigate."""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -11,9 +12,11 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
+    FrigateEntity,
     FrigateMQTTEntity,
     ReceiveMessage,
     decode_if_necessary,
@@ -36,10 +39,9 @@ async def async_setup_entry(
 ) -> None:
     """Binary sensor entry setup."""
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    entities: list[FrigateEntity] = []
 
-    entities = []
-
-    # add object sensors for cameras and zones
+    # Add object sensors for cameras and zones.
     entities.extend(
         [
             FrigateObjectOccupancySensor(entry, frigate_config, cam_name, obj)
@@ -47,7 +49,7 @@ async def async_setup_entry(
         ]
     )
 
-    # add audio sensors for cameras
+    # Add audio sensors for cameras.
     entities.extend(
         [
             FrigateAudioSensor(entry, frigate_config, cam_name, audio)
@@ -55,7 +57,7 @@ async def async_setup_entry(
         ]
     )
 
-    # add generic motion sensors for cameras
+    # Add generic motion sensors for cameras.
     entities.extend(
         [
             FrigateMotionSensor(entry, frigate_config, cam_name)
@@ -66,7 +68,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
     """Frigate Occupancy Sensor class."""
 
     def __init__(
@@ -98,7 +100,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
@@ -117,7 +119,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return device information."""
         return {
             "identifiers": {
@@ -141,9 +143,9 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         return self._is_on
 
     @property
-    def device_class(self) -> str:
+    def device_class(self) -> BinarySensorDeviceClass:
         """Return the device class."""
-        return cast(str, BinarySensorDeviceClass.OCCUPANCY)
+        return BinarySensorDeviceClass.OCCUPANCY
 
     @property
     def icon(self) -> str:
@@ -151,7 +153,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):  # ty
         return get_dynamic_icon_from_type(self._obj_name, self._is_on)
 
 
-class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):
     """Frigate Audio Sensor class."""
 
     def __init__(
@@ -182,7 +184,7 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = decode_if_necessary(msg.payload) == "ON"
@@ -198,7 +200,7 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return device information."""
         return {
             "identifiers": {
@@ -222,9 +224,9 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
         return self._is_on
 
     @property
-    def device_class(self) -> str:
+    def device_class(self) -> BinarySensorDeviceClass:
         """Return the device class."""
-        return cast(str, BinarySensorDeviceClass.SOUND)
+        return BinarySensorDeviceClass.SOUND
 
     @property
     def icon(self) -> str:
@@ -232,7 +234,7 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore
         return get_dynamic_icon_from_type("sound", self._is_on)
 
 
-class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignore[misc]
+class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     """Frigate Motion Sensor class."""
 
     _attr_name = "Motion"
@@ -263,7 +265,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         self._is_on = decode_if_necessary(msg.payload) == "ON"
@@ -279,7 +281,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return device information."""
         return {
             "identifiers": {
@@ -298,6 +300,6 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):  # type: ignor
         return self._is_on
 
     @property
-    def device_class(self) -> str:
+    def device_class(self) -> BinarySensorDeviceClass:
         """Return the device class."""
-        return cast(str, BinarySensorDeviceClass.MOTION)
+        return BinarySensorDeviceClass.MOTION

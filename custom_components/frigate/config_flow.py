@@ -1,8 +1,9 @@
 """Adds config flow for Frigate."""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, cast
+from typing import Any
 
 import voluptuous as vol
 from voluptuous.validators import All, Range
@@ -16,11 +17,9 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
-    CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
-    CONF_RTMP_URL_TEMPLATE,
     CONF_RTSP_URL_TEMPLATE,
     DEFAULT_HOST,
     DOMAIN,
@@ -38,7 +37,7 @@ def get_config_entry_title(url_str: str) -> str:
     return str(url)[len(url.scheme + "://") :]
 
 
-class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg,misc]
+class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Frigate."""
 
     VERSION = 2
@@ -46,7 +45,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    ) -> config_entries.ConfigFlowResult:
         """Handle a flow initialized by the user."""
 
         if user_input is None:
@@ -69,43 +68,35 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
         # Search for duplicates with the same Frigate CONF_HOST value.
         for existing_entry in self._async_current_entries(include_ignore=False):
             if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
-                return cast(
-                    Dict[str, Any], self.async_abort(reason="already_configured")
-                )
+                return self.async_abort(reason="already_configured")
 
-        return cast(
-            Dict[str, Any],
-            self.async_create_entry(
-                title=get_config_entry_title(user_input[CONF_URL]), data=user_input
-            ),
+        return self.async_create_entry(
+            title=get_config_entry_title(user_input[CONF_URL]), data=user_input
         )
 
     def _show_config_form(
         self,
         user_input: dict[str, Any] | None = None,
         errors: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> config_entries.ConfigFlowResult:
         """Show the configuration form."""
         if user_input is None:
             user_input = {}
 
-        return cast(
-            Dict[str, Any],
-            self.async_show_form(
-                step_id="user",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
-                        ): str
-                    }
-                ),
-                errors=errors,
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
+                    ): str
+                }
             ),
+            errors=errors,
         )
 
     @staticmethod
-    @callback  # type: ignore[misc]
+    @callback
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> FrigateOptionsFlowHandler:
@@ -113,7 +104,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):  # type: ign
         return FrigateOptionsFlowHandler(config_entry)
 
 
-class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[misc]
+class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
     """Frigate options flow."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
@@ -122,37 +113,15 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    ) -> config_entries.ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
-            return cast(
-                Dict[str, Any], self.async_create_entry(title="", data=user_input)
-            )
+            return self.async_create_entry(title="", data=user_input)
 
         if not self.show_advanced_options:
-            return cast(
-                Dict[str, Any], self.async_abort(reason="only_advanced_options")
-            )
+            return self.async_abort(reason="only_advanced_options")
 
         schema: dict[Any, Any] = {
-            # Whether to enable webrtc as the medium for camera streaming
-            vol.Optional(
-                CONF_ENABLE_WEBRTC,
-                default=self._config_entry.options.get(
-                    CONF_ENABLE_WEBRTC,
-                    False,
-                ),
-            ): bool,
-            # The input URL is not validated as being a URL to allow for the
-            # possibility the template input won't be a valid URL until after
-            # it's rendered.
-            vol.Optional(
-                CONF_RTMP_URL_TEMPLATE,
-                default=self._config_entry.options.get(
-                    CONF_RTMP_URL_TEMPLATE,
-                    "",
-                ),
-            ): str,
             # The input URL is not validated as being a URL to allow for the
             # possibility the template input won't be a valid URL until after
             # it's rendered.
@@ -186,7 +155,4 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):  # type: ignore[mis
             ): All(int, Range(min=0)),
         }
 
-        return cast(
-            Dict[str, Any],
-            self.async_show_form(step_id="init", data_schema=vol.Schema(schema)),
-        )
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))

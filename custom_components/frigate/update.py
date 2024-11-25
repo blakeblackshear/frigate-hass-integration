@@ -1,4 +1,5 @@
 """Update platform for frigate."""
+
 from __future__ import annotations
 
 import logging
@@ -33,7 +34,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class FrigateContainerUpdate(FrigateEntity, UpdateEntity, CoordinatorEntity):  # type: ignore[misc]
+class FrigateContainerUpdate(
+    FrigateEntity, UpdateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
     """Frigate container update."""
 
     _attr_name = "Server"

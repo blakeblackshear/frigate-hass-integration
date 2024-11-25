@@ -1,4 +1,5 @@
 """Frigate event proxy."""
+
 from __future__ import annotations
 
 import logging
@@ -6,6 +7,7 @@ import logging
 from homeassistant.components import websocket_api
 from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.subscription import (
+    EntitySubscription,
     async_prepare_subscribe_topics,
     async_subscribe_topics,
     async_unsubscribe_topics,
@@ -25,16 +27,16 @@ class WSEventProxy:
     within HA.
     """
 
-    def __init__(self, topic_prefix: str) -> None:
+    def __init__(self, hass: HomeAssistant, topic_prefix: str) -> None:
         self._subscriptions: dict[int, websocket_api.ActiveConnection] = {}
         self._topics = {
             "events": {
                 "topic": f"{topic_prefix}/events",
-                "msg_callback": lambda msg: self._receive_message(msg),
+                "msg_callback": lambda msg: self._receive_message(hass, msg),
                 "qos": 0,
             }
         }
-        self._sub_state = None
+        self._sub_state: dict[str, EntitySubscription] | None = None
 
     async def subscribe(
         self,
@@ -89,7 +91,13 @@ class WSEventProxy:
         for subscription_id in list(self._subscriptions.keys()):
             self.unsubscribe(hass, subscription_id)
 
-    def _receive_message(self, msg: ReceiveMessage) -> None:
+    def _receive_message(self, hass: HomeAssistant, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT message."""
-        for id, connection in self._subscriptions.items():
-            connection.send_message(messages.event_message(id, msg.payload))
+
+        async def proxy() -> None:
+            for id, connection in self._subscriptions.items():
+                connection.send_message(messages.event_message(id, msg.payload))
+
+        # Must proxy in the executor pool to ensure threadsafety. Otherwise:
+        # `RuntimeError: Non-thread-safe operation invoked on an event loop other than the current one``
+        hass.create_task(proxy())
