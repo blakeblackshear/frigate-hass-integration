@@ -611,7 +611,7 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity):
             },
         )
 
-    @callback  # type: ignore[misc]
+    @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         try:
