@@ -405,10 +405,6 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                     "sensor_object_count",
                     m.group("cam_obj"),
                 ],
-                re.compile(rf"^{DOMAIN}_(?P<cam_obj>\S+)$"): lambda m: [
-                    "sensor_active_object_count",
-                    m.group("cam_obj"),
-                ],
             }
 
             for regexp, func in converters.items():
