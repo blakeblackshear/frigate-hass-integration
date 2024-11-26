@@ -34,9 +34,9 @@ from homeassistant.components.camera import (
     DOMAIN as CAMERA_DOMAIN,
     SERVICE_DISABLE_MOTION,
     SERVICE_ENABLE_MOTION,
+    StreamType,
     async_get_image,
     async_get_stream_source,
-    StreamType
 )
 from homeassistant.components.websocket_api.const import TYPE_RESULT
 from homeassistant.const import ATTR_ENTITY_ID
