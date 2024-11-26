@@ -265,6 +265,8 @@ class FrigateCamera(
     @property
     def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
+        if not self._attr_is_streaming:
+            return CameraEntityFeature(0)
         return CameraEntityFeature.STREAM
 
     async def async_camera_image(
