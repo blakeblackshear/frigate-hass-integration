@@ -2,12 +2,6 @@
 
 set -euxo pipefail
 
-pip install --disable-pip-version-check --upgrade pip
+uv pip install -r requirements_dev.txt --system
 
-pip install pre-commit
-
-pip install -r requirements_dev.txt &
-
-pre-commit install --install-hooks &
-
-wait
+pre-commit install --install-hooks
