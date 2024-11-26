@@ -173,7 +173,10 @@ class FrigateCamera(
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._stream_source = None
-        self._attr_is_streaming = True
+        self._attr_is_streaming = (
+            self._cam_name
+            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
+        )
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
@@ -185,10 +188,7 @@ class FrigateCamera(
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
         )
 
-        if (
-            self._cam_name
-            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
-        ):
+        if self._attr_is_streaming:
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -353,23 +353,26 @@ class BirdseyeCamera(FrigateEntity, Camera):
         # The device_class is used to filter out regular camera entities
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
-        self._attr_is_streaming = True
+        self._attr_is_streaming = self._frigate_config.get("birdseye", {}).get(
+            "restream", False
+        )
         self._attr_is_recording = False
 
-        streaming_template = config_entry.options.get(
-            CONF_RTSP_URL_TEMPLATE, ""
-        ).strip()
+        if self._attr_is_streaming:
+            streaming_template = config_entry.options.get(
+                CONF_RTSP_URL_TEMPLATE, ""
+            ).strip()
 
-        if streaming_template:
-            # Can't use homeassistant.helpers.template as it requires hass which
-            # is not available in the constructor, so use direct jinja2
-            # template instead. This means templates cannot access HomeAssistant
-            # state, but rather only the camera config.
-            self._stream_source = Template(streaming_template).render(
-                {"name": "birdseye"}
-            )
-        else:
-            self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
+            if streaming_template:
+                # Can't use homeassistant.helpers.template as it requires hass which
+                # is not available in the constructor, so use direct jinja2
+                # template instead. This means templates cannot access HomeAssistant
+                # state, but rather only the camera config.
+                self._stream_source = Template(streaming_template).render(
+                    {"name": "birdseye"}
+                )
+            else:
+                self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
 
     @property
     def unique_id(self) -> str:
@@ -397,6 +400,8 @@ class BirdseyeCamera(FrigateEntity, Camera):
     @property
     def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
+        if not self._attr_is_streaming:
+            return CameraEntityFeature(0)
         return CameraEntityFeature.STREAM
 
     async def async_camera_image(
