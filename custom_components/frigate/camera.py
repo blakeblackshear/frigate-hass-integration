@@ -6,7 +6,6 @@ import datetime
 import logging
 from typing import Any, cast
 
-import aiohttp
 import async_timeout
 from jinja2 import Template
 import voluptuous as vol
