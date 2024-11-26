@@ -2,7 +2,7 @@ aiohttp
 aiohttp_cors
 attr
 janus
-homeassistant==2024.11.3
+homeassistant==2024.12.0
 paho-mqtt
 python-dateutil
 yarl
