@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any
+from typing import Any, cast
 
+import aiohttp
 import async_timeout
 from jinja2 import Template
 import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
-from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.components.camera import Camera, CameraEntityFeature, StreamType
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
@@ -189,6 +190,8 @@ class FrigateCamera(
         )
 
         if self._attr_is_streaming:
+            self._attr_frontend_stream_type = StreamType.WEB_RTC
+
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -299,6 +302,15 @@ class FrigateCamera(
             False,
         )
 
+    async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
+        """Handle the WebRTC offer and return an answer."""
+        websession = async_get_clientsession(self.hass)
+        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
+        payload = {"type": "offer", "sdp": offer_sdp}
+        async with websession.post(url, json=payload) as resp:
+            answer = await resp.json()
+            return cast(str, answer["sdp"])
+
     async def async_disable_motion_detection(self) -> None:
         """Disable motion detection for this camera."""
         await async_publish(
@@ -357,6 +369,8 @@ class BirdseyeCamera(FrigateEntity, Camera):
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._attr_is_streaming = True
         self._attr_is_recording = False
+
+        self._attr_frontend_stream_type = StreamType.WEB_RTC
 
         streaming_template = config_entry.options.get(
             CONF_RTSP_URL_TEMPLATE, ""
@@ -420,3 +434,12 @@ class BirdseyeCamera(FrigateEntity, Camera):
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
+
+    async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
+        """Handle the WebRTC offer and return an answer."""
+        websession = async_get_clientsession(self.hass)
+        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
+        payload = {"type": "offer", "sdp": offer_sdp}
+        async with websession.post(url, json=payload) as resp:
+            answer = await resp.json()
+            return cast(str, answer["sdp"])
