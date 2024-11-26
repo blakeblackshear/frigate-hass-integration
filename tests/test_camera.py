@@ -36,7 +36,9 @@ from homeassistant.components.camera import (
     SERVICE_ENABLE_MOTION,
     async_get_image,
     async_get_stream_source,
+    StreamType
 )
+from homeassistant.components.websocket_api.const import TYPE_RESULT
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -62,6 +64,7 @@ _LOGGER = logging.getLogger(__name__)
 async def test_frigate_camera_setup(
     hass: HomeAssistant,
     aioclient_mock: Any,
+    hass_ws_client: Any,
 ) -> None:
     """Set up a camera."""
 
@@ -71,6 +74,7 @@ async def test_frigate_camera_setup(
     assert entity_state
     assert entity_state.state == "streaming"
     assert entity_state.attributes["supported_features"] == 2
+    assert entity_state.attributes["frontend_stream_type"] == StreamType.WEB_RTC
 
     source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert source
@@ -84,6 +88,26 @@ async def test_frigate_camera_setup(
     image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
     assert image
     assert image.content == b"data-277"
+
+    aioclient_mock.post(
+        "http://example.com/api/go2rtc/webrtc?src=front_door",
+        json={"type": "answer", "sdp": "return_sdp"},
+    )
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {
+            "id": 5,
+            "type": "camera/web_rtc_offer",
+            "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            "offer": "send_sdp",
+        }
+    )
+
+    msg = await client.receive_json()
+    assert msg["id"] == 5
+    assert msg["type"] == TYPE_RESULT
+    assert msg["success"]
+    assert msg["result"]["answer"] == "return_sdp"
 
 
 async def test_frigate_camera_setup_birdseye(hass: HomeAssistant) -> None:
