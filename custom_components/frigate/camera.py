@@ -360,6 +360,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
     ) -> None:
         """Initialize the birdseye camera."""
         self._client = frigate_client
+        self._cam_name = "birdseye"
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
         self._url = config_entry.data[CONF_URL]
@@ -382,10 +383,10 @@ class BirdseyeCamera(FrigateEntity, Camera):
             # template instead. This means templates cannot access HomeAssistant
             # state, but rather only the camera config.
             self._stream_source = Template(streaming_template).render(
-                {"name": "birdseye"}
+                {"name": self._cam_name}
             )
         else:
-            self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
+            self._stream_source = f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
 
     @property
     def unique_id(self) -> str:
@@ -423,7 +424,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
 
         image_url = str(
             URL(self._url)
-            / "api/birdseye/latest.jpg"
+            / f"api/{self._cam_name}/latest.jpg"
             % ({"h": height} if height is not None and height > 0 else {})
         )
 
