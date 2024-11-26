@@ -97,6 +97,12 @@ async def async_setup_entry(
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
+    entities.extend(
+        [
+            FrigateActiveObjectCountSensor(entry, frigate_config, cam_name, obj)
+            for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+        ]
+    )
     entities.append(FrigateStatusSensor(coordinator, entry))
     async_add_entities(entities)
 
@@ -554,6 +560,93 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     def name(self) -> str:
         """Return the name of the sensor."""
         return f"{self._obj_name} count"
+
+    @property
+    def state(self) -> int:
+        """Return true if the binary sensor is on."""
+        return self._state
+
+    @property
+    def unit_of_measurement(self) -> str:
+        """Return the unit of measurement of the sensor."""
+        return "objects"
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return self._icon
+
+
+class FrigateActiveObjectCountSensor(FrigateMQTTEntity):
+    """Frigate Motion Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        obj_name: str,
+    ) -> None:
+        """Construct a FrigateObjectCountSensor."""
+        self._cam_name = cam_name
+        self._obj_name = obj_name
+        self._state = 0
+        self._frigate_config = frigate_config
+        self._icon = get_icon_from_type(self._obj_name)
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._obj_name}"
+                        "/active"
+                    ),
+                    "encoding": None,
+                },
+            },
+        )
+
+    @callback
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            self._state = int(msg.payload)
+            self.async_write_ha_state()
+        except ValueError:
+            pass
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_active_object_count",
+            f"{self._cam_name}_{self._obj_name}",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{self._obj_name} active count".title()
 
     @property
     def state(self) -> int:
