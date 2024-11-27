@@ -20,6 +20,7 @@
     "step": {
       "init": {
         "data": {
+          "enable_webrtc": "Use Frigate-native WebRTC support",
           "rtsp_url_template": "RTSP URL template (see documentation)",
           "media_browser_enable": "Enable the media browser",
           "notification_proxy_enable": "Enable the unauthenticated notification event proxy",

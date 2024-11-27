@@ -12,7 +12,13 @@ import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
-from homeassistant.components.camera import Camera, CameraEntityFeature
+from homeassistant.components.camera import (
+    Camera,
+    CameraEntityFeature,
+    StreamType,
+    WebRTCAnswer,
+    WebRTCSendMessage,
+)
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
@@ -44,6 +50,7 @@ from .const import (
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
+    CONF_ENABLE_WEBRTC,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
@@ -67,9 +74,13 @@ async def async_setup_entry(
     client_id = get_frigate_instance_id_for_config_entry(hass, entry)
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
+    frigate_webrtc = entry.options.get(CONF_ENABLE_WEBRTC, False)
+    camera_type = FrigateCameraWebRTC if frigate_webrtc else FrigateCamera
+    birdseye_type = BirdseyeCameraWebRTC if frigate_webrtc else BirdseyeCamera
+
     async_add_entities(
         [
-            FrigateCamera(
+            camera_type(
                 entry,
                 cam_name,
                 frigate_client,
@@ -81,7 +92,7 @@ async def async_setup_entry(
             for cam_name, camera_config in frigate_config["cameras"].items()
         ]
         + (
-            [BirdseyeCamera(entry, frigate_client)]
+            [birdseye_type(entry, frigate_client)]
             if frigate_config.get("birdseye", {}).get("restream", False)
             else []
         )
@@ -336,7 +347,7 @@ class FrigateCamera(
 
 
 class BirdseyeCamera(FrigateEntity, Camera):
-    """Representation of the Frigate birdseye camera."""
+    """A Frigate birdseye camera."""
 
     # sets the entity name to same as device name ex: camera.front_doorbell
     _attr_name = None
@@ -348,6 +359,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
     ) -> None:
         """Initialize the birdseye camera."""
         self._client = frigate_client
+        self._cam_name = "birdseye"
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
         self._url = config_entry.data[CONF_URL]
@@ -368,10 +380,10 @@ class BirdseyeCamera(FrigateEntity, Camera):
             # template instead. This means templates cannot access HomeAssistant
             # state, but rather only the camera config.
             self._stream_source = Template(streaming_template).render(
-                {"name": "birdseye"}
+                {"name": self._cam_name}
             )
         else:
-            self._stream_source = f"rtsp://{URL(self._url).host}:8554/birdseye"
+            self._stream_source = f"rtsp://{URL(self._url).host}:8554/{self._cam_name}"
 
     @property
     def unique_id(self) -> str:
@@ -409,7 +421,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
 
         image_url = str(
             URL(self._url)
-            / "api/birdseye/latest.jpg"
+            / f"api/{self._cam_name}/latest.jpg"
             % ({"h": height} if height is not None and height > 0 else {})
         )
 
@@ -420,3 +432,55 @@ class BirdseyeCamera(FrigateEntity, Camera):
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
+
+
+class FrigateCameraWebRTC(FrigateCamera):
+    """A Frigate camera with WebRTC support."""
+
+    # TODO: this property can be removed after this fix is released:
+    # https://github.com/home-assistant/core/pull/130932/files#diff-75655c0eec1c3e736cad1bdb5627100a4595ece9accc391b5c85343bb998594fR598-R603
+    @property
+    def frontend_stream_type(self) -> StreamType | None:
+        """Return the type of stream supported by this camera."""
+        return StreamType.WEB_RTC
+
+    async def async_handle_async_webrtc_offer(
+        self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
+    ) -> None:
+        """Handle the WebRTC offer and return an answer."""
+        websession = async_get_clientsession(self.hass)
+        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
+        payload = {"type": "offer", "sdp": offer_sdp}
+        async with websession.post(url, json=payload) as resp:
+            answer = await resp.json()
+            send_message(WebRTCAnswer(answer["sdp"]))
+
+    async def async_on_webrtc_candidate(self, session_id: str, candidate: Any) -> None:
+        """Ignore WebRTC candidates for Frigate cameras."""
+        return
+
+
+class BirdseyeCameraWebRTC(BirdseyeCamera):
+    """A Frigate birdseye camera with WebRTC support."""
+
+    # TODO: this property can be removed after this fix is released:
+    # https://github.com/home-assistant/core/pull/130932/files#diff-75655c0eec1c3e736cad1bdb5627100a4595ece9accc391b5c85343bb998594fR598-R603
+    @property
+    def frontend_stream_type(self) -> StreamType | None:
+        """Return the type of stream supported by this camera."""
+        return StreamType.WEB_RTC
+
+    async def async_handle_async_webrtc_offer(
+        self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
+    ) -> None:
+        """Handle the WebRTC offer and return an answer."""
+        websession = async_get_clientsession(self.hass)
+        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
+        payload = {"type": "offer", "sdp": offer_sdp}
+        async with websession.post(url, json=payload) as resp:
+            answer = await resp.json()
+            send_message(WebRTCAnswer(answer["sdp"]))
+
+    async def async_on_webrtc_candidate(self, session_id: str, candidate: Any) -> None:
+        """Ignore WebRTC candidates for Frigate cameras."""
+        return
