@@ -174,6 +174,23 @@ async def test_frigate_camera_birdseye_image_height(
     assert image.content == b"data-no-height"
 
 
+async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
+    """Set up a camera without streaming."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["go2rtc"] = {}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "idle"
+    assert not entity_state.attributes["supported_features"]
+
+    assert not await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+
+
 async def test_frigate_camera_recording_camera_state(
     hass: HomeAssistant,
     aioclient_mock: Any,
@@ -181,7 +198,6 @@ async def test_frigate_camera_recording_camera_state(
     """Set up an mqtt camera."""
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
-    config["go2rtc"] = {}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
     await setup_mock_frigate_config_entry(hass, client=client)

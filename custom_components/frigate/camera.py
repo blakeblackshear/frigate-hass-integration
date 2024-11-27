@@ -173,7 +173,10 @@ class FrigateCamera(
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
         self._stream_source = None
-        self._attr_is_streaming = True
+        self._attr_is_streaming = (
+            self._cam_name
+            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
+        )
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
@@ -185,10 +188,7 @@ class FrigateCamera(
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/motion/set"
         )
 
-        if (
-            self._cam_name
-            in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
-        ):
+        if self._attr_is_streaming:
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -265,6 +265,8 @@ class FrigateCamera(
     @property
     def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
+        if not self._attr_is_streaming:
+            return CameraEntityFeature(0)
         return CameraEntityFeature.STREAM
 
     async def async_camera_image(
