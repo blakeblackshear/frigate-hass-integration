@@ -24,6 +24,8 @@
     "vscode": {
       "extensions": [
         "ms-python.python",
+        "ms-python.pylint",
+        "mikoz.black-py",
         "visualstudioexptteam.vscodeintellicode",
         "mhutchie.git-graph",
         "ms-azuretools.vscode-docker",
