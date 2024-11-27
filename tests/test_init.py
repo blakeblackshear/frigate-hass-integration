@@ -17,7 +17,6 @@ from custom_components.frigate import (
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
-    CONF_ENABLE_WEBRTC,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
 )
@@ -436,7 +435,6 @@ async def test_startup_message(caplog: Any, hass: HomeAssistant) -> None:
     "option",
     [
         CONF_CAMERA_STATIC_IMAGE_HEIGHT,
-        CONF_ENABLE_WEBRTC,
         CONF_RTMP_URL_TEMPLATE,
     ],
 )

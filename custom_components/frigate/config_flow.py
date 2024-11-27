@@ -17,6 +17,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
+    CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
@@ -122,6 +123,14 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_abort(reason="only_advanced_options")
 
         schema: dict[Any, Any] = {
+            # Whether to enable webrtc as the medium for camera streaming
+            vol.Optional(
+                CONF_ENABLE_WEBRTC,
+                default=self._config_entry.options.get(
+                    CONF_ENABLE_WEBRTC,
+                    False,
+                ),
+            ): bool,
             # The input URL is not validated as being a URL to allow for the
             # possibility the template input won't be a valid URL until after
             # it's rendered.

@@ -23,6 +23,7 @@ from custom_components.frigate.const import (
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
+    CONF_ENABLE_WEBRTC,
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
     NAME,
@@ -69,6 +70,77 @@ async def test_frigate_camera_setup(
     """Set up a camera."""
 
     await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+    assert entity_state.attributes["frontend_stream_type"] == StreamType.HLS
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert source
+    assert source == "rtsp://example.com:8554/front_door"
+
+    aioclient_mock.get(
+        "http://example.com/api/front_door/latest.jpg?h=277",
+        content=b"data-277",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID, height=277)
+    assert image
+    assert image.content == b"data-277"
+
+
+async def test_frigate_camera_setup_birdseye(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+    hass_ws_client: Any,
+) -> None:
+    """Set up birdseye camera."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["birdseye"] = {"restream": True}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+    assert entity_state.attributes["frontend_stream_type"] == StreamType.HLS
+
+    source = await async_get_stream_source(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID)
+    assert source
+    assert source == "rtsp://example.com:8554/birdseye"
+
+    aioclient_mock.get(
+        "http://example.com/api/birdseye/latest.jpg?h=299",
+        content=b"data-299",
+    )
+
+    image = await async_get_image(hass, TEST_CAMERA_BIRDSEYE_ENTITY_ID, height=299)
+    assert image
+    assert image.content == b"data-299"
+
+
+async def test_frigate_camera_setup_webrtc(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+    hass_ws_client: Any,
+) -> None:
+    """Set up a camera."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_ENABLE_WEBRTC: True}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
 
     entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
     assert entity_state
@@ -141,7 +213,7 @@ async def test_frigate_camera_setup(
     assert response["success"]
 
 
-async def test_frigate_camera_setup_birdseye(
+async def test_frigate_camera_setup_birdseye_webrtc(
     hass: HomeAssistant,
     aioclient_mock: Any,
     hass_ws_client: Any,
@@ -152,7 +224,13 @@ async def test_frigate_camera_setup_birdseye(
     config["birdseye"] = {"restream": True}
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
-    await setup_mock_frigate_config_entry(hass, client=client)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_ENABLE_WEBRTC: True}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
 
     entity_state = hass.states.get(TEST_CAMERA_BIRDSEYE_ENTITY_ID)
     assert entity_state

@@ -44,7 +44,6 @@ from .const import (
     ATTR_WS_EVENT_PROXY,
     ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
-    CONF_ENABLE_WEBRTC,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     FRIGATE_RELEASES_URL,
@@ -268,7 +267,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Remove old options.
     OLD_OPTIONS = [
         CONF_CAMERA_STATIC_IMAGE_HEIGHT,
-        CONF_ENABLE_WEBRTC,
         CONF_RTMP_URL_TEMPLATE,
     ]
     if any(option in entry.options for option in OLD_OPTIONS):
