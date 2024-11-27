@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any, cast
+from typing import Any
 
 import async_timeout
 from jinja2 import Template
@@ -12,7 +12,13 @@ import voluptuous as vol
 from yarl import URL
 
 from custom_components.frigate.api import FrigateApiClient
-from homeassistant.components.camera import Camera, CameraEntityFeature, StreamType
+from homeassistant.components.camera import (
+    Camera,
+    CameraEntityFeature,
+    StreamType,
+    WebRTCAnswer,
+    WebRTCSendMessage,
+)
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
@@ -301,14 +307,20 @@ class FrigateCamera(
             False,
         )
 
-    async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
+    async def async_handle_async_webrtc_offer(
+        self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
+    ) -> None:
         """Handle the WebRTC offer and return an answer."""
         websession = async_get_clientsession(self.hass)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
             answer = await resp.json()
-            return cast(str, answer["sdp"])
+            send_message(WebRTCAnswer(answer["sdp"]))
+
+    async def async_on_webrtc_candidate(self, session_id: str, candidate: Any) -> None:
+        """Ignore WebRTC candidates for Frigate cameras."""
+        return
 
     async def async_disable_motion_detection(self) -> None:
         """Disable motion detection for this camera."""
@@ -435,11 +447,17 @@ class BirdseyeCamera(FrigateEntity, Camera):
         """Return the source of the stream."""
         return self._stream_source
 
-    async def async_handle_web_rtc_offer(self, offer_sdp: str) -> str | None:
+    async def async_handle_async_webrtc_offer(
+        self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
+    ) -> None:
         """Handle the WebRTC offer and return an answer."""
         websession = async_get_clientsession(self.hass)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
             answer = await resp.json()
-            return cast(str, answer["sdp"])
+            send_message(WebRTCAnswer(answer["sdp"]))
+
+    async def async_on_webrtc_candidate(self, session_id: str, candidate: Any) -> None:
+        """Ignore WebRTC candidates for Frigate cameras."""
+        return

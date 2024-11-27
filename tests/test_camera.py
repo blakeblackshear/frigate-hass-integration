@@ -97,17 +97,31 @@ async def test_frigate_camera_setup(
     await client.send_json(
         {
             "id": 5,
-            "type": "camera/web_rtc_offer",
+            "type": "camera/webrtc/offer",
             "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
             "offer": "send_sdp",
         }
     )
 
-    msg = await client.receive_json()
-    assert msg["id"] == 5
-    assert msg["type"] == TYPE_RESULT
-    assert msg["success"]
-    assert msg["result"]["answer"] == "return_sdp"
+    response = await client.receive_json()
+    assert response["id"] == 5
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
+
+    # Session id
+    response = await client.receive_json()
+    assert response["id"] == 5
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "session"
+
+    # Answer
+    response = await client.receive_json()
+    assert response["id"] == 5
+    assert response["type"] == "event"
+    assert response["event"] == {
+        "type": "answer",
+        "answer": "return_sdp",
+    }
 
 
 async def test_frigate_camera_setup_birdseye(
@@ -150,17 +164,31 @@ async def test_frigate_camera_setup_birdseye(
     await client.send_json(
         {
             "id": 5,
-            "type": "camera/web_rtc_offer",
+            "type": "camera/webrtc/offer",
             "entity_id": TEST_CAMERA_BIRDSEYE_ENTITY_ID,
             "offer": "send_sdp",
         }
     )
 
-    msg = await client.receive_json()
-    assert msg["id"] == 5
-    assert msg["type"] == TYPE_RESULT
-    assert msg["success"]
-    assert msg["result"]["answer"] == "return_sdp"
+    response = await client.receive_json()
+    assert response["id"] == 5
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
+
+    # Session id
+    response = await client.receive_json()
+    assert response["id"] == 5
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "session"
+
+    # Answer
+    response = await client.receive_json()
+    assert response["id"] == 5
+    assert response["type"] == "event"
+    assert response["event"] == {
+        "type": "answer",
+        "answer": "return_sdp",
+    }
 
 
 async def test_frigate_extra_attributes(hass: HomeAssistant) -> None:
