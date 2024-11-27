@@ -1,8 +1,7 @@
 {
-  "python.linting.pylintEnabled": true,
-  "python.linting.enabled": true,
-  "python.formatting.provider": "black",
-  "python.testing.pytestArgs": ["--no-cov", "-p", "no:sugar", "tests"],
-  "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestArgs": ["--no-cov", "-p", "no:sugar"],
+  "python.testing.pytestEnabled": true,
+  "[python]": {
+    "editor.defaultFormatter": "mikoz.black-py"
+  }
 }

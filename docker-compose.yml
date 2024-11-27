@@ -1,7 +1,9 @@
 ---
 services:
   devcontainer:
-    build: .devcontainer
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
     init: true
     env_file:
       - .env
