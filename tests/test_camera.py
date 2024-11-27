@@ -89,11 +89,13 @@ async def test_frigate_camera_setup(
     assert image
     assert image.content == b"data-277"
 
+    client = await hass_ws_client(hass)
+
     aioclient_mock.post(
         "http://example.com/api/go2rtc/webrtc?src=front_door",
         json={"type": "answer", "sdp": "return_sdp"},
     )
-    client = await hass_ws_client(hass)
+
     await client.send_json(
         {
             "id": 5,
@@ -122,6 +124,21 @@ async def test_frigate_camera_setup(
         "type": "answer",
         "answer": "return_sdp",
     }
+
+    await client.send_json(
+        {
+            "id": 6,
+            "type": "camera/webrtc/candidate",
+            "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            "session_id": "session_id",
+            "candidate": "candidate",
+        }
+    )
+
+    response = await client.receive_json()
+    assert response["id"] == 6
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
 
 
 async def test_frigate_camera_setup_birdseye(
@@ -156,11 +173,13 @@ async def test_frigate_camera_setup_birdseye(
     assert image
     assert image.content == b"data-299"
 
+    client = await hass_ws_client(hass)
+
     aioclient_mock.post(
         "http://example.com/api/go2rtc/webrtc?src=birdseye",
         json={"type": "answer", "sdp": "return_sdp"},
     )
-    client = await hass_ws_client(hass)
+
     await client.send_json(
         {
             "id": 5,
@@ -189,6 +208,21 @@ async def test_frigate_camera_setup_birdseye(
         "type": "answer",
         "answer": "return_sdp",
     }
+
+    await client.send_json(
+        {
+            "id": 6,
+            "type": "camera/webrtc/candidate",
+            "entity_id": TEST_CAMERA_BIRDSEYE_ENTITY_ID,
+            "session_id": "session_id",
+            "candidate": "candidate",
+        }
+    )
+
+    response = await client.receive_json()
+    assert response["id"] == 6
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
 
 
 async def test_frigate_extra_attributes(hass: HomeAssistant) -> None:
