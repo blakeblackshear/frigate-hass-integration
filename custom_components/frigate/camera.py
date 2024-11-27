@@ -74,46 +74,29 @@ async def async_setup_entry(
     client_id = get_frigate_instance_id_for_config_entry(hass, entry)
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
-    if entry.options.get(CONF_ENABLE_WEBRTC, False):
-        async_add_entities(
-            [
-                FrigateCameraWebRTC(
-                    entry,
-                    cam_name,
-                    frigate_client,
-                    client_id,
-                    coordinator,
-                    frigate_config,
-                    camera_config,
-                )
-                for cam_name, camera_config in frigate_config["cameras"].items()
-            ]
-            + (
-                [BirdseyeCameraWebRTC(entry, frigate_client)]
-                if frigate_config.get("birdseye", {}).get("restream", False)
-                else []
+    frigate_webrtc = entry.options.get(CONF_ENABLE_WEBRTC, False)
+    camera_type = FrigateCameraWebRTC if frigate_webrtc else FrigateCamera
+    birdseye_type = BirdseyeCameraWebRTC if frigate_webrtc else BirdseyeCamera
+
+    async_add_entities(
+        [
+            camera_type(
+                entry,
+                cam_name,
+                frigate_client,
+                client_id,
+                coordinator,
+                frigate_config,
+                camera_config,
             )
+            for cam_name, camera_config in frigate_config["cameras"].items()
+        ]
+        + (
+            [birdseye_type(entry, frigate_client)]
+            if frigate_config.get("birdseye", {}).get("restream", False)
+            else []
         )
-    else:
-        async_add_entities(
-            [
-                FrigateCamera(
-                    entry,
-                    cam_name,
-                    frigate_client,
-                    client_id,
-                    coordinator,
-                    frigate_config,
-                    camera_config,
-                )
-                for cam_name, camera_config in frigate_config["cameras"].items()
-            ]
-            + (
-                [BirdseyeCamera(entry, frigate_client)]
-                if frigate_config.get("birdseye", {}).get("restream", False)
-                else []
-            )
-        )
+    )
 
     # setup services
     platform = entity_platform.async_get_current_platform()

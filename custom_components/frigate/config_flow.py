@@ -123,7 +123,7 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_abort(reason="only_advanced_options")
 
         schema: dict[Any, Any] = {
-            # Whether to enable webrtc as the medium for camera streaming
+            # Whether to enable Frigate-native WebRTC for camera streaming
             vol.Optional(
                 CONF_ENABLE_WEBRTC,
                 default=self._config_entry.options.get(
