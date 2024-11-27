@@ -195,8 +195,6 @@ class FrigateCamera(
         )
 
         if self._attr_is_streaming:
-            self._attr_frontend_stream_type = StreamType.WEB_RTC
-
             streaming_template = config_entry.options.get(
                 CONF_RTSP_URL_TEMPLATE, ""
             ).strip()
@@ -276,6 +274,11 @@ class FrigateCamera(
         if not self._attr_is_streaming:
             return CameraEntityFeature(0)
         return CameraEntityFeature.STREAM
+
+    @property
+    def frontend_stream_type(self) -> StreamType | None:
+        """Return the type of stream supported by this camera."""
+        return StreamType.WEB_RTC
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
@@ -382,8 +385,6 @@ class BirdseyeCamera(FrigateEntity, Camera):
         self._attr_is_streaming = True
         self._attr_is_recording = False
 
-        self._attr_frontend_stream_type = StreamType.WEB_RTC
-
         streaming_template = config_entry.options.get(
             CONF_RTSP_URL_TEMPLATE, ""
         ).strip()
@@ -426,6 +427,11 @@ class BirdseyeCamera(FrigateEntity, Camera):
     def supported_features(self) -> CameraEntityFeature:
         """Return supported features of this camera."""
         return CameraEntityFeature.STREAM
+
+    @property
+    def frontend_stream_type(self) -> StreamType | None:
+        """Return the type of stream supported by this camera."""
+        return StreamType.WEB_RTC
 
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
