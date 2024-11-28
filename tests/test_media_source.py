@@ -12,7 +12,6 @@ from typing import Any, cast
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
-import pytz
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
 from custom_components.frigate.const import (
@@ -37,6 +36,7 @@ from homeassistant.components.media_source.models import PlayMedia
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import system_info
+from homeassistant.util.dt import DEFAULT_TIME_ZONE, async_get_time_zone
 
 from . import (
     TEST_CONFIG,
@@ -624,7 +624,7 @@ async def test_async_browse_media_clip_search_multi_month_drilldown(
 async def test_async_resolve_media(
     frigate_client: AsyncMock, hass: HomeAssistant
 ) -> None:
-    """Test successful resolve media."""
+    """Test resolving media."""
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
@@ -652,7 +652,9 @@ async def test_async_resolve_media(
     # Convert from HA local timezone to UTC.
     info = await system_info.async_get_system_info(hass)
     date = datetime.datetime(2021, 5, 30, 15, 46, 8, 0, datetime.timezone.utc) - (
-        datetime.datetime.now(pytz.timezone(info.get("timezone", "utc"))).utcoffset()
+        datetime.datetime.now(
+            await async_get_time_zone(info.get("timezone", "utc"))
+        ).utcoffset()
         or datetime.timedelta()
     )
 
@@ -685,6 +687,18 @@ async def test_async_resolve_media(
             f"{const.URI_SCHEME}{DOMAIN}/UNKNOWN",
             target_media_player="media_player.kitchen",
         )
+
+    # Test resolving when system timezone is not found.
+    with patch(
+        "homeassistant.helpers.system_info.async_get_system_info",
+        return_value={"timezone": "UNKNOWN"},
+    ):
+        with pytest.raises(Unresolvable):
+            media = await media_source.async_resolve_media(
+                hass,
+                f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/CLIP-FOO",
+                target_media_player="media_player.kitchen",
+            )
 
 
 async def test_async_browse_media_recordings_root(
@@ -998,7 +1012,7 @@ async def test_event_search_identifier() -> None:
     # Event searches have no equivalent Frigate server path (searches result in
     # EventIdentifiers, that do have a Frigate server path).
     with pytest.raises(NotImplementedError):
-        identifier.get_integration_proxy_path("utc")
+        identifier.get_integration_proxy_path(DEFAULT_TIME_ZONE)
 
     # Invalid "after" time.
     assert (
@@ -1091,7 +1105,7 @@ async def test_recordings_identifier() -> None:
         identifier_in = f"{TEST_FRIGATE_INSTANCE_ID}/recordings/front_door//15"
         identifier = RecordingIdentifier.from_str(identifier_in)
         assert identifier is not None
-        identifier.get_integration_proxy_path("utc")
+        identifier.get_integration_proxy_path(DEFAULT_TIME_ZONE)
 
     # Verify a zero hour:
     # https://github.com/blakeblackshear/frigate-hass-integration/issues/126
