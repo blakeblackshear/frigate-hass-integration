@@ -6,5 +6,4 @@ homeassistant==2024.11.3
 paho-mqtt
 python-dateutil
 yarl
-pytz
 hass-web-proxy-lib==0.0.7

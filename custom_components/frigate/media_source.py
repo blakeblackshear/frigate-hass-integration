@@ -9,7 +9,6 @@ from typing import Any, cast
 
 import attr
 from dateutil.relativedelta import relativedelta
-import pytz
 
 from homeassistant.components.media_player.const import MediaClass, MediaType
 from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
@@ -22,7 +21,7 @@ from homeassistant.components.media_source.models import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import system_info
 from homeassistant.helpers.template import DATE_STR_FORMAT
-from homeassistant.util.dt import DEFAULT_TIME_ZONE
+from homeassistant.util.dt import DEFAULT_TIME_ZONE, async_get_time_zone
 
 from . import get_friendly_name
 from .api import FrigateApiClient, FrigateApiClientError
@@ -118,7 +117,7 @@ class Identifier:
         """Get the identifier type."""
         raise NotImplementedError
 
-    def get_integration_proxy_path(self, timezone: str) -> str:
+    def get_integration_proxy_path(self, tz_info: dt.tzinfo) -> str:
         """Get the proxy (Home Assistant view) path for this identifier."""
         raise NotImplementedError
 
@@ -240,7 +239,7 @@ class EventIdentifier(Identifier):
         """Get the identifier type."""
         return "event"
 
-    def get_integration_proxy_path(self, timezone: str) -> str:
+    def get_integration_proxy_path(self, tz_info: dt.tzinfo) -> str:
         """Get the equivalent Frigate server path."""
         if self.frigate_media_type == FrigateMediaType.CLIPS:
             return f"vod/event/{self.id}/index.{self.frigate_media_type.extension}"
@@ -444,7 +443,7 @@ class RecordingIdentifier(Identifier):
         """Get the identifier type."""
         return "recordings"
 
-    def get_integration_proxy_path(self, timezone: str) -> str:
+    def get_integration_proxy_path(self, tz_info: dt.tzinfo) -> str:
         """Get the integration path that will proxy this identifier."""
 
         if (
@@ -460,8 +459,8 @@ class RecordingIdentifier(Identifier):
                 int(month),
                 int(day),
                 int(self.hour),
-                tzinfo=dt.timezone.utc,
-            ) - (dt.datetime.now(pytz.timezone(timezone)).utcoffset() or dt.timedelta())
+                tzinfo=dt.UTC,
+            ) - (dt.datetime.now(tz_info).utcoffset() or dt.timedelta())
 
             parts = [
                 "vod",
@@ -565,9 +564,14 @@ class FrigateMediaSource(MediaSource):
             identifier.frigate_instance_id
         ):
             info = await system_info.async_get_system_info(self.hass)
-            server_path = identifier.get_integration_proxy_path(
-                info.get("timezone", "utc")
-            )
+            tz_name = info.get("timezone", "utc")
+            tz_info = await async_get_time_zone(tz_name)
+            if not tz_info:
+                raise Unresolvable(
+                    f"Could not get timezone object for timezone: {tz_name}"
+                )
+
+            server_path = identifier.get_integration_proxy_path(tz_info)
             return PlayMedia(
                 f"/api/frigate/{identifier.frigate_instance_id}/{server_path}",
                 identifier.mime_type,

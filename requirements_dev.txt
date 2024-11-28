@@ -10,4 +10,3 @@ pylint
 pytest-aiohttp
 pytest-asyncio
 types-python-dateutil
-types-pytz
