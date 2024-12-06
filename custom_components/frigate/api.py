@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 import socket
 from typing import Any, cast
@@ -31,10 +32,19 @@ class FrigateApiClientError(Exception):
 class FrigateApiClient:
     """Frigate API client."""
 
-    def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
+    def __init__(
+        self,
+        host: str,
+        session: aiohttp.ClientSession,
+        username: str | None = None,
+        password: str | None = None,
+    ) -> None:
         """Construct API Client."""
         self._host = host
         self._session = session
+        self._username = username
+        self._password = password
+        self._token_data: dict[str, Any] = {}
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
@@ -216,6 +226,58 @@ class FrigateApiClient:
         )
         return cast(dict[str, Any], result) if decode_json else result
 
+    async def _get_token(self) -> None:
+        """
+        Obtain a new JWT token using the provided username and password.
+        Sends a POST request to the login endpoint and extracts the token
+        and expiration date from the response headers.
+        """
+        response = await self.api_wrapper(
+            method="post",
+            url=str(URL(self._host) / "api/login"),
+            data={"user": self._username, "password": self._password},
+            decode_json=False,
+            login_request=True,
+        )
+
+        set_cookie_header = response.headers.get("Set-Cookie", "")
+        for cookie_prop in set_cookie_header.split(";"):
+            cookie_prop = cookie_prop.strip()
+            if cookie_prop.startswith("frigate_token="):
+                self._token_data["token"] = cookie_prop.split("=", 1)[1]
+            elif cookie_prop.startswith("expires="):
+                try:
+                    self._token_data["expires"] = datetime.datetime.strptime(
+                        cookie_prop.split("=", 1)[1].strip(), "%a, %d %b %Y %H:%M:%S %Z"
+                    )
+                except ValueError:
+                    raise ValueError("Invalid date format in 'expires' property")
+
+    async def _refresh_token_if_needed(self) -> None:
+        """
+        Refresh the JWT token if it is expired or about to expire.
+        """
+        if (
+            "expires" not in self._token_data
+            or datetime.datetime.now() >= self._token_data["expires"]
+        ):
+            await self._get_token()
+
+    async def _get_headers(self) -> dict[str, str]:
+        """
+        Get headers for API requests, including the JWT token if available.
+        Ensures that the token is refreshed if needed.
+        """
+        headers = {}
+
+        if self._username and self._password:
+            await self._refresh_token_if_needed()
+
+            if "token" in self._token_data:
+                headers["Authorization"] = f"Bearer {self._token_data['token']}"
+
+        return headers
+
     async def api_wrapper(
         self,
         method: str,
@@ -223,12 +285,16 @@ class FrigateApiClient:
         data: dict | None = None,
         headers: dict | None = None,
         decode_json: bool = True,
+        login_request: bool = False,
     ) -> Any:
         """Get information from the API."""
         if data is None:
             data = {}
         if headers is None:
             headers = {}
+
+        if not login_request:
+            headers.update(await self._get_headers())
 
         try:
             async with async_timeout.timeout(TIMEOUT):
@@ -237,6 +303,9 @@ class FrigateApiClient:
                     response = await func(
                         url, headers=headers, raise_for_status=True, json=data
                     )
+                    response.raise_for_status()
+                    if login_request:
+                        return response
                     if decode_json:
                         return await response.json()
                     return await response.text()
@@ -249,6 +318,27 @@ class FrigateApiClient:
             )
             raise FrigateApiClientError from exc
 
+        except aiohttp.ClientResponseError as exc:
+            if exc.status == 401:
+                _LOGGER.error(
+                    "Unauthorized (401) error for URL %s: %s", url, exc.message
+                )
+                raise FrigateApiClientError(
+                    "Unauthorized access - check credentials."
+                ) from exc
+            elif exc.status == 403:
+                _LOGGER.error("Forbidden (403) error for URL %s: %s", url, exc.message)
+                raise FrigateApiClientError(
+                    "Forbidden - insufficient permissions."
+                ) from exc
+            else:
+                _LOGGER.error(
+                    "Client response error (%d) for URL %s: %s",
+                    exc.status,
+                    url,
+                    exc.message,
+                )
+                raise FrigateApiClientError from exc
         except (KeyError, TypeError) as exc:
             _LOGGER.error(
                 "Error parsing information from %s: %s",

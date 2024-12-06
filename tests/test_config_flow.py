@@ -17,7 +17,7 @@ from custom_components.frigate.const import (
     DOMAIN,
 )
 from homeassistant import config_entries, data_entry_flow
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
 from . import TEST_URL, create_mock_frigate_client, create_mock_frigate_config_entry
@@ -54,6 +54,8 @@ async def test_user_success(hass: HomeAssistant) -> None:
     assert result["title"] == "example.com"
     assert result["data"] == {
         CONF_URL: TEST_URL,
+        CONF_USERNAME: "",
+        CONF_PASSWORD: "",
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
@@ -127,6 +129,8 @@ async def test_user_connection_failure(hass: HomeAssistant) -> None:
             result["flow_id"],
             {
                 CONF_URL: TEST_URL,
+                CONF_USERNAME: "",
+                CONF_PASSWORD: "",
             },
         )
         await hass.async_block_till_done()
@@ -148,6 +152,8 @@ async def test_user_invalid_url(hass: HomeAssistant) -> None:
         result["flow_id"],
         {
             CONF_URL: "THIS IS NOT A URL",
+            CONF_USERNAME: "",
+            CONF_PASSWORD: "",
         },
     )
     await hass.async_block_till_done()

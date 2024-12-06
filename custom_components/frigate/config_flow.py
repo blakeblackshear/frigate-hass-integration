@@ -10,7 +10,7 @@ from voluptuous.validators import All, Range
 from yarl import URL
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_URL, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -82,7 +82,12 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             session = async_create_clientsession(self.hass)
-            client = FrigateApiClient(user_input[CONF_URL], session)
+            client = FrigateApiClient(
+                user_input[CONF_URL],
+                session,
+                user_input.get(CONF_USERNAME),
+                user_input.get(CONF_PASSWORD),
+            )
             await client.async_get_stats()
         except FrigateApiClientError:
             return self._show_config_form(
@@ -122,7 +127,13 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(
                         CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
-                    ): str
+                    ): str,
+                    vol.Optional(
+                        CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
+                    ): str,
+                    vol.Optional(
+                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
+                    ): str,
                 }
             ),
             errors=errors,
