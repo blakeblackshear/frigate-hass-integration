@@ -241,26 +241,48 @@ class FrigateApiClient:
         )
 
         set_cookie_header = response.headers.get("Set-Cookie", "")
+        if not set_cookie_header:
+            raise KeyError("Missing Set-Cookie header in response")
+
+        token_found = False
+        expires_found = False
+
         for cookie_prop in set_cookie_header.split(";"):
             cookie_prop = cookie_prop.strip()
             if cookie_prop.startswith("frigate_token="):
                 self._token_data["token"] = cookie_prop.split("=", 1)[1]
+                token_found = True
             elif cookie_prop.startswith("expires="):
+                expires_str = cookie_prop.split("=", 1)[1].strip()
                 try:
+                    # Try parsing with timezone (%Z)
+                    print("HHHHHH")
                     self._token_data["expires"] = datetime.datetime.strptime(
-                        cookie_prop.split("=", 1)[1].strip(), "%a, %d %b %Y %H:%M:%S %Z"
+                        expires_str, "%a, %d %b %Y %H:%M:%S %Z"
                     )
                 except ValueError:
-                    raise ValueError("Invalid date format in 'expires' property")
+                    # Assume UTC if timezone is missing
+                    print("Here")
+                    self._token_data["expires"] = datetime.datetime.strptime(
+                        expires_str, "%a, %d %b %Y %H:%M:%S"
+                    ).replace(tzinfo=datetime.timezone.utc)
+                expires_found = True
+
+        if not token_found:
+            raise KeyError("Missing 'frigate_token' in Set-Cookie header")
+        if not expires_found:
+            raise KeyError("Missing 'expires' in Set-Cookie header")
 
     async def _refresh_token_if_needed(self) -> None:
         """
         Refresh the JWT token if it is expired or about to expire.
         """
-        if (
-            "expires" not in self._token_data
-            or datetime.datetime.now() >= self._token_data["expires"]
-        ):
+        if "expires" not in self._token_data:
+            await self._get_token()
+            return
+
+        current_time = datetime.datetime.now(datetime.UTC)
+        if current_time >= self._token_data["expires"]:  # Compare UTC-aware datetimes
             await self._get_token()
 
     async def _get_headers(self) -> dict[str, str]:

@@ -412,3 +412,140 @@ async def test_async_get_ptz_info(
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert await frigate_client.async_get_ptz_info(camera) == summary_success
     assert summary_handler.called
+
+
+async def test_get_token_success(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token retrieves and parses token and expiration successfully."""
+    token = "test_token"
+    expires = "Sun, 10 Dec 2023 22:00:00 GMT"
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; expires={expires}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    await frigate_client._get_token()
+
+    assert frigate_client._token_data["token"] == token
+    assert frigate_client._token_data["expires"] == datetime.datetime.strptime(
+        expires, "%a, %d %b %Y %H:%M:%S %Z"
+    )
+
+
+async def test_get_token_invalid_response(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token with invalid Set-Cookie header."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with no token in response."""
+        return web.Response(status=200)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(KeyError, match="Missing Set-Cookie header in response"):
+        await frigate_client._get_token()
+
+
+async def test_refresh_token_if_needed(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _refresh_token_if_needed refreshes token if expired."""
+    token = "test_token"
+    expires = (
+        datetime.datetime.now(datetime.UTC) - datetime.timedelta(seconds=1)
+    ).strftime("%a, %d %b %Y %H:%M:%S %Z")
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; expires={expires}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+    # Simulate an expired token
+    frigate_client._token_data["expires"] = datetime.datetime.now(
+        datetime.UTC
+    ) - datetime.timedelta(seconds=5)
+
+    await frigate_client._refresh_token_if_needed()
+    assert frigate_client._token_data["token"] == token
+
+
+async def test_get_headers(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_headers includes Authorization header with valid token."""
+    token = "test_token"
+    expires = (
+        datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)
+    ).strftime("%a, %d %b %Y %H:%M:%S %Z")
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; expires={expires}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+    # Pre-fetch token
+    await frigate_client._get_token()
+    headers = await frigate_client._get_headers()
+
+    assert headers["Authorization"] == f"Bearer {token}"
+
+
+async def test_refresh_token_with_timezone_awareness(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _refresh_token_if_needed handles timezone-aware datetimes."""
+    token = "test_token"
+    expires = (
+        datetime.datetime.now(datetime.UTC) - datetime.timedelta(seconds=1)
+    ).strftime("%a, %d %b %Y %H:%M:%S")
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; expires={expires}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    # Simulate expired token with UTC timezone
+    frigate_client._token_data["expires"] = datetime.datetime.now(
+        datetime.UTC
+    ) - datetime.timedelta(seconds=5)
+
+    await frigate_client._refresh_token_if_needed()
+    assert frigate_client._token_data["token"] == token
