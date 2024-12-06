@@ -15,7 +15,6 @@ from custom_components.frigate.api import FrigateApiClient
 from homeassistant.components.camera import (
     Camera,
     CameraEntityFeature,
-    StreamType,
     WebRTCAnswer,
     WebRTCSendMessage,
 )
@@ -437,13 +436,6 @@ class BirdseyeCamera(FrigateEntity, Camera):
 class FrigateCameraWebRTC(FrigateCamera):
     """A Frigate camera with WebRTC support."""
 
-    # TODO: this property can be removed after this fix is released:
-    # https://github.com/home-assistant/core/pull/130932/files#diff-75655c0eec1c3e736cad1bdb5627100a4595ece9accc391b5c85343bb998594fR598-R603
-    @property
-    def frontend_stream_type(self) -> StreamType | None:
-        """Return the type of stream supported by this camera."""
-        return StreamType.WEB_RTC
-
     async def async_handle_async_webrtc_offer(
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
@@ -462,13 +454,6 @@ class FrigateCameraWebRTC(FrigateCamera):
 
 class BirdseyeCameraWebRTC(BirdseyeCamera):
     """A Frigate birdseye camera with WebRTC support."""
-
-    # TODO: this property can be removed after this fix is released:
-    # https://github.com/home-assistant/core/pull/130932/files#diff-75655c0eec1c3e736cad1bdb5627100a4595ece9accc391b5c85343bb998594fR598-R603
-    @property
-    def frontend_stream_type(self) -> StreamType | None:
-        """Return the type of stream supported by this camera."""
-        return StreamType.WEB_RTC
 
     async def async_handle_async_webrtc_offer(
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage

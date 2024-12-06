@@ -203,7 +203,9 @@ async def test_frigate_camera_setup_webrtc(
             "type": "camera/webrtc/candidate",
             "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
             "session_id": "session_id",
-            "candidate": "candidate",
+            "candidate": {
+                "candidate": "candidate",
+            },
         }
     )
 
@@ -293,7 +295,9 @@ async def test_frigate_camera_setup_birdseye_webrtc(
             "type": "camera/webrtc/candidate",
             "entity_id": TEST_CAMERA_BIRDSEYE_ENTITY_ID,
             "session_id": "session_id",
-            "candidate": "candidate",
+            "candidate": {
+                "candidate": "candidate",
+            },
         }
     )
 
