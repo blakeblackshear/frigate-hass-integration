@@ -48,35 +48,67 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         """Handle a flow initialized by the user."""
+        return await self._handle_config_step(user_input)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Handle a flow initialized by a reconfiguration."""
+        return await self._handle_config_step(
+            user_input,
+            step_id="reconfigure",
+            default_form_input=dict(self._get_reconfigure_entry().data),
+        )
+
+    async def _handle_config_step(
+        self,
+        user_input: dict[str, Any] | None = None,
+        step_id: str = "user",
+        default_form_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Handle a config step."""
 
         if user_input is None:
-            return self._show_config_form()
+            return self._show_config_form(step_id, user_input=default_form_input)
 
         try:
-            # Cannot use cv.url validation in the schema itself, so
-            # apply extra validation here.
+            # Cannot use cv.url validation in the schema itself, so apply extra
+            # validation here.
             cv.url(user_input[CONF_URL])
         except vol.Invalid:
-            return self._show_config_form(user_input, errors={"base": "invalid_url"})
+            return self._show_config_form(
+                step_id, user_input, errors={"base": "invalid_url"}
+            )
 
         try:
             session = async_create_clientsession(self.hass)
             client = FrigateApiClient(user_input[CONF_URL], session)
             await client.async_get_stats()
         except FrigateApiClientError:
-            return self._show_config_form(user_input, errors={"base": "cannot_connect"})
+            return self._show_config_form(
+                step_id, user_input, errors={"base": "cannot_connect"}
+            )
 
         # Search for duplicates with the same Frigate CONF_HOST value.
-        for existing_entry in self._async_current_entries(include_ignore=False):
-            if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
-                return self.async_abort(reason="already_configured")
+        if self.source != config_entries.SOURCE_RECONFIGURE:
+            for existing_entry in self._async_current_entries(include_ignore=False):
+                if existing_entry.data.get(CONF_URL) == user_input[CONF_URL]:
+                    return self.async_abort(reason="already_configured")
 
-        return self.async_create_entry(
-            title=get_config_entry_title(user_input[CONF_URL]), data=user_input
-        )
+        if self.source == config_entries.SOURCE_RECONFIGURE:
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(),
+                title=get_config_entry_title(user_input[CONF_URL]),
+                data=user_input,
+            )
+        else:
+            return self.async_create_entry(
+                title=get_config_entry_title(user_input[CONF_URL]), data=user_input
+            )
 
     def _show_config_form(
         self,
+        step_id: str,
         user_input: dict[str, Any] | None = None,
         errors: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
@@ -85,7 +117,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             user_input = {}
 
         return self.async_show_form(
-            step_id="user",
+            step_id=step_id,
             data_schema=vol.Schema(
                 {
                     vol.Required(
