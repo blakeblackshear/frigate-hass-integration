@@ -28,9 +28,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_MODEL,
     CONF_HOST,
-    CONF_USERNAME,
-    CONF_URL,
     CONF_PASSWORD,
+    CONF_URL,
+    CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady

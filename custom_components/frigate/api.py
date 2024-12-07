@@ -12,6 +12,8 @@ import aiohttp
 import async_timeout
 from yarl import URL
 
+from homeassistant.auth import jwt_wrapper
+
 TIMEOUT = 10
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -245,33 +247,26 @@ class FrigateApiClient:
             raise KeyError("Missing Set-Cookie header in response")
 
         token_found = False
-        expires_found = False
-
         for cookie_prop in set_cookie_header.split(";"):
             cookie_prop = cookie_prop.strip()
             if cookie_prop.startswith("frigate_token="):
-                self._token_data["token"] = cookie_prop.split("=", 1)[1]
+                jwt_token = cookie_prop.split("=", 1)[1]
+                self._token_data["token"] = jwt_token
                 token_found = True
-            elif cookie_prop.startswith("expires="):
-                expires_str = cookie_prop.split("=", 1)[1].strip()
+
                 try:
-                    # Try parsing with timezone (%Z)
-                    print("HHHHHH")
-                    self._token_data["expires"] = datetime.datetime.strptime(
-                        expires_str, "%a, %d %b %Y %H:%M:%S %Z"
-                    )
-                except ValueError:
-                    # Assume UTC if timezone is missing
-                    print("Here")
-                    self._token_data["expires"] = datetime.datetime.strptime(
-                        expires_str, "%a, %d %b %Y %H:%M:%S"
-                    ).replace(tzinfo=datetime.timezone.utc)
-                expires_found = True
+                    decoded_token = jwt_wrapper.unverified_hs256_token_decode(jwt_token)
+                except Exception as e:
+                    raise ValueError(f"Failed to decode JWT token: {e}")
+                exp_timestamp = decoded_token.get("exp")
+                if not exp_timestamp:
+                    raise KeyError("JWT is missing 'exp' claim")
+                self._token_data["expires"] = datetime.datetime.fromtimestamp(
+                    exp_timestamp, datetime.UTC
+                )
 
         if not token_found:
             raise KeyError("Missing 'frigate_token' in Set-Cookie header")
-        if not expires_found:
-            raise KeyError("Missing 'expires' in Set-Cookie header")
 
     async def _refresh_token_if_needed(self) -> None:
         """
