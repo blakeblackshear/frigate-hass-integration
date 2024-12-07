@@ -245,6 +245,8 @@ class NotificationsProxyView(FrigateProxyView):
             url_path = f"api/events/{event_id}/snapshot.jpg"
         elif path.endswith("clip.mp4"):
             url_path = f"api/events/{event_id}/clip.mp4"
+        elif path.endswith("master.m3u8"):
+            url_path = f"vod/events/{event_id}/master.m3u8"
         elif path.endswith("event_preview.gif"):
             url_path = f"api/events/{event_id}/preview.gif"
         elif path.endswith("review_preview.gif"):
