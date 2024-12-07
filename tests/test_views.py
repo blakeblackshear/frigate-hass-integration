@@ -61,6 +61,7 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/api/events/event_id/thumbnail.jpg", response_handler),
             web.get("/api/events/event_id/snapshot.jpg", response_handler),
             web.get("/api/events/event_id/clip.mp4", response_handler),
+            web.get("/vod/events/event_id/master.m3u8", response_handler),
             web.get("/api/events/event_id/preview.gif", response_handler),
             web.get("/api/review/event_id/preview", response_handler),
             web.get(
@@ -252,6 +253,7 @@ async def test_notifications_proxy_view_review_preview(
     )
     assert resp.status == HTTPStatus.OK
 
+
 async def test_notifications_proxy_view_hls(
     local_frigate: Any,
     hass_client_no_auth: Any,
@@ -264,6 +266,7 @@ async def test_notifications_proxy_view_hls(
         "/api/frigate/notifications/event_id/camera/master.m3u8"
     )
     assert resp.status == HTTPStatus.OK
+
 
 async def test_notifications_proxy_view_clip(
     local_frigate: Any,
