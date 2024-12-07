@@ -252,6 +252,18 @@ async def test_notifications_proxy_view_review_preview(
     )
     assert resp.status == HTTPStatus.OK
 
+async def test_notifications_proxy_view_hls(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test notification HLS."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        "/api/frigate/notifications/event_id/camera/master.m3u8"
+    )
+    assert resp.status == HTTPStatus.OK
 
 async def test_notifications_proxy_view_clip(
     local_frigate: Any,
