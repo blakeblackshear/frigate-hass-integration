@@ -59,6 +59,44 @@ async def test_user_success(hass: HomeAssistant) -> None:
     assert mock_client.async_get_stats.called
 
 
+async def test_reconfigure_success(hass: HomeAssistant) -> None:
+    """Test successful reconfigure flow."""
+    config_entry = create_mock_frigate_config_entry(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": config_entry.entry_id,
+        },
+    )
+
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_URL: TEST_URL,
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == "abort"
+    assert result["reason"] == "reconfigure_successful"
+    assert len(mock_setup_entry.mock_calls) == 1
+    assert mock_client.async_get_stats.called
+
+
 async def test_user_multiple_instances(hass: HomeAssistant) -> None:
     """Test multiple instances will be allowed."""
     # Create another config for this domain.
