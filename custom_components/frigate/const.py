@@ -50,6 +50,7 @@ ATTRIBUTE_LABELS = ["amazon", "face", "fedex", "license_plate", "ups"]
 CONF_MEDIA_BROWSER_ENABLE = "media_browser_enable"
 CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
 CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS = "notification_proxy_expire_after_seconds"
+CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_PATH = "path"
 CONF_RTSP_URL_TEMPLATE = "rtsp_url_template"
