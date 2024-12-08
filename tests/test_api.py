@@ -473,7 +473,7 @@ async def test_refresh_token_if_needed_without_expires(
     frigate_client = FrigateApiClient(
         str(server.make_url("/")), aiohttp_session, username="user", password="pass"
     )
-    # Ensure expirs is not set
+    # Ensure expires is not set
     frigate_client._token_data.pop("expires", None)
 
     await frigate_client._refresh_token_if_needed()
@@ -507,10 +507,10 @@ async def test_refresh_token_if_needed_with_expires(
     assert frigate_client._token_data["token"] == token
 
 
-async def test_get_headers(
+async def test_get_auth_headers(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
-    """Test _get_headers includes Authorization header with valid token."""
+    """Test _get_auth_headers includes Authorization header with valid token."""
     token = get_test_token()
 
     async def login_handler(request: web.Request) -> web.Response:
@@ -527,7 +527,7 @@ async def test_get_headers(
     )
     # Pre-fetch token
     await frigate_client._get_token()
-    headers = await frigate_client._get_headers()
+    headers = await frigate_client._get_auth_headers()
 
     assert headers["Authorization"] == f"Bearer {token}"
 

@@ -246,14 +246,11 @@ class FrigateApiClient:
         if not set_cookie_header:
             raise KeyError("Missing Set-Cookie header in response")
 
-        token_found = False
         for cookie_prop in set_cookie_header.split(";"):
             cookie_prop = cookie_prop.strip()
             if cookie_prop.startswith("frigate_token="):
                 jwt_token = cookie_prop.split("=", 1)[1]
                 self._token_data["token"] = jwt_token
-                token_found = True
-
                 try:
                     decoded_token = jwt_wrapper.unverified_hs256_token_decode(jwt_token)
                 except Exception as e:
@@ -264,8 +261,8 @@ class FrigateApiClient:
                 self._token_data["expires"] = datetime.datetime.fromtimestamp(
                     exp_timestamp, datetime.UTC
                 )
-
-        if not token_found:
+                break
+        else:
             raise KeyError("Missing 'frigate_token' in Set-Cookie header")
 
     async def _refresh_token_if_needed(self) -> None:
@@ -280,7 +277,7 @@ class FrigateApiClient:
         if current_time >= self._token_data["expires"]:  # Compare UTC-aware datetimes
             await self._get_token()
 
-    async def _get_headers(self) -> dict[str, str]:
+    async def _get_auth_headers(self) -> dict[str, str]:
         """
         Get headers for API requests, including the JWT token if available.
         Ensures that the token is refreshed if needed.
@@ -311,7 +308,7 @@ class FrigateApiClient:
             headers = {}
 
         if not login_request:
-            headers.update(await self._get_headers())
+            headers.update(await self._get_auth_headers())
 
         try:
             async with async_timeout.timeout(TIMEOUT):
