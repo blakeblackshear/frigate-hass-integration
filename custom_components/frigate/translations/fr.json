@@ -4,7 +4,9 @@
       "user": {
         "description": "URL que vous utilisez pour accéder à Frigate (par exemple, `http://frigate:5000/`)\n\nSi vous utilisez HassOS avec l'addon, l'URL devrait être `http://ccab4aaf-frigate:5000/`\n\nHome Assistant a besoin d'accès au port 5000 (api) et 8554/8555 (rtsp, webrtc) pour toutes les fonctionnalités.\n\nL'intégration configurera des capteurs, des caméras et la fonctionnalité de navigateur multimédia.\n\nCapteurs :\n- Statistiques pour surveiller la performance de Frigate\n- Comptes d'objets pour toutes les zones et caméras\n\nCaméras :\n- Caméras pour l'image du dernier objet détecté pour chaque caméra\n- Entités de caméra avec support de flux\n\nNavigateur multimédia :\n- Interface riche avec miniatures pour parcourir les clips d'événements\n- Interface riche pour parcourir les enregistrements 24/7 par mois, jour, caméra, heure\n\nAPI :\n- API de notification avec des points de terminaison publics pour les images dans les notifications",
         "data": {
-          "url": "URL"
+          "url": "URL",
+          "username": "Nom d'utilisateur (facultatif)",
+          "password": "Mot de passe (facultatif)"
         }
       }
     },
