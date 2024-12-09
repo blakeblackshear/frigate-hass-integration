@@ -239,7 +239,7 @@ class FrigateApiClient:
             url=str(URL(self._host) / "api/login"),
             data={"user": self._username, "password": self._password},
             decode_json=False,
-            login_request=True,
+            is_login_request=True,
         )
 
         set_cookie_header = response.headers.get("Set-Cookie", "")
@@ -299,7 +299,7 @@ class FrigateApiClient:
         data: dict | None = None,
         headers: dict | None = None,
         decode_json: bool = True,
-        login_request: bool = False,
+        is_login_request: bool = False,
     ) -> Any:
         """Get information from the API."""
         if data is None:
@@ -307,7 +307,7 @@ class FrigateApiClient:
         if headers is None:
             headers = {}
 
-        if not login_request:
+        if not is_login_request:
             headers.update(await self._get_auth_headers())
 
         try:
@@ -318,7 +318,7 @@ class FrigateApiClient:
                         url, headers=headers, raise_for_status=True, json=data
                     )
                     response.raise_for_status()
-                    if login_request:
+                    if is_login_request:
                         return response
                     if decode_json:
                         return await response.json()

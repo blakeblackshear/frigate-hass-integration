@@ -202,8 +202,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     client = FrigateApiClient(
         str(entry.data.get(CONF_URL)),
         async_get_clientsession(hass),
-        str(entry.data.get(CONF_USERNAME)),
-        str(entry.data.get(CONF_PASSWORD)),
+        entry.data.get(CONF_USERNAME),
+        entry.data.get(CONF_PASSWORD),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()

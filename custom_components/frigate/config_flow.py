@@ -129,10 +129,10 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
                     ): str,
                     vol.Optional(
-                        CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
+                        CONF_USERNAME, default=user_input.get(CONF_USERNAME)
                     ): str,
                     vol.Optional(
-                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
+                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)
                     ): str,
                 }
             ),
