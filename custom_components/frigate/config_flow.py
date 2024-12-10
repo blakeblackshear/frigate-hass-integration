@@ -130,10 +130,10 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     ): str,
                     vol.Optional(
                         CONF_USERNAME, default=user_input.get(CONF_USERNAME)
-                    ): str,
+                    ): vol.Any(str, None),
                     vol.Optional(
                         CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)
-                    ): str,
+                    ): vol.Any(str, None),
                 }
             ),
             errors=errors,
