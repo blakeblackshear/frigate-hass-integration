@@ -60,8 +60,8 @@ async def test_user_success(hass: HomeAssistant) -> None:
     assert result["title"] == "example.com"
     assert result["data"] == {
         CONF_URL: TEST_URL,
-        CONF_PASSWORD: None,
-        CONF_USERNAME: None,
+        CONF_PASSWORD: "",
+        CONF_USERNAME: "",
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
