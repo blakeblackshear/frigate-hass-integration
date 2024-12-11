@@ -56,29 +56,25 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a flow initialized by a reconfiguration."""
         return await self._handle_config_step(
             user_input,
-            step_id="reconfigure",
             default_form_input=dict(self._get_reconfigure_entry().data),
         )
 
     async def _handle_config_step(
         self,
         user_input: dict[str, Any] | None = None,
-        step_id: str = "user",
         default_form_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
         """Handle a config step."""
 
         if user_input is None:
-            return self._show_config_form(step_id, user_input=default_form_input)
+            return self._show_config_form(user_input=default_form_input)
 
         try:
             # Cannot use cv.url validation in the schema itself, so apply extra
             # validation here.
             cv.url(user_input[CONF_URL])
         except vol.Invalid:
-            return self._show_config_form(
-                step_id, user_input, errors={"base": "invalid_url"}
-            )
+            return self._show_config_form(user_input, errors={"base": "invalid_url"})
 
         try:
             session = async_create_clientsession(self.hass)
@@ -90,9 +86,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             await client.async_get_stats()
         except FrigateApiClientError:
-            return self._show_config_form(
-                step_id, user_input, errors={"base": "cannot_connect"}
-            )
+            return self._show_config_form(user_input, errors={"base": "cannot_connect"})
 
         # Search for duplicates with the same Frigate CONF_HOST value.
         if self.source != config_entries.SOURCE_RECONFIGURE:
@@ -113,7 +107,6 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     def _show_config_form(
         self,
-        step_id: str,
         user_input: dict[str, Any] | None = None,
         errors: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
@@ -122,18 +115,18 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             user_input = {}
 
         return self.async_show_form(
-            step_id=step_id,
+            step_id="user",
             data_schema=vol.Schema(
                 {
                     vol.Required(
                         CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
                     ): str,
                     vol.Optional(
-                        CONF_USERNAME, default=user_input.get(CONF_USERNAME)
-                    ): vol.Any(str, None),
+                        CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
+                    ): str,
                     vol.Optional(
-                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)
-                    ): vol.Any(str, None),
+                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
+                    ): str,
                 }
             ),
             errors=errors,
