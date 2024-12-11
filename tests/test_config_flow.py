@@ -17,10 +17,16 @@ from custom_components.frigate.const import (
     DOMAIN,
 )
 from homeassistant import config_entries, data_entry_flow
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
-from . import TEST_URL, create_mock_frigate_client, create_mock_frigate_config_entry
+from . import (
+    TEST_PASSWORD,
+    TEST_URL,
+    TEST_USERNAME,
+    create_mock_frigate_client,
+    create_mock_frigate_config_entry,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,6 +60,46 @@ async def test_user_success(hass: HomeAssistant) -> None:
     assert result["title"] == "example.com"
     assert result["data"] == {
         CONF_URL: TEST_URL,
+        CONF_PASSWORD: None,
+        CONF_USERNAME: None,
+    }
+    assert len(mock_setup_entry.mock_calls) == 1
+    assert mock_client.async_get_stats.called
+
+
+async def test_user_success_with_auth(hass: HomeAssistant) -> None:
+    """Test successful user flow with authentication."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_PASSWORD: TEST_PASSWORD,
+                CONF_URL: TEST_URL,
+                CONF_USERNAME: TEST_USERNAME,
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+    assert result["title"] == "example.com"
+    assert result["data"] == {
+        CONF_URL: TEST_URL,
+        CONF_PASSWORD: TEST_PASSWORD,
+        CONF_USERNAME: TEST_USERNAME,
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called

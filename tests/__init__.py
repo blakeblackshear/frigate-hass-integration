@@ -74,6 +74,8 @@ TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 TEST_SERVER_VERSION = "0.14.1-f4f3cfa"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
+TEST_USERNAME = "secret_username"
+TEST_PASSWORD = "secret_password"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
 TEST_CONFIG = {
     "cameras": {

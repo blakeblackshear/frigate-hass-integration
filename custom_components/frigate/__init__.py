@@ -25,7 +25,13 @@ from homeassistant.components.mqtt.subscription import (
 )
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_MODEL, CONF_HOST, CONF_URL
+from homeassistant.const import (
+    ATTR_MODEL,
+    CONF_HOST,
+    CONF_PASSWORD,
+    CONF_URL,
+    CONF_USERNAME,
+)
 from homeassistant.core import HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -196,6 +202,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     client = FrigateApiClient(
         str(entry.data.get(CONF_URL)),
         async_get_clientsession(hass),
+        entry.data.get(CONF_USERNAME),
+        entry.data.get(CONF_PASSWORD),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()

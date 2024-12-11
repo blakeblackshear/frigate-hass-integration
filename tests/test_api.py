@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import aiohttp
 from aiohttp import web
+import jwt
 import pytest
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
@@ -412,3 +413,277 @@ async def test_async_get_ptz_info(
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert await frigate_client.async_get_ptz_info(camera) == summary_success
     assert summary_handler.called
+
+
+def get_test_token(expiration: datetime.timedelta = datetime.timedelta(hours=1)) -> str:
+    return jwt.encode(
+        {
+            "sub": "test_user",
+            "exp": (
+                datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)
+            ).timestamp(),
+        },
+        key="secret",
+        algorithm="HS256",
+    )
+
+
+async def test_get_token_success(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token decodes JWT and sets expiration correctly."""
+    token = get_test_token()
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; Path=/; HttpOnly"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    await frigate_client._get_token()
+
+    assert frigate_client._token_data["token"] == token
+    assert frigate_client._token_data["expires"] > datetime.datetime.now(
+        datetime.timezone.utc
+    )
+
+
+async def test_refresh_token_if_needed_without_expires(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _refresh_token_if_needed refreshes token if expired."""
+    token = get_test_token()
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+    # Ensure expires is not set
+    frigate_client._token_data.pop("expires", None)
+
+    await frigate_client._refresh_token_if_needed()
+    assert frigate_client._token_data["token"] == token
+
+
+async def test_refresh_token_if_needed_with_expires(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _refresh_token_if_needed refreshes token if expired."""
+    token = get_test_token()
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+    # Simulate an expired token
+    frigate_client._token_data["expires"] = datetime.datetime.now(
+        datetime.UTC
+    ) - datetime.timedelta(hours=1)
+
+    await frigate_client._refresh_token_if_needed()
+    assert frigate_client._token_data["token"] == token
+
+
+async def test_get_auth_headers(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_auth_headers includes Authorization header with valid token."""
+    token = get_test_token()
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+    # Pre-fetch token
+    await frigate_client._get_token()
+    headers = await frigate_client._get_auth_headers()
+
+    assert headers["Authorization"] == f"Bearer {token}"
+
+
+async def test_get_token_missing_set_cookie(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing Set-Cookie header."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint without Set-Cookie."""
+        return web.Response(status=200)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(KeyError, match="Missing Set-Cookie header in response"):
+        await frigate_client._get_token()
+
+
+async def test_get_token_missing_token_in_cookie(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing frigate_token in cookie."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint without frigate_token."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = "expires=Fri, 06 Dec 2024 20:22:35"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(KeyError, match="Missing 'frigate_token' in Set-Cookie header"):
+        await frigate_client._get_token()
+
+
+async def test_get_token_missing_exp_claim(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing exp claim in JWT."""
+    token = jwt.encode({"sub": "test_user"}, key="secret", algorithm="HS256")
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with token missing exp claim."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; Path=/; HttpOnly"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(KeyError, match="JWT is missing 'exp' claim"):
+        await frigate_client._get_token()
+
+
+async def test_get_token_malformed_token(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing exp claim in JWT."""
+    token = "ThisIsObviously a bad token"
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with token missing exp claim."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}; Path=/; HttpOnly"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(
+        ValueError, match="Failed to decode JWT token: Not enough segments"
+    ):
+        await frigate_client._get_token()
+
+
+async def test_get_verbose_frigate_auth_error_unauthorized(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing exp claim in JWT."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with token missing exp claim."""
+        response = web.Response(status=401)
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(
+        FrigateApiClientError, match="Unauthorized access - check credentials."
+    ):
+        await frigate_client._get_token()
+
+
+async def test_get_verbose_frigate_auth_error_forbidden(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing exp claim in JWT."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with token missing exp claim."""
+        response = web.Response(status=403)
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(
+        FrigateApiClientError, match="Forbidden - insufficient permissions."
+    ):
+        await frigate_client._get_token()
+
+
+async def test_get_verbose_frigate_auth_error_teapot(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token raises KeyError for missing exp claim in JWT."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with token missing exp claim."""
+        response = web.Response(status=418)
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(FrigateApiClientError):
+        await frigate_client._get_token()
