@@ -61,7 +61,7 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/api/events/event_id/thumbnail.jpg", response_handler),
             web.get("/api/events/event_id/snapshot.jpg", response_handler),
             web.get("/api/events/event_id/clip.mp4", response_handler),
-            web.get("/vod/events/event_id/master.m3u8", response_handler),
+            web.get("/vod/event/event_id/master.m3u8", response_handler),
             web.get("/api/events/event_id/preview.gif", response_handler),
             web.get("/api/review/event_id/preview", response_handler),
             web.get(
