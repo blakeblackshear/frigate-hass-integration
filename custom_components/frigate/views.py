@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import datetime
 import logging
+import os
 from typing import Any, Optional, cast
 
 from aiohttp import web
@@ -245,12 +246,14 @@ class NotificationsProxyView(FrigateProxyView):
             url_path = f"api/events/{event_id}/snapshot.jpg"
         elif path.endswith("clip.mp4"):
             url_path = f"api/events/{event_id}/clip.mp4"
-        elif path.endswith("master.m3u8"):
-            url_path = f"vod/events/{event_id}/master.m3u8"
         elif path.endswith("event_preview.gif"):
             url_path = f"api/events/{event_id}/preview.gif"
         elif path.endswith("review_preview.gif"):
             url_path = f"api/review/{event_id}/preview"
+        elif path.endswith(".m3u8") or path.endswith(".ts"):
+            # Proxy event HLS requests to the vod module
+            file_name = os.path.basename(path)
+            url_path = f"vod/event/{event_id}/{file_name}"
 
         if not url_path:
             raise HASSWebProxyLibNotFoundRequestError
