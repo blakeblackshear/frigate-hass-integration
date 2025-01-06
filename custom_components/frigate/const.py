@@ -25,6 +25,7 @@ DEVICE_CLASS_CAMERA = "camera"
 # Unit of measurement
 FPS = "fps"
 MS = "ms"
+S = "s"
 
 # Attributes
 ATTR_CLIENT = "client"

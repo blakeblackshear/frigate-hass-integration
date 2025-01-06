@@ -44,6 +44,7 @@ from . import (
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
+    TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
@@ -373,6 +374,19 @@ async def test_status_sensor_error(hass: HomeAssistant) -> None:
     # The update coordinator will treat the error as unavailability.
     assert entity_state.state == "unavailable"
     assert entity_state.attributes["icon"] == ICON_SERVER
+
+
+async def test_uptime_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateUptimeSensor expected state."""
+
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(hass, client, TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "101113"
+    assert entity_state.attributes["icon"] == ICON_UPTIME
 
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:
