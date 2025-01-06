@@ -29,6 +29,7 @@ from custom_components.frigate.icons import (
     ICON_PERSON,
     ICON_SERVER,
     ICON_SPEEDOMETER,
+    ICON_UPTIME,
     ICON_WAVEFORM,
 )
 from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature

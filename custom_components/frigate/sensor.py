@@ -29,13 +29,13 @@ from . import (
     get_frigate_entity_unique_id,
     get_zones,
 )
-from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, S, NAME
+from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME, S
 from .icons import (
     ICON_CORAL,
     ICON_SERVER,
     ICON_SPEEDOMETER,
-    ICON_WAVEFORM,
     ICON_UPTIME,
+    ICON_WAVEFORM,
     get_icon_from_type,
 )
 
@@ -247,10 +247,7 @@ class FrigateUptimeSensor(
     def state(self) -> int | None:
         """Return the state of the sensor."""
         if self.coordinator.data:
-            data = (
-                self.coordinator.data.get("service", {})
-                .get("uptime", 0)
-            )
+            data = self.coordinator.data.get("service", {}).get("uptime", 0)
             try:
                 return int(data)
             except (TypeError, ValueError):
