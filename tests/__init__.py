@@ -69,6 +69,7 @@ TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID = "sensor.front_door_sound_level"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
+TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID = "sensor.frigate_uptime"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
 TEST_SERVER_VERSION = "0.14.1-f4f3cfa"

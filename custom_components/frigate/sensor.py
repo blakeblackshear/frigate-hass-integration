@@ -29,11 +29,12 @@ from . import (
     get_frigate_entity_unique_id,
     get_zones,
 )
-from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
+from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME, S
 from .icons import (
     ICON_CORAL,
     ICON_SERVER,
     ICON_SPEEDOMETER,
+    ICON_UPTIME,
     ICON_WAVEFORM,
     get_icon_from_type,
 )
@@ -104,6 +105,7 @@ async def async_setup_entry(
         ]
     )
     entities.append(FrigateStatusSensor(coordinator, entry))
+    entities.append(FrigateUptimeSensor(coordinator, entry))
     async_add_entities(entities)
 
 
@@ -205,6 +207,62 @@ class FrigateStatusSensor(
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_SERVER
+
+
+class FrigateUptimeSensor(
+    FrigateEntity, CoordinatorEntity[FrigateDataUpdateCoordinator]
+):
+    """Frigate Uptime Sensor class."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "Uptime"
+
+    def __init__(
+        self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
+    ) -> None:
+        """Construct a FrigateUptimeSensor."""
+        FrigateEntity.__init__(self, config_entry)
+        CoordinatorEntity.__init__(self, coordinator)
+        self._attr_entity_registry_enabled_default = False
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id, "uptime", "frigate"
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {get_frigate_device_identifier(self._config_entry)},
+            "name": NAME,
+            "model": self._get_model(),
+            "configuration_url": self._config_entry.data.get(CONF_URL),
+            "manufacturer": NAME,
+        }
+
+    @property
+    def state(self) -> int | None:
+        """Return the state of the sensor."""
+        if self.coordinator.data:
+            data = self.coordinator.data.get("service", {}).get("uptime", 0)
+            try:
+                return int(data)
+            except (TypeError, ValueError):
+                pass
+        return None
+
+    @property
+    def unit_of_measurement(self) -> str:
+        """Return the unit of measurement of the sensor."""
+        return S
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_UPTIME
 
 
 class DetectorSpeedSensor(
