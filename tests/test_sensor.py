@@ -389,6 +389,25 @@ async def test_uptime_sensor(hass: HomeAssistant) -> None:
     assert entity_state.state == "101113"
     assert entity_state.attributes["icon"] == ICON_UPTIME
 
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    client.async_get_stats = AsyncMock(return_value=stats)
+
+    stats["service"]["uptime"] = None
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
+    stats["service"]["uptime"] = "NOT_A_NUMBER"
+    async_fire_time_changed(hass, dt_util.utcnow() + SCAN_INTERVAL)
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "unknown"
+
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:
     """Verify switch device information."""
