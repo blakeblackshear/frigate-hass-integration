@@ -42,18 +42,23 @@ from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_COORDINATOR,
+    ATTR_DURATION,
     ATTR_END_TIME,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_INCLUDE_RECORDING,
+    ATTR_LABEL,
     ATTR_PLAYBACK_FACTOR,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
     ATTR_START_TIME,
+    ATTR_SUB_LABEL,
     CONF_ENABLE_WEBRTC,
     CONF_RTSP_URL_TEMPLATE,
     DEVICE_CLASS_CAMERA,
     DOMAIN,
     NAME,
+    SERVICE_CREATE_EVENT,
     SERVICE_EXPORT_RECORDING,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
@@ -123,6 +128,16 @@ async def async_setup_entry(
             vol.Optional(ATTR_PTZ_ARGUMENT, default=""): str,
         },
         SERVICE_PTZ,
+    )
+    platform.async_register_entity_service(
+        SERVICE_CREATE_EVENT,
+        {
+            vol.Required(ATTR_LABEL): str,
+            vol.Optional(ATTR_SUB_LABEL, default=""): str,
+            vol.Optional(ATTR_DURATION, default=30): int,
+            vol.Optional(ATTR_INCLUDE_RECORDING, default=True): bool,
+        },
+        SERVICE_CREATE_EVENT,
     )
 
 
@@ -342,6 +357,14 @@ class FrigateCamera(
             f"{action}{f'_{argument}' if argument else ''}",
             0,
             False,
+        )
+
+    async def create_event(
+        self, label: str, sub_label: str, duration: int, include_recording: bool
+    ) -> None:
+        """Create an event."""
+        await self._client.async_create_event(
+            self._cam_name, label, sub_label, duration, include_recording
         )
 
 

@@ -228,6 +228,28 @@ class FrigateApiClient:
         )
         return cast(dict[str, Any], result) if decode_json else result
 
+    async def async_create_event(
+        self,
+        camera: str,
+        label: str,
+        sub_label: str | None = None,
+        duration: int | None = 30,
+        include_recording: bool = True,
+    ) -> dict[str, Any]:
+        """Create an event."""
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "post",
+                str(URL(self._host) / f"api/events/{camera}/{label}/create"),
+                data={
+                    "sub_label": sub_label,
+                    "duration": duration,
+                    "include_recording": include_recording,
+                },
+            ),
+        )
+
     async def _get_token(self) -> None:
         """
         Obtain a new JWT token using the provided username and password.
