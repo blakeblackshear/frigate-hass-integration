@@ -131,14 +131,17 @@ create_event:
         text:
     duration:
       name: Duration
-      description: Predetermined length of event. Default is 30 seconds.
+      description: >
+        Predetermined length of event.
+        Default is 30 seconds. Use 0 for indefinite.
       required: false
       advanced: false
       example: 30
       default: 30
       selector:
         number:
-          min: 1
+          min: 0
+          max: 300
           step: 1
     include_recording:
       name: Include Recording
@@ -151,3 +154,23 @@ create_event:
       default: true
       selector:
         boolean:
+
+end_event:
+  name: End an event
+  description: >
+    End a manual event with a given id for a camera.
+  target:
+    entity:
+      integration: frigate
+      domain: camera
+      device_class: camera
+  fields:
+    event_id:
+      name: Event ID
+      description: ID of the event to end.
+      required: true
+      advanced: false
+      example: "1656510950.19548-ihtjj7"
+      default: ""
+      selector:
+        text:

@@ -21,7 +21,7 @@ from homeassistant.components.camera import (
 from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, SupportsResponse, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -59,6 +59,7 @@ from .const import (
     DOMAIN,
     NAME,
     SERVICE_CREATE_EVENT,
+    SERVICE_END_EVENT,
     SERVICE_EXPORT_RECORDING,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
@@ -138,6 +139,15 @@ async def async_setup_entry(
             vol.Optional(ATTR_INCLUDE_RECORDING, default=True): bool,
         },
         SERVICE_CREATE_EVENT,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    platform.async_register_entity_service(
+        SERVICE_END_EVENT,
+        {
+            vol.Required(ATTR_EVENT_ID): str,
+        },
+        SERVICE_END_EVENT,
+        supports_response=SupportsResponse.OPTIONAL,
     )
 
 
@@ -361,11 +371,19 @@ class FrigateCamera(
 
     async def create_event(
         self, label: str, sub_label: str, duration: int, include_recording: bool
-    ) -> None:
+    ) -> dict[str, Any]:
         """Create an event."""
-        await self._client.async_create_event(
-            self._cam_name, label, sub_label, duration, include_recording
+        return await self._client.async_create_event(
+            self._cam_name,
+            label,
+            sub_label,
+            duration if duration > 0 else None,
+            include_recording,
         )
+
+    async def end_event(self, event_id: str) -> dict[str, Any]:
+        """End an event."""
+        return await self._client.async_end_event(event_id)
 
 
 class BirdseyeCamera(FrigateEntity, Camera):

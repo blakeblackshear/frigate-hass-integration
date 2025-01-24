@@ -232,7 +232,7 @@ class FrigateApiClient:
         self,
         camera: str,
         label: str,
-        sub_label: str | None = None,
+        sub_label: str = "",
         duration: int | None = 30,
         include_recording: bool = True,
     ) -> dict[str, Any]:
@@ -247,6 +247,16 @@ class FrigateApiClient:
                     "duration": duration,
                     "include_recording": include_recording,
                 },
+            ),
+        )
+
+    async def async_end_event(self, event_id: str) -> dict[str, Any]:
+        """End an event."""
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "put",
+                str(URL(self._host) / f"api/events/{event_id}/end"),
             ),
         )
 

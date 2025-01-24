@@ -687,3 +687,52 @@ async def test_get_verbose_frigate_auth_error_teapot(
 
     with pytest.raises(FrigateApiClientError):
         await frigate_client._get_token()
+
+
+async def test_create_event(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_create_event."""
+    camera = "front_door"
+    event_id = "1656282822.206673-bovnfg"
+    create_success = {"success": True, "message": "Event created", "event_id": event_id}
+
+    async def create_handler(request: web.Request) -> web.Response:
+        """Event create handler."""
+        body = await request.json()
+        assert body == {"duration": 30, "include_recording": True, "sub_label": ""}
+
+        return web.json_response(create_success)
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.post(f"/api/events/{camera}/doorbell_press/create", create_handler),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_create_event(camera, "doorbell_press")
+        == create_success
+    )
+
+
+async def test_end_event(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_end_event."""
+    event_id = "1656282822.206673-bovnfg"
+    end_success = {"success": True, "message": "Event ended", "event_id": event_id}
+    end_handler = AsyncMock(return_value=web.json_response(end_success))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.put(f"/api/events/{event_id}/end", end_handler),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert await frigate_client.async_end_event(event_id) == end_success
+    assert end_handler.called
