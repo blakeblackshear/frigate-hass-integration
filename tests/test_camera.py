@@ -16,9 +16,11 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.frigate import SCAN_INTERVAL
 from custom_components.frigate.const import (
+    ATTR_DURATION,
     ATTR_END_TIME,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
+    ATTR_LABEL,
     ATTR_PLAYBACK_FACTOR,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
@@ -27,6 +29,8 @@ from custom_components.frigate.const import (
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
     NAME,
+    SERVICE_CREATE_EVENT,
+    SERVICE_END_EVENT,
     SERVICE_EXPORT_RECORDING,
     SERVICE_FAVORITE_EVENT,
     SERVICE_PTZ,
@@ -741,4 +745,91 @@ async def test_ptz_stop_service_call(
     )
     mqtt_mock.async_publish.assert_called_once_with(
         "frigate/front_door/ptz", "stop", 0, False
+    )
+
+
+async def test_create_event_service_call(
+    hass: HomeAssistant,
+) -> None:
+    """Test create event service call."""
+    event_id = "1656282822.206673-bovnfg"
+    create_success = {"success": True, "message": "Event created", "event_id": event_id}
+
+    client = create_mock_frigate_client()
+    client.async_create_event = AsyncMock(return_value=create_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_CREATE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_LABEL: "doorbell_press",
+        },
+        blocking=True,
+    )
+
+    client.async_create_event.assert_called_with(
+        "front_door",
+        "doorbell_press",
+        "",
+        30,
+        True,
+    )
+
+
+async def test_create_event_service_call_indefinite(
+    hass: HomeAssistant,
+) -> None:
+    """Test create event service call with a indefinite duration."""
+    event_id = "1656282822.206673-bovnfg"
+    create_success = {"success": True, "message": "Event created", "event_id": event_id}
+
+    client = create_mock_frigate_client()
+    client.async_create_event = AsyncMock(return_value=create_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_CREATE_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_LABEL: "doorbell_press",
+            ATTR_DURATION: 0,
+        },
+        blocking=True,
+    )
+
+    client.async_create_event.assert_called_with(
+        "front_door",
+        "doorbell_press",
+        "",
+        None,
+        True,
+    )
+
+
+async def test_end_event(
+    hass: HomeAssistant,
+) -> None:
+    """Test end event service call."""
+    event_id = "1656282822.206673-bovnfg"
+    end_success = {"success": True, "message": "Event ended"}
+
+    client = create_mock_frigate_client()
+    client.async_end_event = AsyncMock(return_value=end_success)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_END_EVENT,
+        {
+            ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            ATTR_EVENT_ID: event_id,
+        },
+        blocking=True,
+    )
+
+    client.async_end_event.assert_called_with(
+        event_id,
     )

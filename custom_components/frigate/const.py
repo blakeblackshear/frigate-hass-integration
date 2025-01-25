@@ -41,6 +41,10 @@ ATTR_PTZ_ACTION = "action"
 ATTR_PTZ_ARGUMENT = "argument"
 ATTR_START_TIME = "start_time"
 ATTR_WS_EVENT_PROXY = "ws_event_proxy"
+ATTR_LABEL = "label"
+ATTR_SUB_LABEL = "sub_label"
+ATTR_DURATION = "duration"
+ATTR_INCLUDE_RECORDING = "include_recording"
 
 # Frigate Attribute Labels
 # These are labels that are not individually tracked as they are
@@ -97,3 +101,5 @@ STATUS_STARTING = "starting"
 SERVICE_EXPORT_RECORDING = "export_recording"
 SERVICE_FAVORITE_EVENT = "favorite_event"
 SERVICE_PTZ = "ptz"
+SERVICE_CREATE_EVENT = "create_event"
+SERVICE_END_EVENT = "end_event"
