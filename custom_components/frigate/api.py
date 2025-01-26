@@ -322,6 +322,10 @@ class FrigateApiClient:
             if "token" in self._token_data:
                 headers["Authorization"] = f"Bearer {self._token_data['token']}"
 
+        elif self._password:
+            # If only password is set - treat it as proxy secret
+            headers["X-Proxy-Secret"] = self._password
+
         return headers
 
     async def api_wrapper(
