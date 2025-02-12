@@ -253,7 +253,7 @@ class NotificationsProxyView(FrigateProxyView):
         elif (
             path.endswith(".m3u8")
             or path.endswith(".ts")
-            or path.endswith("m4s")
+            or path.endswith(".m4s")
             or path.endswith("init-v1-a1.mp4")
         ):
             # Proxy event HLS requests to the vod module
