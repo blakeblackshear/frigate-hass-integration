@@ -250,7 +250,12 @@ class NotificationsProxyView(FrigateProxyView):
             url_path = f"api/events/{event_id}/preview.gif"
         elif path.endswith("review_preview.gif"):
             url_path = f"api/review/{event_id}/preview"
-        elif path.endswith(".m3u8") or path.endswith(".ts"):
+        elif (
+            path.endswith(".m3u8")
+            or path.endswith(".ts")
+            or path.endswith(".m4s")
+            or path.endswith("init-v1-a1.mp4")
+        ):
             # Proxy event HLS requests to the vod module
             file_name = os.path.basename(path)
             url_path = f"vod/event/{event_id}/{file_name}"
