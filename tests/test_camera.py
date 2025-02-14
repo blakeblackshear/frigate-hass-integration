@@ -46,6 +46,7 @@ from homeassistant.components.camera import (
 from homeassistant.components.websocket_api.const import TYPE_RESULT
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
 
@@ -809,6 +810,25 @@ async def test_create_event_service_call_indefinite(
     )
 
 
+async def test_create_event_empty_label(
+    hass: HomeAssistant,
+) -> None:
+    """Test create event service call with an empty label."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    with pytest.raises(ServiceValidationError, match="Label cannot be empty"):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_CREATE_EVENT,
+            {
+                ATTR_LABEL: "",
+                ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            },
+            blocking=True,
+        )
+
+
 async def test_end_event(
     hass: HomeAssistant,
 ) -> None:
@@ -833,3 +853,22 @@ async def test_end_event(
     client.async_end_event.assert_called_with(
         event_id,
     )
+
+
+async def test_end_event_empty_event_id(
+    hass: HomeAssistant,
+) -> None:
+    """Test end event service call with an empty event_id."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    with pytest.raises(ServiceValidationError, match="Event ID cannot be empty"):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_END_EVENT,
+            {
+                ATTR_EVENT_ID: "",
+                ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            },
+            blocking=True,
+        )
