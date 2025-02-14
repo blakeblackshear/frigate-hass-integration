@@ -22,6 +22,7 @@ from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, SupportsResponse, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -373,6 +374,9 @@ class FrigateCamera(
         self, label: str, sub_label: str, duration: int, include_recording: bool
     ) -> dict[str, Any]:
         """Create an event."""
+        if label == "":
+            raise ServiceValidationError("Label cannot be empty")
+
         return await self._client.async_create_event(
             self._cam_name,
             label,
@@ -383,6 +387,9 @@ class FrigateCamera(
 
     async def end_event(self, event_id: str) -> dict[str, Any]:
         """End an event."""
+        if event_id == "":
+            raise ServiceValidationError("Event ID cannot be empty")
+
         return await self._client.async_end_event(event_id)
 
 
