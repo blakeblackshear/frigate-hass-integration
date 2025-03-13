@@ -242,6 +242,8 @@ class NotificationsProxyView(FrigateProxyView):
         url_path: str | None = None
         if path == "thumbnail.jpg":
             url_path = f"api/events/{event_id}/thumbnail.jpg"
+        elif path.endswith(f"{event_id}.webp"):
+            url_path = path.replace("/media/frigate/", "")
         elif path == "snapshot.jpg":
             url_path = f"api/events/{event_id}/snapshot.jpg"
         elif path.endswith("clip.mp4"):
