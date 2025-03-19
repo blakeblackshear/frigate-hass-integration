@@ -31,6 +31,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_URL,
     CONF_USERNAME,
+    CONF_VALIDATE_SSL,
 )
 from homeassistant.core import HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -204,6 +205,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_get_clientsession(hass),
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
+        entry.data.get(CONF_VALIDATE_SSL),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
