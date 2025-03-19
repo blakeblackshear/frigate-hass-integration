@@ -31,7 +31,6 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_URL,
     CONF_USERNAME,
-    CONF_VALIDATE_SSL,
 )
 from homeassistant.core import HomeAssistant, callback, valid_entity_id
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -52,6 +51,7 @@ from .const import (
     ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
+    CONF_VALIDATE_SSL,
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,

@@ -10,7 +10,7 @@ from voluptuous.validators import All, Range
 from yarl import URL
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, CONF_VALIDATE_SSL
+from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -22,6 +22,7 @@ from .const import (
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     CONF_RTSP_URL_TEMPLATE,
+    CONF_VALIDATE_SSL,
     DEFAULT_HOST,
     DOMAIN,
 )
