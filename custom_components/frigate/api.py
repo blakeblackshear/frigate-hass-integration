@@ -349,7 +349,11 @@ class FrigateApiClient:
                 func = getattr(self._session, method)
                 if func:
                     response = await func(
-                        url, headers=headers, raise_for_status=True, json=data, ssl=self.validate_ssl
+                        url,
+                        headers=headers,
+                        raise_for_status=True,
+                        json=data,
+                        ssl=self.validate_ssl
                     )
                     response.raise_for_status()
                     if is_login_request:
