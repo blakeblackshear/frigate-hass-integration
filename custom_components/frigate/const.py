@@ -59,7 +59,6 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_PATH = "path"
 CONF_RTSP_URL_TEMPLATE = "rtsp_url_template"
-CONF_VALIDATE_SSL = "validate_ssl"
 
 # Removed options
 CONF_CAMERA_STATIC_IMAGE_HEIGHT = "camera_image_height"

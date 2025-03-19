@@ -22,7 +22,6 @@ from .const import (
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     CONF_RTSP_URL_TEMPLATE,
-    CONF_VALIDATE_SSL,
     DEFAULT_HOST,
     DOMAIN,
 )
@@ -84,7 +83,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 session,
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
-                user_input.get(CONF_VALIDATE_SSL)
+                user_input.get("validate_ssl")
             )
             await client.async_get_stats()
         except FrigateApiClientError:
@@ -124,7 +123,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
                     ): str,
                     vol.Required(
-                        CONF_VALIDATE_SSL, default=user_input.get(CONF_VALIDATE_SSL, True)
+                        "validate_ssl", default=user_input.get("validate_ssl", True)
                     ): bool,
                     vol.Optional(
                         CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
