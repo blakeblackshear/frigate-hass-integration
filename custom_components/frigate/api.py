@@ -40,6 +40,7 @@ class FrigateApiClient:
         session: aiohttp.ClientSession,
         username: str | None = None,
         password: str | None = None,
+        validate_ssl: bool = True,
     ) -> None:
         """Construct API Client."""
         self._host = host
@@ -47,6 +48,7 @@ class FrigateApiClient:
         self._username = username
         self._password = password
         self._token_data: dict[str, Any] = {}
+        self.validate_ssl = validate_ssl
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
@@ -347,7 +349,11 @@ class FrigateApiClient:
                 func = getattr(self._session, method)
                 if func:
                     response = await func(
-                        url, headers=headers, raise_for_status=True, json=data
+                        url,
+                        headers=headers,
+                        raise_for_status=True,
+                        json=data,
+                        ssl=self.validate_ssl,
                     )
                     response.raise_for_status()
                     if is_login_request:

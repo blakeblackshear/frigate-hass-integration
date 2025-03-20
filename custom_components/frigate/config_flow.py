@@ -83,6 +83,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 session,
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
+                bool(user_input.get("validate_ssl")),
             )
             await client.async_get_stats()
         except FrigateApiClientError:
@@ -121,6 +122,9 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_URL, default=user_input.get(CONF_URL, DEFAULT_HOST)
                     ): str,
+                    vol.Required(
+                        "validate_ssl", default=user_input.get("validate_ssl", True)
+                    ): bool,
                     vol.Optional(
                         CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
                     ): str,
