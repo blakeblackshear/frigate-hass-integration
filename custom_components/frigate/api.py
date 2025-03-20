@@ -40,7 +40,7 @@ class FrigateApiClient:
         session: aiohttp.ClientSession,
         username: str | None = None,
         password: str | None = None,
-        validate_ssl: bool = True
+        validate_ssl: bool = True,
     ) -> None:
         """Construct API Client."""
         self._host = host
@@ -353,7 +353,7 @@ class FrigateApiClient:
                         headers=headers,
                         raise_for_status=True,
                         json=data,
-                        ssl=self.validate_ssl
+                        ssl=self.validate_ssl,
                     )
                     response.raise_for_status()
                     if is_login_request:

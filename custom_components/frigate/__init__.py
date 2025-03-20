@@ -204,7 +204,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_get_clientsession(hass),
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
-        entry.data.get("validate_ssl"),
+        bool(entry.data.get("validate_ssl")),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
