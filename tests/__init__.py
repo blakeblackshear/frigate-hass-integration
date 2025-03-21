@@ -79,6 +79,7 @@ TEST_USERNAME = "secret_username"
 TEST_PASSWORD = "secret_password"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
 TEST_CONFIG = {
+    "version": "0.16-0",
     "cameras": {
         "front_door": {
             "best_image_timeout": 60,
