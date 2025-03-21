@@ -443,9 +443,7 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
     assert TEST_CAMERA_FRONT_DOOR_ENTITY_ID in entities_from_device
 
 
-async def test_camera_enable_camera(
-    hass: HomeAssistant, mqtt_mock: Any
-) -> None:
+async def test_camera_enable_camera(hass: HomeAssistant, mqtt_mock: Any) -> None:
     """Test built in camera toggle."""
 
     await setup_mock_frigate_config_entry(hass)
@@ -472,9 +470,7 @@ async def test_camera_enable_camera(
     )
 
 
-async def test_camera_disable_camera(
-    hass: HomeAssistant, mqtt_mock: Any
-) -> None:
+async def test_camera_disable_camera(hass: HomeAssistant, mqtt_mock: Any) -> None:
     """Test built in camera toggle."""
 
     await setup_mock_frigate_config_entry(hass)
