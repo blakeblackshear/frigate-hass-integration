@@ -35,6 +35,8 @@ from homeassistant.components.camera import (
     DOMAIN as CAMERA_DOMAIN,
     SERVICE_DISABLE_MOTION,
     SERVICE_ENABLE_MOTION,
+    SERVICE_TURN_OFF,
+    SERVICE_TURN_ON,
     StreamType,
     async_get_image,
     async_get_stream_source,
@@ -439,6 +441,64 @@ async def test_camera_device_info(hass: HomeAssistant) -> None:
         for entry in er.async_entries_for_device(entity_registry, device.id)
     ]
     assert TEST_CAMERA_FRONT_DOOR_ENTITY_ID in entities_from_device
+
+
+async def test_camera_enable_camera(
+    hass: HomeAssistant, mqtt_mock: Any
+) -> None:
+    """Test built in camera toggle."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/front_door/enabled/state", "ON")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+
+    await hass.services.async_call(
+        CAMERA_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID},
+        blocking=True,
+    )
+    mqtt_mock.async_publish.assert_called_once_with(
+        "frigate/front_door/enabled/set", "ON", 0, False
+    )
+
+
+async def test_camera_disable_camera(
+    hass: HomeAssistant, mqtt_mock: Any
+) -> None:
+    """Test built in camera toggle."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+    assert entity_state.attributes["supported_features"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/front_door/enabled/state", "OFF")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+
+    await hass.services.async_call(
+        CAMERA_DOMAIN,
+        SERVICE_TURN_OFF,
+        {ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID},
+        blocking=True,
+    )
+    mqtt_mock.async_publish.assert_called_once_with(
+        "frigate/front_door/enabled/set", "OFF", 0, False
+    )
 
 
 async def test_camera_enable_motion_detection(
