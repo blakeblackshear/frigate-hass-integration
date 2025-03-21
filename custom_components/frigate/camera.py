@@ -301,7 +301,7 @@ class FrigateCamera(
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
-    
+
     async def async_turn_on(self) -> None:
         """Turn on the camera."""
         if self._frigate_config.get("version", "0.14") >= "0.16":
