@@ -309,7 +309,7 @@ class FrigateCamera(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = async_get_clientsession(self.hass)
+        websession = async_get_clientsession(self.hass, verify_ssl=self._client.validate_ssl)
 
         image_url = str(
             URL(self._url)
@@ -464,7 +464,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = async_get_clientsession(self.hass)
+        websession = async_get_clientsession(self.hass, verify_ssl=self._client.validate_ssl)
 
         image_url = str(
             URL(self._url)
@@ -488,7 +488,7 @@ class FrigateCameraWebRTC(FrigateCamera):
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
         """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(self.hass)
+        websession = async_get_clientsession(self.hass, verify_ssl=self._client.validate_ssl)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
@@ -507,7 +507,7 @@ class BirdseyeCameraWebRTC(BirdseyeCamera):
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
         """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(self.hass)
+        websession = async_get_clientsession(self.hass, verify_ssl=self._client.validate_ssl)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
