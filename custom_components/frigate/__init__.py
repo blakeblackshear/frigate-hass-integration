@@ -54,6 +54,7 @@ from .const import (
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,
+    LOGO_LABELS,
     NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
@@ -116,8 +117,16 @@ def get_cameras_and_objects(
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
         for obj in cam_config["objects"]["track"]:
-            if obj not in ATTRIBUTE_LABELS:
-                camera_objects.add((cam_name, obj))
+            if obj in ATTRIBUTE_LABELS:
+                continue
+
+            if (
+                config.get("version", "0.14") < "0.16"
+                and obj in LOGO_LABELS
+            ):
+                continue
+                
+            camera_objects.add((cam_name, obj))
 
         # add an artificial all label to track
         # all objects for this camera
