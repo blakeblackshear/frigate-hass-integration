@@ -217,6 +217,9 @@ class FrigateCamera(
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
         )
+        self._turn_on_off_topic = (
+            f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/enabled/set"
+        )
         self._ptz_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/ptz"
         )
@@ -326,6 +329,28 @@ class FrigateCamera(
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
+
+    async def async_turn_on(self) -> None:
+        """Turn on the camera."""
+        if self._frigate_config.get("version", "0.14") >= "0.16":
+            await async_publish(
+                self.hass,
+                self._turn_on_off_topic,
+                "ON",
+                0,
+                False,
+            )
+
+    async def async_turn_off(self) -> None:
+        """Turn off the camera."""
+        if self._frigate_config.get("version", "0.14") >= "0.16":
+            await async_publish(
+                self.hass,
+                self._turn_on_off_topic,
+                "OFF",
+                0,
+                False,
+            )
 
     async def async_enable_motion_detection(self) -> None:
         """Enable motion detection for this camera."""
