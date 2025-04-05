@@ -4,7 +4,7 @@ flake8
 mypy
 pre-commit
 pytest
-pytest-homeassistant-custom-component==0.13.190
+pytest-homeassistant-custom-component==0.13.233
 pylint-pytest
 pylint
 pytest-aiohttp

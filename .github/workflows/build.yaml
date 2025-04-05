@@ -11,7 +11,7 @@ on: # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 env:
-  DEFAULT_PYTHON: "3.12"
+  DEFAULT_PYTHON: "3.13"
 
 jobs:
   pre-commit:
