@@ -16,9 +16,10 @@ from custom_components.frigate.const import (
     CONF_RTSP_URL_TEMPLATE,
     DOMAIN,
 )
-from homeassistant import config_entries, data_entry_flow
+from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
 from . import (
     TEST_PASSWORD,
@@ -240,7 +241,7 @@ async def test_duplicate(hass: HomeAssistant) -> None:
         )
         await hass.async_block_till_done()
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
+    assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "already_configured"
 
 
@@ -273,7 +274,7 @@ async def test_options_advanced(hass: HomeAssistant) -> None:
             },
         )
         await hass.async_block_till_done()
-        assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+        assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"][CONF_ENABLE_WEBRTC] is True
         assert result["data"][CONF_RTSP_URL_TEMPLATE] == "http://moo"
         assert result["data"][CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS] == 60
@@ -300,5 +301,5 @@ async def test_options(hass: HomeAssistant) -> None:
             config_entry.entry_id,
         )
 
-        assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
+        assert result["type"] == FlowResultType.ABORT
         assert result["reason"] == "only_advanced_options"

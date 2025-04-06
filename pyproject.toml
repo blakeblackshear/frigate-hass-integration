@@ -137,7 +137,7 @@ addopts = "--timeout=10 --cov-report=xml:coverage.xml --cov-report=term-missing 
 [tool.mypy]
 # Stock HomeAssistant mypy configuration.
 ignore_missing_imports = true
-python_version = "3.12"
+python_version = "3.13"
 follow_imports = "silent"
 strict_equality = true
 warn_incomplete_stub = true
