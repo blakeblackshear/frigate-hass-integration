@@ -29,7 +29,8 @@
         "esbenp.prettier-vscode",
         "redhat.vscode-yaml",
         "keesschollaart.vscode-home-assistant",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "github.vscode-pull-request-github"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
