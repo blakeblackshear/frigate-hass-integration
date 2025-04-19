@@ -30,7 +30,8 @@
         "redhat.vscode-yaml",
         "keesschollaart.vscode-home-assistant",
         "ms-azuretools.vscode-docker",
-        "github.vscode-pull-request-github"
+        "github.vscode-pull-request-github",
+        "github.vscode-github-actions"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
