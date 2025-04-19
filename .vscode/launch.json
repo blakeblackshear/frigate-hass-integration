@@ -14,7 +14,7 @@
       ],
       "justMyCode": true,
       "preLaunchTask": "Home Assistant",
-      // Makes the debugger restart button restart Home Assistant
+      // Makes the debugger's restart button restart Home Assistant
       "postDebugTask": "Restart Home Assistant"
     }
   ]

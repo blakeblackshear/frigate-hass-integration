@@ -20,8 +20,7 @@ services:
       # Avoid mounting the entire config directory so that data is not persisted
       - .devcontainer/homeassistant_config/configuration.yaml:/config/configuration.yaml:ro
       - .devcontainer/homeassistant_config/specific_configuration.yaml:/config/specific_configuration.yaml:ro
-      # For Downloader integration
-      - .devcontainer/homeassistant_config/www:/config/www
+      - .devcontainer/homeassistant_config/www:/config/www # For Downloader
       - ./custom_components:/config/custom_components:ro
   frigate:
     privileged: true
@@ -32,8 +31,9 @@ services:
       - /dev/dri:/dev/dri
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - .devcontainer/frigate_config/config.yml:/config/config.yml:ro
       - .devcontainer/frigate_media:/media/frigate
+      # Avoid mounting the entire config directory so that data is not persisted
+      - .devcontainer/frigate_config/config.yml:/config/config.yml:ro
   mqtt:
     image: eclipse-mosquitto:2
     restart: unless-stopped
