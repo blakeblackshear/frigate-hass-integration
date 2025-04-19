@@ -7,11 +7,11 @@
     }
   },
   "workspaceFolder": "${localWorkspaceFolder}",
-  "initializeCommand": [".devcontainer/set_dot_env.sh"],
-  "postCreateCommand": [".devcontainer/post_create.sh"],
-  "forwardPorts": ["hass:8123", "frigate:5000"],
+  "initializeCommand": [".devcontainer/scripts/devcontainer_initialize.sh"],
+  "postCreateCommand": [".devcontainer/scripts/devcontainer_post_create.sh"],
+  "forwardPorts": ["homeassistant:8123", "frigate:5000"],
   "portsAttributes": {
-    "hass:8123": {
+    "homeassistant:8123": {
       "label": "Home Assistant",
       "onAutoForward": "silent"
     },
@@ -24,43 +24,29 @@
     "vscode": {
       "extensions": [
         "ms-python.python",
-        "ms-python.pylint",
         "mikoz.black-py",
-        "visualstudioexptteam.vscodeintellicode",
-        "mhutchie.git-graph",
-        "ms-azuretools.vscode-docker",
         "streetsidesoftware.code-spell-checker",
-        "eamodio.gitlens",
         "esbenp.prettier-vscode",
-        "ms-python.vscode-pylance",
         "redhat.vscode-yaml",
         "keesschollaart.vscode-home-assistant",
         "ms-azuretools.vscode-docker"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "editor.formatOnPaste": false,
         "editor.formatOnSave": true,
-        "editor.formatOnType": true,
-        "files.trimTrailingWhitespace": true,
         "yaml.schemas": {
-          "http://frigate:5000/api/config/schema.json": "/frigate.yml"
+          "http://frigate:5000/api/config/schema.json": "/frigate_config/config.yml"
         },
-        "files.associations": {
-          "**/config/*configuration.yaml": "home-assistant"
-        },
-        "vscode-home-assistant.hostUrl": "http://hass:8123",
+        "vscode-home-assistant.hostUrl": "http://homeassistant:8123",
         "vscode-home-assistant.longLivedAccessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhOTZjZTdhYTg0YzU0ODcxYWZhNTJmYmU4OWFmMjg3OSIsImlhdCI6MTY1NDgwNzk2MiwiZXhwIjoxOTcwMTY3OTYyfQ.0JUxrtqWWj-FwkAujcQCc5aRq9sf5_uR_sCI2eWcmIE",
+        "files.associations": {
+          "**/homeassistant_preconfig/.storage/*": "json",
+          "**/homeassistant_config/*configuration.yaml": "home-assistant"
+        },
         "[home-assistant]": {
           "editor.defaultFormatter": "keesschollaart.vscode-home-assistant"
         },
-        "[json]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[jsonc]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[yaml]": {
+        "[json][jsonc][yaml]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode"
         }
       }

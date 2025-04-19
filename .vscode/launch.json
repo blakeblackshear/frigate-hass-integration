@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "Python: Attach to Home Assistant",
-      "type": "python",
+      "type": "debugpy",
       "request": "attach",
-      "connect": { "host": "hass", "port": 5678 },
+      "connect": { "host": "homeassistant", "port": 5678 },
       "pathMappings": [
         {
           "localRoot": "${workspaceFolder}/custom_components/frigate",
@@ -14,7 +14,7 @@
       ],
       "justMyCode": true,
       "preLaunchTask": "Home Assistant",
-      // This ensures that the restart button works
+      // Makes the debugger restart button restart Home Assistant
       "postDebugTask": "Restart Home Assistant"
     }
   ]
