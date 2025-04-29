@@ -40,7 +40,6 @@ class FrigateApiClient:
         session: aiohttp.ClientSession,
         username: str | None = None,
         password: str | None = None,
-        validate_ssl: bool = True,
     ) -> None:
         """Construct API Client."""
         self._host = host
@@ -48,7 +47,6 @@ class FrigateApiClient:
         self._username = username
         self._password = password
         self._token_data: dict[str, Any] = {}
-        self.validate_ssl = validate_ssl
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
@@ -175,16 +173,22 @@ class FrigateApiClient:
         playback_factor: str,
         start_time: float,
         end_time: float,
+        name: str | None = None,
         decode_json: bool = True,
     ) -> dict[str, Any] | str:
         """Export recording."""
+        data = {"playback": playback_factor}
+    
+        if name: 
+            data["name"] = name
+
         result = await self.api_wrapper(
             "post",
             str(
                 URL(self._host)
                 / f"api/export/{camera}/start/{start_time}/end/{end_time}"
             ),
-            data={"playback": playback_factor},
+            data=data,
             decode_json=decode_json,
         )
         return cast(dict[str, Any], result) if decode_json else result
@@ -349,11 +353,7 @@ class FrigateApiClient:
                 func = getattr(self._session, method)
                 if func:
                     response = await func(
-                        url,
-                        headers=headers,
-                        raise_for_status=True,
-                        json=data,
-                        ssl=self.validate_ssl,
+                        url, headers=headers, raise_for_status=True, json=data
                     )
                     response.raise_for_status()
                     if is_login_request:
