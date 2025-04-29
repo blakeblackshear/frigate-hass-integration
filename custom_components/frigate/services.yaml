@@ -20,6 +20,13 @@ export_recording:
           options:
             - "realtime"
             - "timelapse_25x"
+    name:
+      name: Export name
+      description: Name of exported recording
+      required: false
+      advanced: false
+      selector:
+        text:
     start_time:
       name: Export Start Time
       description: Start time of exported recording

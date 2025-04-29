@@ -22,7 +22,6 @@ from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, SupportsResponse, callback
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -45,6 +44,7 @@ from .const import (
     ATTR_COORDINATOR,
     ATTR_DURATION,
     ATTR_END_TIME,
+    ATTR_NAME,
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     ATTR_INCLUDE_RECORDING,
@@ -112,6 +112,8 @@ async def async_setup_entry(
             vol.Required(ATTR_PLAYBACK_FACTOR, default="realtime"): str,
             vol.Required(ATTR_START_TIME): str,
             vol.Required(ATTR_END_TIME): str,
+            vol.Optional("name", default=""): str,
+
         },
         SERVICE_EXPORT_RECORDING,
     )
@@ -217,9 +219,6 @@ class FrigateCamera(
         self._attr_motion_detection_enabled = self._camera_config.get("motion", {}).get(
             "enabled"
         )
-        self._turn_on_off_topic = (
-            f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/enabled/set"
-        )
         self._ptz_topic = (
             f"{frigate_config['mqtt']['topic_prefix']}" f"/{self._cam_name}/ptz"
         )
@@ -312,9 +311,7 @@ class FrigateCamera(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = async_get_clientsession(
-            self.hass, verify_ssl=self._client.validate_ssl
-        )
+        websession = async_get_clientsession(self.hass)
 
         image_url = str(
             URL(self._url)
@@ -329,28 +326,6 @@ class FrigateCamera(
     async def stream_source(self) -> str | None:
         """Return the source of the stream."""
         return self._stream_source
-
-    async def async_turn_on(self) -> None:
-        """Turn on the camera."""
-        if self._frigate_config.get("version", "0.14") >= "0.16":
-            await async_publish(
-                self.hass,
-                self._turn_on_off_topic,
-                "ON",
-                0,
-                False,
-            )
-
-    async def async_turn_off(self) -> None:
-        """Turn off the camera."""
-        if self._frigate_config.get("version", "0.14") >= "0.16":
-            await async_publish(
-                self.hass,
-                self._turn_on_off_topic,
-                "OFF",
-                0,
-                False,
-            )
 
     async def async_enable_motion_detection(self) -> None:
         """Enable motion detection for this camera."""
@@ -373,7 +348,7 @@ class FrigateCamera(
         )
 
     async def export_recording(
-        self, playback_factor: str, start_time: str, end_time: str
+        self, playback_factor: str, start_time: str, end_time: str, name: str | None = None
     ) -> None:
         """Export recording."""
         await self._client.async_export_recording(
@@ -381,6 +356,7 @@ class FrigateCamera(
             playback_factor,
             datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
             datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+            name=name,
         )
 
     async def favorite_event(self, event_id: str, favorite: bool) -> None:
@@ -401,9 +377,6 @@ class FrigateCamera(
         self, label: str, sub_label: str, duration: int, include_recording: bool
     ) -> dict[str, Any]:
         """Create an event."""
-        if label == "":
-            raise ServiceValidationError("Label cannot be empty")
-
         return await self._client.async_create_event(
             self._cam_name,
             label,
@@ -414,9 +387,6 @@ class FrigateCamera(
 
     async def end_event(self, event_id: str) -> dict[str, Any]:
         """End an event."""
-        if event_id == "":
-            raise ServiceValidationError("Event ID cannot be empty")
-
         return await self._client.async_end_event(event_id)
 
 
@@ -491,9 +461,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
         """Return bytes of camera image."""
-        websession = async_get_clientsession(
-            self.hass, verify_ssl=self._client.validate_ssl
-        )
+        websession = async_get_clientsession(self.hass)
 
         image_url = str(
             URL(self._url)
@@ -517,9 +485,7 @@ class FrigateCameraWebRTC(FrigateCamera):
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
         """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(
-            self.hass, verify_ssl=self._client.validate_ssl
-        )
+        websession = async_get_clientsession(self.hass)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
@@ -538,9 +504,7 @@ class BirdseyeCameraWebRTC(BirdseyeCamera):
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
         """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(
-            self.hass, verify_ssl=self._client.validate_ssl
-        )
+        websession = async_get_clientsession(self.hass)
         url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
         payload = {"type": "offer", "sdp": offer_sdp}
         async with websession.post(url, json=payload) as resp:
