@@ -129,7 +129,7 @@ TEST_CONFIG = {
                     }
                 },
                 "mask": None,
-                "track": ["person"],
+                "track": ["amazon", "car", "person"],
             },
             "onvif": {
                 "autotracking": {
