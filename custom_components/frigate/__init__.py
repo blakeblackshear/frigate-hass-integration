@@ -77,6 +77,11 @@ _LOGGER: logging.Logger = logging.getLogger(__name__)
 #   migration to Home Assistant Core.
 
 
+def verify_frigate_version(config: dict[str, Any], check_version: str) -> bool:
+    """Checks if Frigate is at least the check version."""
+    return str(config.get("version", "0.14")) >= check_version
+
+
 def get_frigate_device_identifier(
     entry: ConfigEntry, camera_name: str | None = None
 ) -> tuple[str, str]:
@@ -121,9 +126,9 @@ def get_cameras_and_objects(
                 # don't create sensors for attributes that are not logos
                 continue
 
-            if config.get("version", "0.14") < "0.16" and obj in config["model"].get(
-                "all_attributes", ["amazon", "fedex", "ups"]
-            ):
+            if not verify_frigate_version(config, "0.16") and obj in config[
+                "model"
+            ].get("all_attributes", ["amazon", "fedex", "ups"]):
                 # Logo attributes are only supported in Frigate 0.16+
                 continue
 

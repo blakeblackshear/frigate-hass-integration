@@ -38,6 +38,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    verify_frigate_version,
 )
 from .const import (
     ATTR_CLIENT,
@@ -332,7 +333,7 @@ class FrigateCamera(
 
     async def async_turn_on(self) -> None:
         """Turn on the camera."""
-        if self._frigate_config.get("version", "0.14") >= "0.16":
+        if verify_frigate_version(self._frigate_config, "0.16"):
             await async_publish(
                 self.hass,
                 self._turn_on_off_topic,
@@ -343,7 +344,7 @@ class FrigateCamera(
 
     async def async_turn_off(self) -> None:
         """Turn off the camera."""
-        if self._frigate_config.get("version", "0.14") >= "0.16":
+        if verify_frigate_version(self._frigate_config, "0.16"):
             await async_publish(
                 self.hass,
                 self._turn_on_off_topic,

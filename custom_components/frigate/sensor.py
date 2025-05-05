@@ -29,6 +29,7 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
     get_zones,
+    verify_frigate_version,
 )
 from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME, S
 from .icons import (
@@ -110,8 +111,7 @@ async def async_setup_entry(
     entities.append(FrigateStatusSensor(coordinator, entry))
     entities.append(FrigateUptimeSensor(coordinator, entry))
 
-    if frigate_config.get("version", "0.14") >= "0.16":
-
+    if verify_frigate_version(frigate_config, "0.16"):
         if frigate_config.get("face_recognition", {}).get("enabled"):
             entities.extend(
                 [
