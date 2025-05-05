@@ -617,7 +617,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{self._obj_name} count"
+        return f"{get_friendly_name(self._obj_name)} count"
 
     @property
     def state(self) -> int:
@@ -704,7 +704,7 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{self._obj_name} active count".title()
+        return f"{get_friendly_name(self._obj_name)} active count".title()
 
     @property
     def state(self) -> int:

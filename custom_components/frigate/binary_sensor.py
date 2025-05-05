@@ -135,7 +135,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{self._obj_name} occupancy"
+        return f"{get_friendly_name(self._obj_name)} occupancy"
 
     @property
     def is_on(self) -> bool:

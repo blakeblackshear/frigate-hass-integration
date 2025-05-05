@@ -111,7 +111,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return self._obj_name.title()
+        return get_friendly_name(self._obj_name).title()
 
     @property
     def image_last_updated(self) -> datetime.datetime | None:
