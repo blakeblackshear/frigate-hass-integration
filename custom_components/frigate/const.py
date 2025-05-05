@@ -46,11 +46,6 @@ ATTR_SUB_LABEL = "sub_label"
 ATTR_DURATION = "duration"
 ATTR_INCLUDE_RECORDING = "include_recording"
 
-# Frigate Attribute Labels
-# These are labels that are not individually tracked as they are
-# attributes of another label. ex: face is an attribute of person
-ATTRIBUTE_LABELS = ["amazon", "face", "fedex", "license_plate", "ups"]
-
 # Configuration and options
 CONF_MEDIA_BROWSER_ENABLE = "media_browser_enable"
 CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"

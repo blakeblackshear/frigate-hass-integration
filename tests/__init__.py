@@ -129,7 +129,11 @@ TEST_CONFIG = {
                     }
                 },
                 "mask": None,
-                "track": ["person"],
+                "track": [
+                    "amazon",
+                    "face",
+                    "person",
+                ],  # need to have logo for tests
             },
             "onvif": {
                 "autotracking": {
@@ -162,7 +166,27 @@ TEST_CONFIG = {
     },
     "environment_vars": {},
     "logger": {"default": "INFO", "logs": {}},
-    "model": {"height": 320, "width": 320},
+    "model": {
+        "height": 320,
+        "width": 320,
+        "all_attributes": [
+            "gls",
+            "purolator",
+            "usps",
+            "dpd",
+            "amazon",
+            "postnl",
+            "face",
+            "fedex",
+            "dhl",
+            "postnord",
+            "an_post",
+            "license_plate",
+            "nzpost",
+            "ups",
+        ],
+        "non_logo_attributes": ["face", "license_plate"],
+    },
     "mqtt": {
         "client_id": TEST_FRIGATE_INSTANCE_ID,
         "host": "mqtt",
