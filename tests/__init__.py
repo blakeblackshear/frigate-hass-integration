@@ -131,9 +131,8 @@ TEST_CONFIG = {
                 "mask": None,
                 "track": [
                     "amazon",
-                    "car",
                     "person",
-                ],  # need to have car and logo for tests
+                ],  # need to have logo for tests
             },
             "onvif": {
                 "autotracking": {
