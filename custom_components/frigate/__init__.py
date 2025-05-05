@@ -121,7 +121,7 @@ def get_cameras_and_objects(
 
             if (
                 config.get("version", "0.14") < "0.16"
-                and obj in cam_config["model"]["all_attributes"]
+                and obj in config["model"]["all_attributes"]
             ):
                 # Logo attributes are only supported in Frigate 0.16+
                 continue
