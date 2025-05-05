@@ -131,6 +131,7 @@ TEST_CONFIG = {
                 "mask": None,
                 "track": [
                     "amazon",
+                    "face",
                     "person",
                 ],  # need to have logo for tests
             },
