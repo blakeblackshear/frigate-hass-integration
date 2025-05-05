@@ -930,10 +930,10 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
         try:
             data: dict[str, Any] = json.loads(msg.payload)
 
-            if data["type"] != "face":
+            if data.get("type") != "face":
                 return
 
-            if data["camera"] != self._cam_name:
+            if data.get("camera") != self._cam_name:
                 return
 
             self._state = data["name"]
@@ -970,9 +970,9 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
         return "Last Recognized Face"
 
     @property
-    def state(self) -> int:
+    def state(self) -> str:
         """Return true if the binary sensor is on."""
-        return self._state.title()
+        return str(self._state).title()
 
     @property
     def icon(self) -> str:
@@ -1016,13 +1016,17 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
         try:
             data: dict[str, Any] = json.loads(msg.payload)
 
-            if data["type"] != "lpr":
+            if data.get("type") != "lpr":
                 return
 
-            if data["camera"] != self._cam_name:
+            if data.get("camera") != self._cam_name:
                 return
 
-            self._state = data.get("name") or data["plate"]
+            if data.get("name"):
+                self._state = str(data["name"]).title()
+            else:
+                self._state = str(data["plate"])
+
             self.async_write_ha_state()
         except ValueError:
             pass
@@ -1056,9 +1060,9 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
         return "Last Recognized Plate"
 
     @property
-    def state(self) -> int:
+    def state(self) -> str:
         """Return true if the binary sensor is on."""
-        return self._state.title()
+        return self._state
 
     @property
     def icon(self) -> str:

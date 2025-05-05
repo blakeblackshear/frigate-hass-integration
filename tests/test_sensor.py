@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import logging
 from typing import Any
 from unittest.mock import AsyncMock
@@ -56,6 +57,8 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE,
+    TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID,
     TEST_SENSOR_GPU_LOAD_ENTITY_ID,
@@ -743,3 +746,133 @@ async def test_sensors_setup_correctly_in_registry(
             TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
         },
     )
+
+
+async def test_recognized_face_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateRecognizedFaceSensor state."""
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "face", "camera": "front_door", "name": "test"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test that other camera update is not picked up
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "face", "camera": "not_front_door", "name": "test"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test that other type update is not picked up
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "lpr", "camera": "front_door", "name": "test"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test bad value
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        "something",
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+
+async def test_recognized_plate_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateRecognizedPlateSensor state."""
+    await setup_mock_frigate_config_entry(hass)
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "lpr", "camera": "front_door", "name": "test"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test that other camera update is not picked up
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "lpr", "camera": "not_front_door", "name": "test"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test that other type update is not picked up
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "face", "camera": "front_door", "name": "test"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test bad value
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        "something",
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
+    assert entity_state
+    assert entity_state.state == "Test"
+
+    # test that it falls back to plate
+    async_fire_mqtt_message(
+        hass,
+        "frigate/tracked_object_update",
+        json.dumps({"type": "lpr", "camera": "front_door", "plate": "ABC123"}),
+    )
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
+    assert entity_state
+    assert entity_state.state == "ABC123"
