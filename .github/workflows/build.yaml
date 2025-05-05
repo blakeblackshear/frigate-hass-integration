@@ -1,7 +1,7 @@
 ---
 name: Build
 
-on: # yamllint disable-line rule:truthy
+on:
   push:
     branches:
       - master
@@ -25,9 +25,9 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v5.4.2
         with:
-          version: "0.5"
+          version: "0.6"
       - name: Install requirements
         run: |
           uv pip install -r requirements_dev.txt --system
@@ -68,9 +68,9 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v5.4.2
         with:
-          version: "0.5"
+          version: "0.6"
       - name: Install requirements
         run: |
           uv pip install -r requirements_dev.txt --system

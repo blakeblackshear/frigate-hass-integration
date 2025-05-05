@@ -4,7 +4,7 @@
     {
       "label": "Restart Home Assistant",
       "type": "shell",
-      "command": "docker compose restart hass",
+      "command": "docker compose restart homeassistant",
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
@@ -15,7 +15,7 @@
     {
       "label": "Reconfigure Home Assistant",
       "type": "shell",
-      "command": "docker compose up --detach --force-recreate hass",
+      "command": "docker compose up --detach --force-recreate homeassistant",
       "problemMatcher": [],
       "isBackground": false,
       "presentation": {
@@ -26,7 +26,7 @@
     {
       "label": "Home Assistant",
       "type": "shell",
-      "command": ".devcontainer/follow_ha.sh",
+      "command": ".devcontainer/scripts/homeassistant_follow_logs.sh",
       "problemMatcher": {
         "pattern": [
           {
