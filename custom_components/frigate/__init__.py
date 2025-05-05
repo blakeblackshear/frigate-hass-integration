@@ -48,13 +48,11 @@ from .const import (
     ATTR_CONFIG,
     ATTR_COORDINATOR,
     ATTR_WS_EVENT_PROXY,
-    ATTRIBUTE_LABELS,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
     FRIGATE_RELEASES_URL,
     FRIGATE_VERSION_ERROR_CUTOFF,
-    LOGO_LABELS,
     NAME,
     PLATFORMS,
     STARTUP_MESSAGE,
@@ -117,12 +115,17 @@ def get_cameras_and_objects(
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
         for obj in cam_config["objects"]["track"]:
-            if obj in ATTRIBUTE_LABELS:
+            if obj in config["model"]["non_logo_attributes"]:
+                # don't create sensors for attributes that are not logos
                 continue
 
-            if config.get("version", "0.14") < "0.16" and obj in LOGO_LABELS:
+            if (
+                config.get("version", "0.14") < "0.16"
+                and obj in cam_config["model"]["all_attributes"]
+            ):
+                # Logo attributes are only supported in Frigate 0.16+
                 continue
-                
+
             camera_objects.add((cam_name, obj))
 
         # add an artificial all label to track
