@@ -558,3 +558,27 @@ async def test_entry_rename_entities_with_unusual_names(hass: HomeAssistant) -> 
     # Verify the rename has correctly occurred.
     entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
     assert entity_id == "sensor.front_door_person_count"
+
+
+async def test_older_frigate_no_logo_sensors(hass: HomeAssistant) -> None:
+    """Test that non-simple names work."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+
+    # Rename one camera.
+    config["version"] = "0.15-1"
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+
+    config_entry = create_mock_frigate_config_entry(hass)
+
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+    await hass.async_block_till_done()
+
+    # Entity: Ensure the entity does not exist.
+    entity_registry = er.async_get(hass)
+    assert not entity_registry.async_get_entity_id(
+        DOMAIN, "sensor", "front_door_amazon_count"
+    )
