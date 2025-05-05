@@ -120,10 +120,7 @@ def get_cameras_and_objects(
             if obj in ATTRIBUTE_LABELS:
                 continue
 
-            if (
-                config.get("version", "0.14") < "0.16"
-                and obj in LOGO_LABELS
-            ):
+            if config.get("version", "0.14") < "0.16" and obj in LOGO_LABELS:
                 continue
                 
             camera_objects.add((cam_name, obj))
