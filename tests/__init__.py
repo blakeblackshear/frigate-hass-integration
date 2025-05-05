@@ -68,6 +68,8 @@ TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE = "sensor.front_door_ffmpeg_cpu_usage"
 TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID = "sensor.front_door_process_fps"
 TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID = "sensor.front_door_skipped_fps"
 TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID = "sensor.front_door_sound_level"
+TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE = "sensor.front_door_last_recognized_face"
+TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE = "sensor.front_door_last_recognized_plate"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID = "sensor.frigate_uptime"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
@@ -98,9 +100,15 @@ TEST_CONFIG = {
                 "listen": ["bark", "speech"],
                 "enabled_in_config": True,
             },
+            "face_recognition": {
+                "enabled": True,
+            },
             "fps": 4,
             "frame_shape": [1080, 1920],
             "height": 1080,
+            "lpr": {
+                "enabled": True,
+            },
             "motion": {
                 "contour_area": 35,
                 "delta_alpha": 0.2,
@@ -165,7 +173,13 @@ TEST_CONFIG = {
         "cpu1": {"device": "usb", "num_threads": 3, "type": "cpu"},
     },
     "environment_vars": {},
+    "face_recognition": {
+        "enabled": True,
+    },
     "logger": {"default": "INFO", "logs": {}},
+    "lpr": {
+        "enabled": True,
+    },
     "model": {
         "height": 320,
         "width": 320,
