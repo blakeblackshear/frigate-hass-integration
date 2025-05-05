@@ -115,13 +115,14 @@ def get_cameras_and_objects(
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
         for obj in cam_config["objects"]["track"]:
-            if obj in config["model"]["non_logo_attributes"]:
+            if obj in config["model"].get(
+                "non_logo_attributes", ["face", "license_plate"]
+            ):
                 # don't create sensors for attributes that are not logos
                 continue
 
-            if (
-                config.get("version", "0.14") < "0.16"
-                and obj in config["model"]["all_attributes"]
+            if config.get("version", "0.14") < "0.16" and obj in config["model"].get(
+                "all_attributes", ["amazon", "fedex", "ups"]
             ):
                 # Logo attributes are only supported in Frigate 0.16+
                 continue
