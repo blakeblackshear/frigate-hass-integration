@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -32,6 +33,8 @@ from . import (
 from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME, S
 from .icons import (
     ICON_CORAL,
+    ICON_FACE,
+    ICON_LICENSE_PLATE,
     ICON_SERVER,
     ICON_SPEEDOMETER,
     ICON_UPTIME,
@@ -48,7 +51,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Sensor entry setup."""
-    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    frigate_config: dict[str, Any] = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
     entities: list[FrigateEntity] = []
@@ -106,6 +109,27 @@ async def async_setup_entry(
     )
     entities.append(FrigateStatusSensor(coordinator, entry))
     entities.append(FrigateUptimeSensor(coordinator, entry))
+
+    if frigate_config.get("version", "0.14") >= "0.16":
+
+        if frigate_config.get("face_recognition", {}).get("enabled"):
+            entities.extend(
+                [
+                    FrigateRecognizedFaceSensor(entry, frigate_config, cam_name)
+                    for cam_name, cam_config in frigate_config["cameras"].items()
+                    if cam_config.get("face_recognition", {}).get("enabled")
+                ]
+            )
+
+        if frigate_config.get("lpr", {}).get("enabled"):
+            entities.extend(
+                [
+                    FrigateRecognizedPlateSensor(entry, frigate_config, cam_name)
+                    for cam_name, cam_config in frigate_config["cameras"].items()
+                    if cam_config.get("lpr", {}).get("enabled")
+                ]
+            )
+
     async_add_entities(entities)
 
 
@@ -868,3 +892,175 @@ class CameraProcessCpuSensor(
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_CORAL
+
+
+class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
+    """Frigate Recognized Face Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+    ) -> None:
+        """Construct a FrigateRecognizedFaceSensor."""
+        self._cam_name = cam_name
+        self._state = "Unknown"
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        "/tracked_object_update"
+                    ),
+                    "encoding": None,
+                },
+            },
+        )
+
+    @callback
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            data: dict[str, Any] = json.loads(msg.payload)
+
+            if data["type"] != "face":
+                return
+
+            if data["camera"] != self._cam_name:
+                return
+
+            self._state = data["name"]
+            self.async_write_ha_state()
+        except ValueError:
+            pass
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_recognized_face",
+            f"{self._cam_name}",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Last Recognized Face"
+
+    @property
+    def state(self) -> int:
+        """Return true if the binary sensor is on."""
+        return self._state.title()
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_FACE
+
+
+class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
+    """Frigate Recognized License Plate Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+    ) -> None:
+        """Construct a FrigateRecognizedPlateSensor."""
+        self._cam_name = cam_name
+        self._state = "Unknown"
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        "/tracked_object_update"
+                    ),
+                    "encoding": None,
+                },
+            },
+        )
+
+    @callback
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        try:
+            data: dict[str, Any] = json.loads(msg.payload)
+
+            if data["type"] != "lpr":
+                return
+
+            if data["camera"] != self._cam_name:
+                return
+
+            self._state = data.get("name") or data["plate"]
+            self.async_write_ha_state()
+        except ValueError:
+            pass
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_recognized_plate",
+            f"{self._cam_name}",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Last Recognized Plate"
+
+    @property
+    def state(self) -> int:
+        """Return true if the binary sensor is on."""
+        return self._state.title()
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return ICON_LICENSE_PLATE
