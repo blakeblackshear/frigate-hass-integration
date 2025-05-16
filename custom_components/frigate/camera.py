@@ -271,6 +271,19 @@ class FrigateCamera(
     def _enabled_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT extra message."""
         self._attr_is_on = decode_if_necessary(msg.payload) == "ON"
+
+        if self._attr_is_on:
+            self._attr_is_streaming = (
+                self._cam_name
+                in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
+            )
+            self._attr_is_recording = self._camera_config.get("record", {}).get(
+                "enabled"
+            )
+        else:
+            self._attr_is_streaming = False
+            self._attr_is_recording = False
+
         self.async_write_ha_state()
 
     @property
