@@ -1,7 +1,6 @@
 __pycache__
 pythonenv*
 custom_components/hacs
-frigate/**
 
 # pytest
 .pytest_cache

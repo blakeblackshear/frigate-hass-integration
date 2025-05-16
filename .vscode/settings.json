@@ -1,4 +1,6 @@
 {
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
   "python.testing.pytestArgs": ["--no-cov", "-p", "no:sugar"],
   "python.testing.pytestEnabled": true,
   "[python]": {

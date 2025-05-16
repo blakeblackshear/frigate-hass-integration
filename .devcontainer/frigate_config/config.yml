@@ -10,7 +10,7 @@ go2rtc:
   streams:
     big_buck_bunny:
       # yamllint disable-line rule:line-length
-      - exec:ffmpeg -re -stream_loop -1 -i https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_h264.mov -c copy -rtsp_transport tcp -f rtsp {{output}}
+      - exec:/usr/lib/ffmpeg/7.0/bin/ffmpeg -re -stream_loop -1 -i https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_h264.mov -c copy -rtsp_transport tcp -f rtsp {{output}}
 cameras:
   big_buck_bunny:
     ffmpeg:
