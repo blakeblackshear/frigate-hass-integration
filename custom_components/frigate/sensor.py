@@ -906,6 +906,12 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
         """Construct a FrigateRecognizedFaceSensor."""
         self._cam_name = cam_name
         self._state = "Unknown"
+
+        # new attribute holders
+        self._score: float | None = None
+        self._object_id: str | None = None
+        self._timestamp: float | None = None
+
         self._frigate_config = frigate_config
 
         super().__init__(
@@ -935,6 +941,11 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
 
             if data.get("camera") != self._cam_name:
                 return
+
+            # store extra attributes (may be missing on older Frigate versions)
+            self._score = data.get("score")
+            self._object_id = data.get("id")
+            self._timestamp = data.get("timestamp")                
 
             self._state = data["name"]
             self.async_write_ha_state()
@@ -978,6 +989,24 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_FACE
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return additional attributes for HA."""
+        attrs: dict[str, Any] = {}
+
+        if self._score is not None:
+            # round to three decimals to keep it readable
+            attrs["score"] = round(self._score, 3)
+
+        if self._object_id is not None:
+            attrs["id"] = self._object_id
+
+        if self._timestamp is not None:
+            # leave as float (epoch seconds) so templates can format as needed
+            attrs["timestamp"] = self._timestamp
+
+        return attrs or None
 
 
 class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
