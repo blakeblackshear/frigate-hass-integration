@@ -199,6 +199,15 @@ class FrigateCamera(
                     ),
                     "encoding": None,
                 },
+                "enabled_topic": {
+                    "msg_callback": self._enabled_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/enabled/state"
+                    ),
+                    "encoding": None,
+                },
             },
         )
         FrigateEntity.__init__(self, config_entry)
@@ -258,9 +267,33 @@ class FrigateCamera(
         self._attr_motion_detection_enabled = decode_if_necessary(msg.payload) == "ON"
         self.async_write_ha_state()
 
+    @callback
+    def _enabled_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT extra message."""
+        self._attr_is_on = decode_if_necessary(msg.payload) == "ON"
+
+        if self._attr_is_on:
+            self._attr_is_streaming = (
+                self._cam_name
+                in self._frigate_config.get("go2rtc", {}).get("streams", {}).keys()
+            )
+            self._attr_is_recording = self._camera_config.get("record", {}).get(
+                "enabled"
+            )
+        else:
+            self._attr_is_streaming = False
+            self._attr_is_recording = False
+
+        self.async_write_ha_state()
+
     @property
     def available(self) -> bool:
         """Signal when frigate loses connection to camera."""
+        if not self._attr_is_on:
+            # if the camera is off it may appear unavailable
+            # but it should be available for service calls
+            return True
+
         if self.coordinator.data:
             if (
                 self.coordinator.data.get("cameras", {})
