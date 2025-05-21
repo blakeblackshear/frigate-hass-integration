@@ -10,16 +10,17 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker-host.sock
       - .:${LOCAL_WORKSPACE_FOLDER}:cached
-  hass:
+  homeassistant:
     image: "homeassistant/home-assistant:${HA_VERSION:-latest}"
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - .devcontainer/preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
-      - .devcontainer/preconfig:/preconfig.d/01-integration:ro
-      - .devcontainer/config/configuration.yaml:/config/configuration.yaml:ro
-      - .devcontainer/config/specific_configuration.yaml:/config/specific_configuration.yaml:ro
-      - .devcontainer/config/www:/config/www
+      - .devcontainer/scripts/homeassistant_preconfig.sh:/etc/cont-init.d/preconfig.sh:ro
+      - .devcontainer/homeassistant_preconfig:/preconfig.d/01-integration:ro
+      # Avoid mounting the entire config directory so that data is not persisted
+      - .devcontainer/homeassistant_config/configuration.yaml:/config/configuration.yaml:ro
+      - .devcontainer/homeassistant_config/specific_configuration.yaml:/config/specific_configuration.yaml:ro
+      - .devcontainer/homeassistant_config/www:/config/www # For Downloader
       - ./custom_components:/config/custom_components:ro
   frigate:
     privileged: true
@@ -30,8 +31,11 @@ services:
       - /dev/dri:/dev/dri
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - .devcontainer/frigate.yml:/config/config.yml:ro
-      - ./frigate:/media/frigate
+      - .devcontainer/frigate_media:/media/frigate
+      # Avoid mounting the entire config directory so that data is not persisted
+      - .devcontainer/frigate_config/config.yml:/config/config.yml:ro
   mqtt:
-    image: eclipse-mosquitto:1.6
+    image: eclipse-mosquitto:2
     restart: unless-stopped
+    volumes:
+      - .devcontainer/mosquitto_config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
