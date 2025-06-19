@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping
 import datetime
 import logging
@@ -142,6 +143,22 @@ class FrigateProxyViewMixin:
         if not config_entry:
             raise HASSWebProxyLibNotFoundRequestError()
         return str(URL(config_entry.data[CONF_URL]) / path)
+    
+    async def _get_frigate_auth_for_request(
+            self, request: web.Request, frigate_instance_id: str | None = None
+    ) -> dict[str, str] | None:
+        hass = request.app[KEY_HASS]
+        return await get_client_for_frigate_instance_id(hass, frigate_instance_id).get_auth_headers()
+    
+    async def get(self, request: web.Request, **kwargs):
+        auth_headers = await get_client_for_frigate_instance_id(
+            request.app[KEY_HASS], kwargs.get("frigate_instance_id")
+        ).get_auth_headers()
+
+        existing_headers = kwargs.get("headers", {})
+        kwargs['headers'] = {**existing_headers, **auth_headers}
+
+        return await super().get(request, **kwargs)
 
 
 class FrigateProxyView(FrigateProxyViewMixin, ProxyView):
@@ -168,6 +185,7 @@ class SnapshotsProxyView(FrigateProxyView):
                 f"api/events/{kwargs['eventid']}/snapshot.jpg",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -191,6 +209,7 @@ class RecordingProxyView(FrigateProxyView):
                 + f"/end/{kwargs['end']}/clip.mp4",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -210,6 +229,7 @@ class ThumbnailsProxyView(FrigateProxyView):
                 f"api/events/{kwargs['eventid']}/thumbnail.jpg",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -270,6 +290,7 @@ class NotificationsProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             allow_unauthenticated=True,
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -336,6 +357,7 @@ class VodProxyView(FrigateProxyView):
                 f"vod/{kwargs['path']}/{kwargs['manifest']}.m3u8",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -360,6 +382,7 @@ class VodSegmentProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             allow_unauthenticated=True,
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -406,6 +429,7 @@ class JSMPEGProxyView(FrigateWebsocketProxyView):
                 f"live/jsmpeg/{kwargs['path']}",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -426,6 +450,7 @@ class MSEProxyView(FrigateWebsocketProxyView):
                 f"live/mse/{kwargs['path']}",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
 
@@ -446,5 +471,6 @@ class WebRTCProxyView(FrigateWebsocketProxyView):
                 f"live/webrtc/{kwargs['path']}",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
+            headers = kwargs['headers'],
             query_params=self._get_query_params(request),
         )
