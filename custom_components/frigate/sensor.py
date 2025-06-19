@@ -1061,7 +1061,7 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
             pass
 
     @callback
-    def clear_recognized_plate(self, _now) -> None:
+    def clear_recognized_plate(self, _now: datetime.datetime) -> None:
         """Clears the current sensor state."""
         self._state = "None"
         self.async_write_ha_state()
