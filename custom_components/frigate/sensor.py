@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+import datetime
 import json
 import logging
 from typing import Any
@@ -16,6 +18,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import (
@@ -907,6 +910,7 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
         self._cam_name = cam_name
         self._state = "Unknown"
         self._frigate_config = frigate_config
+        self._clear_state_callable: Callable | None = None
 
         super().__init__(
             config_entry,
@@ -938,8 +942,24 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity):
 
             self._state = data["name"]
             self.async_write_ha_state()
+
+            if self._clear_state_callable:
+                self._clear_state_callable()
+                self._clear_state_callable = None
+
+            self._clear_state_callable = async_call_later(
+                self.hass, datetime.timedelta(seconds=60), self.clear_recognized_face
+            )
+
         except ValueError:
             pass
+
+    @callback
+    def clear_recognized_face(self, _now: datetime.datetime) -> None:
+        """Clears the current sensor state."""
+        self._state = "None"
+        self.async_write_ha_state()
+        self._clear_state_callable = None
 
     @property
     def unique_id(self) -> str:
@@ -993,6 +1013,7 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
         self._cam_name = cam_name
         self._state = "Unknown"
         self._frigate_config = frigate_config
+        self._clear_state_callable: Callable | None = None
 
         super().__init__(
             config_entry,
@@ -1028,8 +1049,23 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity):
                 self._state = str(data["plate"])
 
             self.async_write_ha_state()
+
+            if self._clear_state_callable:
+                self._clear_state_callable()
+                self._clear_state_callable = None
+
+            self._clear_state_callable = async_call_later(
+                self.hass, datetime.timedelta(seconds=60), self.clear_recognized_plate
+            )
         except ValueError:
             pass
+
+    @callback
+    def clear_recognized_plate(self, _now: datetime.datetime) -> None:
+        """Clears the current sensor state."""
+        self._state = "None"
+        self.async_write_ha_state()
+        self._clear_state_callable = None
 
     @property
     def unique_id(self) -> str:
