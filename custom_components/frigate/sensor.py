@@ -40,7 +40,7 @@ from . import (
     get_zones,
     verify_frigate_version,
 )
-from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME, S
+from .const import ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
 from .icons import (
     ICON_CORAL,
     ICON_FACE,
