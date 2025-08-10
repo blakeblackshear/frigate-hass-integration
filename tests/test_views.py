@@ -87,6 +87,7 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
     )
 
     client = create_mock_frigate_client()
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
     config_entry = create_mock_frigate_config_entry(
         hass, data={CONF_URL: str(server.make_url("/"))}
     )
@@ -101,7 +102,9 @@ async def test_vod_manifest_proxy(
 ) -> None:
     """Test vod manifest."""
     authenticated_hass_client = await hass_client()
-    resp = await authenticated_hass_client.get("/api/frigate/vod/present/manifest.m3u8")
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/vod/present/manifest.m3u8",
+    )
     assert resp.status == HTTPStatus.OK
 
 
@@ -483,6 +486,7 @@ async def test_notifications_with_disabled_option(
     config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
 
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client
@@ -523,6 +527,7 @@ async def test_notifications_with_no_expiration(
     config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
 
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client
@@ -560,6 +565,7 @@ async def test_expired_notifications_are_forbidden(
     config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
 
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client
@@ -610,6 +616,7 @@ async def test_expired_notifications_are_served_when_authenticated(
     config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
 
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client

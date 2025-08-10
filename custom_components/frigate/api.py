@@ -311,7 +311,7 @@ class FrigateApiClient:
         if current_time >= self._token_data["expires"]:  # Compare UTC-aware datetimes
             await self._get_token()
 
-    async def _get_auth_headers(self) -> dict[str, str]:
+    async def get_auth_headers(self) -> dict[str, str]:
         """
         Get headers for API requests, including the JWT token if available.
         Ensures that the token is refreshed if needed.
@@ -342,7 +342,7 @@ class FrigateApiClient:
             headers = {}
 
         if not is_login_request:
-            headers.update(await self._get_auth_headers())
+            headers.update(await self.get_auth_headers())
 
         try:
             async with async_timeout.timeout(TIMEOUT):
