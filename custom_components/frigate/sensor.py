@@ -171,7 +171,7 @@ class FrigateFpsSensor(
 
     @property
     def name(self) -> str:
-        return f"Overall {self._fps_type} fps"
+        return f"{self._fps_type} fps"
 
     @property
     def unique_id(self) -> str:
