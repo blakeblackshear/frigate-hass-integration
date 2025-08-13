@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import namedtuple
 import copy
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
@@ -94,6 +95,8 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client
     )
+    LocalFrigate = namedtuple("LocalFrigate", ["server", "client", "config_entry"])
+    return LocalFrigate(server, client, config_entry)
 
 
 async def test_vod_manifest_proxy(
@@ -697,3 +700,47 @@ async def test_webrtc_ws_proxy_view(
         # Subsequent messages will echo back.
         await ws.send_str("Hello!")
         assert (await ws.receive_str()) == "Hello!"
+
+
+async def test_auth_headers_are_sent_to_frigate_server(
+    local_frigate: Any,
+    hass_client: Any,
+    hass: Any,
+) -> None:
+    authenticated_hass_client = await hass_client()
+    """Test default config entry's auth headers are sent"""
+    resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
+    assert resp.status == 200
+
+    frigate_client = local_frigate.client
+    frigate_client.get_auth_headers.assert_called_once()
+
+    data = await resp.json()
+    assert data["headers"]["Authorization"] == "Bearer token"
+
+    """Test second config entry's auth headers are sent"""
+    config_entry = create_mock_frigate_config_entry(
+        hass,
+        entry_id="private_id",
+        data={CONF_URL: str(local_frigate.server.make_url("/"))},
+    )
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config[ATTR_MQTT][ATTR_CLIENT_ID] = "private_id"
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    client.get_auth_headers = AsyncMock(
+        return_value={"Authorization": "Bearer token 2"}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/private_id/snapshot/event_id"
+    )
+    assert resp.status == 200
+    client.get_auth_headers.assert_called_once()
+
+    data = await resp.json()
+    assert data["headers"]["Authorization"] == "Bearer token 2"

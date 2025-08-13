@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Mapping
 import datetime
 import logging
@@ -92,6 +91,19 @@ def get_client_for_frigate_instance_id(
     return None
 
 
+def get_client_for_config_entry(
+    hass: HomeAssistant, config_entry: ConfigEntry
+) -> FrigateApiClient | None:
+    """Get a client for a given ConfigEntry."""
+    if config_entry:
+        return cast(
+            Optional[FrigateApiClient],
+            hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CLIENT),
+        )
+    # We don't expect a config entry to ever not have a client, but just in case:
+    return None  # pragma: no cover
+
+
 def get_frigate_instance_id_for_config_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -146,37 +158,25 @@ class FrigateProxyViewMixin:
 
     async def _get_frigate_auth_for_request(
         self, request: web.Request, frigate_instance_id: str | None = None
-    ) -> dict[str, str] | None:
+    ) -> dict[str, str]:
         hass = request.app[KEY_HASS]
-        if frigate_instance_id is None:
+        client = None
+        if frigate_instance_id:
+            client = get_client_for_frigate_instance_id(
+                hass, frigate_instance_id=frigate_instance_id
+            )
+        else:
             config_entry = self._get_config_entry_for_request(request)
-            if not config_entry:
-                _LOGGER.warning(
-                    "No Frigate configuration found for request %s.", request.url
-                )
-                return {}
-            frigate_instance_id = get_frigate_instance_id_for_config_entry(
-                hass, config_entry
-            )
-            if not frigate_instance_id:
-                _LOGGER.warning(
-                    "No Frigate instance ID found in frigate configuration for request %s. ",
-                    request.url,
-                )
-                return {}
+            if config_entry:
+                client = get_client_for_config_entry(hass, config_entry)
 
-        client = get_client_for_frigate_instance_id(
-            hass, frigate_instance_id=frigate_instance_id
-        )
         if client is None:
-            _LOGGER.warning(
-                "No Frigate client found for instance ID '%s'. ", frigate_instance_id
-            )
+            _LOGGER.warning("No Frigate client found for request '%s'. ", request.url)
             return {}
         return await client.get_auth_headers()
 
     # Override the get method to inject Frigate auth headers for authenticated requests.
-    async def get(self, request: web.Request, **kwargs):
+    async def get(self, request: web.Request, **kwargs: Any) -> Any:
         auth_headers = await self._get_frigate_auth_for_request(
             request, kwargs.get("frigate_instance_id")
         )
@@ -184,7 +184,8 @@ class FrigateProxyViewMixin:
         existing_headers = kwargs.get("headers", {})
         kwargs["headers"] = {**existing_headers, **auth_headers}
 
-        return await super().get(request, **kwargs)
+        # This mixin is only used with ProxyView or WebsocketProxyView, which define a `get` method, so we can safely ignore the check.
+        return await super().get(request, **kwargs)  # type: ignore[misc]
 
 
 class FrigateProxyView(FrigateProxyViewMixin, ProxyView):
