@@ -54,8 +54,6 @@ from .icons import (
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
-CAMERA_FPS_TYPES = ["camera", "detection", "process", "skipped"]
-
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -66,8 +64,11 @@ async def async_setup_entry(
 
     entities: list[FrigateEntity] = []
     for key, value in coordinator.data.items():
-        if key == "detection_fps":
-            entities.append(FrigateFpsSensor(coordinator, entry))
+
+        if key.endswith("_fps"):
+            entities.append(
+                FrigateFpsSensor(coordinator, entry, fps_type=key.removesuffix("_fps"))
+            )
         elif key == "detectors":
             for name in value.keys():
                 entities.append(DetectorSpeedSensor(coordinator, entry, name))
@@ -93,12 +94,11 @@ async def async_setup_entry(
                     CameraProcessCpuSensor(coordinator, entry, camera, "ffmpeg")
                 )
         elif key == "cameras":
-            for name in value.keys():
+            for name, cam in value.items():
                 entities.extend(
-                    [
-                        CameraFpsSensor(coordinator, entry, name, t)
-                        for t in CAMERA_FPS_TYPES
-                    ]
+                    CameraFpsSensor(coordinator, entry, name, k.removesuffix("_fps"))
+                    for k in cam
+                    if k.endswith("_fps")
                 )
 
                 if frigate_config["cameras"][name]["audio"]["enabled_in_config"]:
@@ -149,21 +149,28 @@ class FrigateFpsSensor(
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_name = "Detection fps"
 
     def __init__(
-        self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
+        self,
+        coordinator: FrigateDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        fps_type: str = "detection",
     ) -> None:
         """Construct a FrigateFpsSensor."""
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
+        self._fps_type = fps_type
         self._attr_entity_registry_enabled_default = False
+
+    @property
+    def name(self) -> str:
+        return f"{self._fps_type} fps"
 
     @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
-            self._config_entry.entry_id, "sensor_fps", "detection"
+            self._config_entry.entry_id, "sensor_fps", self._fps_type
         )
 
     @property
@@ -181,7 +188,7 @@ class FrigateFpsSensor(
     def native_value(self) -> int | None:
         """Return the value of the sensor."""
         if self.coordinator.data:
-            data = self.coordinator.data.get("detection_fps")
+            data = self.coordinator.data.get(f"{self._fps_type}_fps")
             if data is not None:
                 try:
                     return round(float(data))
