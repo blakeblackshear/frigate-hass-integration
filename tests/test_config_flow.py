@@ -64,6 +64,10 @@ async def test_user_success(hass: HomeAssistant) -> None:
         CONF_PASSWORD: "",
         CONF_USERNAME: "",
         "validate_ssl": True,
+        "use_proxy_auth_secret": False,
+        "x_proxy_auth_secret": None,
+        "x_forwarded_user": None,
+        "x_forwarded_groups": None
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
@@ -104,6 +108,51 @@ async def test_user_success_with_auth(hass: HomeAssistant) -> None:
         CONF_PASSWORD: TEST_PASSWORD,
         CONF_USERNAME: TEST_USERNAME,
         "validate_ssl": True,
+    }
+    assert len(mock_setup_entry.mock_calls) == 1
+    assert mock_client.async_get_stats.called
+
+
+async def test_user_success_with_proxy_auth_secret(hass: HomeAssistant) -> None:
+    """Test successful user flow with proxy-auth-secret authentication."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_URL: TEST_URL,
+                "use_proxy_auth_secret": True,
+                "x_proxy_auth_secret": "superSecret",
+                "x_forwarded_user": "admin",
+                "x_forwarded_groups": "admin,frigate-admin"
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+    assert result["title"] == "example.com"
+    assert result["data"] == {
+        CONF_URL: TEST_URL,
+        CONF_PASSWORD: "",
+        CONF_USERNAME: "",
+        "validate_ssl": True,
+        "use_proxy_auth_secret": True,
+        "x_proxy_auth_secret": "superSecret",
+        "x_forwarded_user": "admin",
+        "x_forwarded_groups": "admin,frigate-admin"
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called

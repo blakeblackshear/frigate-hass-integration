@@ -8,7 +8,10 @@
           "validate_ssl": "Validate SSL",
           "use_proxy_auth_secret": "Authenticate using X-Proxy-Secret header",
           "username": "Username (optional)",
-          "password": "Password (optional)"
+          "password": "Password (optional)",
+          "x_proxy_auth_secret": "Proxy-Auth-Secret (required if using X-Proxy-Secret)",
+          "x_forwarded_user": "Authenticated username (optional, sent in headers if using X-Proxy-Secret)",
+          "x_forwarded_groups": "Comma-separated authenticated groups (optional, sent in headers if using X-Proxy-Secret)"
         }
       }
     },

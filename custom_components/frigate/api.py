@@ -40,6 +40,9 @@ class FrigateApiClient:
         session: aiohttp.ClientSession,
         username: str | None = None,
         password: str | None = None,
+        x_proxy_auth_secret: str | None = None,
+        x_forwarded_user: str | None = None,
+        x_forwarded_groups: str | None = None,
         validate_ssl: bool = True,
         use_proxy_auth_secret: bool = True,
     ) -> None:
@@ -48,6 +51,9 @@ class FrigateApiClient:
         self._session = session
         self._username = username
         self._password = password
+        self._x_proxy_auth_secret = x_proxy_auth_secret
+        self._x_forwarded_user = x_forwarded_user
+        self._x_forwarded_groups = x_forwarded_groups
         self._token_data: dict[str, Any] = {}
         self.validate_ssl = validate_ssl
         self.use_proxy_auth_secret = use_proxy_auth_secret
@@ -321,12 +327,16 @@ class FrigateApiClient:
         headers = {}
 
         if self.use_proxy_auth_secret:
-            if self._password:
-                headers["X-Proxy-Secret"] = self._password
+            if self._x_proxy_auth_secret:
+                headers["X-Proxy-Secret"] = self._x_proxy_auth_secret
             else:
                 _LOGGER.warning(
-                    "'use_proxy_auth_secret' is enabled: value from password will be used for X-Proxy-Secret header, so it cannot be empty."
+                    "'use_proxy_auth_secret' is enabled: value within X-Proxy-Secret field cannot be empty."
                 )
+            if self._x_forwarded_user:
+                headers["x_forwarded_user"] = self._x_forwarded_user
+            if self._x_forwarded_groups:
+                headers["x_forwarded_groups"] = self._x_forwarded_groups
 
         elif self._username and self._password:
             await self._refresh_token_if_needed()
