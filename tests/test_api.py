@@ -523,13 +523,44 @@ async def test_get_auth_headers(
         aiohttp_server, [web.post("/api/login", login_handler)]
     )
     frigate_client = FrigateApiClient(
-        str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+        str(server.make_url("/")), aiohttp_session, username="user", password="pass", use_proxy_auth_secret=False
     )
     # Pre-fetch token
     await frigate_client._get_token()
     headers = await frigate_client.get_auth_headers()
 
     assert headers["Authorization"] == f"Bearer {token}"
+
+
+async def test_set_auth_headers_for_proxy_secret_auth(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _set_auth_headers_for_proxy_secret_auth includes correct headers with values provided within the form."""
+    token = get_test_token()
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint."""
+        response = web.Response(status=200)
+        response.headers["Set-Cookie"] = f"frigate_token={token}"
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session,
+        use_proxy_auth_secret=True,
+        x_proxy_auth_secret="superSecret",
+        x_forwarded_user="frigate-admin",
+        x_forwarded_groups="admin,frigate-admin"
+    )
+    # Pre-fetch token
+    await frigate_client._get_token()
+    headers = await frigate_client._get_auth_headers()
+
+    assert headers["X-Proxy-Secret"] == "superSecret"
+    assert headers["x_forwarded_user"] == "frigate-admin"
+    assert headers["x_forwarded_groups"] == "admin,frigate-admin"
 
 
 async def test_get_token_missing_set_cookie(
@@ -637,6 +668,33 @@ async def test_get_verbose_frigate_auth_error_unauthorized(
     )
     frigate_client = FrigateApiClient(
         str(server.make_url("/")), aiohttp_session, username="user", password="pass"
+    )
+
+    with pytest.raises(
+        FrigateApiClientError, match="Unauthorized access - check credentials."
+    ):
+        await frigate_client._get_token()
+
+
+async def test_get_verbose_frigate_auth_error_unauthorized_proxy_auth_secret(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test _get_token_proxy_auth_secret raises KeyError for missing exp claim in JWT."""
+
+    async def login_handler(request: web.Request) -> web.Response:
+        """Simulate login endpoint with token missing exp claim."""
+        response = web.Response(status=401)
+        return response
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")), aiohttp_session,
+        use_proxy_auth_secret=True,
+        x_proxy_auth_secret="superSecret",
+        x_forwarded_user="frigate-admin",
+        x_forwarded_groups="admin,frigate-admin"
     )
 
     with pytest.raises(
