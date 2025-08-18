@@ -41,6 +41,7 @@ class FrigateApiClient:
         username: str | None = None,
         password: str | None = None,
         validate_ssl: bool = True,
+        use_proxy_auth_secret: bool = True,
     ) -> None:
         """Construct API Client."""
         self._host = host
@@ -49,6 +50,7 @@ class FrigateApiClient:
         self._password = password
         self._token_data: dict[str, Any] = {}
         self.validate_ssl = validate_ssl
+        self.use_proxy_auth_secret = use_proxy_auth_secret
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
@@ -318,7 +320,15 @@ class FrigateApiClient:
         """
         headers = {}
 
-        if self._username and self._password:
+        if self.use_proxy_auth_secret:
+            if self._password:
+                headers["X-Proxy-Secret"] = self._password
+            else:
+                _LOGGER.warning(
+                    "'use_proxy_auth_secret' is enabled: value from password will be used for X-Proxy-Secret header, so it cannot be empty."
+                )
+
+        elif self._username and self._password:
             await self._refresh_token_if_needed()
 
             if "token" in self._token_data:

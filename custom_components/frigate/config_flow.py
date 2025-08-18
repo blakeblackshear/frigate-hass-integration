@@ -84,6 +84,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
                 bool(user_input.get("validate_ssl")),
+                bool(user_input.get("use_proxy_auth_secret", False)),
             )
             await client.async_get_stats()
         except FrigateApiClientError:
@@ -115,6 +116,13 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             user_input = {}
 
+        """Handle X-Proxy-Secret authentication in the UI gracefully."""
+        use_proxy_auth_secret = user_input.get("use_proxy_auth_secret", False)
+        username_description = (
+            "(Ignored if 'Use Proxy Auth Secret' is checked)"
+            if use_proxy_auth_secret else ""
+        )
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -126,6 +134,9 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         "validate_ssl", default=user_input.get("validate_ssl", True)
                     ): bool,
                     vol.Optional(
+                        "use_proxy_auth_secret", default=use_proxy_auth_secret
+                    ): bool,
+                    vol.Optional(
                         CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
                     ): str,
                     vol.Optional(
@@ -134,6 +145,9 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+            description_placeholders={
+                "username_description": username_description,
+            },
         )
 
     @staticmethod

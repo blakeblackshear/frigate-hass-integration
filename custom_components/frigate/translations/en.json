@@ -6,6 +6,7 @@
         "data": {
           "url": "URL",
           "validate_ssl": "Validate SSL",
+          "use_proxy_auth_secret": "Authenticate using X-Proxy-Secret header",
           "username": "Username (optional)",
           "password": "Password (optional)"
         }
