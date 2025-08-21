@@ -331,7 +331,7 @@ class FrigateApiClient:
                 headers["X-Proxy-Secret"] = self._x_proxy_auth_secret
             else:
                 _LOGGER.warning(
-                    "'use_proxy_auth_secret' is enabled: value within X-Proxy-Secret field cannot be empty."
+                    "'Proxy-Auth-Secret' authentication is enabled: 'X-Proxy-Secret' is required."
                 )
             if self._x_forwarded_user:
                 headers["x_forwarded_user"] = self._x_forwarded_user
