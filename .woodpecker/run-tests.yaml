@@ -1,6 +1,6 @@
 when:
   - event: push
-    branch: main
+    branch: master
 
 steps:
   tests:
