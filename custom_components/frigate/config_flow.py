@@ -154,6 +154,15 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Optional(
                         CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
                     ): str,
+                    vol.Optional(
+                        "x_proxy_auth_secret", default=user_input.get("x_proxy_auth_secret", "")
+                    ): str,
+                    vol.Optional(
+                        "x_forwarded_user", default=user_input.get("x_forwarded_user", "")
+                    ): str,
+                    vol.Optional(
+                        "x_forwarded_groups", default=user_input.get("x_forwarded_groups", "")
+                    ): str,
                 }
             ),
             errors=errors,
