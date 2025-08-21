@@ -1,10 +1,10 @@
-steps:
-  build:
-    image: python:3.13-slim
-    when:
-      event: pull_request
-      branch: master
+when:
+  event: pull_request
+  branch: master
 
+steps:
+  - name: build
+    image: python:3.13-slim
     commands:
       - ls
       - python -m venv venv
