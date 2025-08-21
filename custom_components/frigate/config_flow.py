@@ -119,7 +119,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             user_input = {}
 
-        """Handle X-Proxy-Secret authentication in the UI gracefully."""
+        """Handle Proxy Auth Secret authentication in the UI gracefully."""
         use_proxy_auth_secret = user_input.get("use_proxy_auth_secret", False)
         ignored_if_proxy_auth = (
             "(Ignored if 'Use Proxy Auth Secret' is checked)"
