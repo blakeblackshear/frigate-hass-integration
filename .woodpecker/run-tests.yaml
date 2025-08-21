@@ -1,0 +1,32 @@
+when:
+  event:
+    - push
+    - pull_request
+
+steps:
+  tests:
+    name: pytest (python:3.13)
+    image: python:3.13-slim
+    environment:
+      PIP_NO_CACHE_DIR: "off"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_CACHE_DIR: "/cache/pip"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - name: pip-cache
+        path: /cache/pip
+    commands:
+      - python -V
+      - apt-get update
+      - apt-get install -y --no-install-recommends build-essential gcc libc6-dev libffi-dev libssl-dev git
+      - rm -rf /var/lib/apt/lists/*
+      - python -m venv .venv
+      - . .venv/bin/activate
+      - pip install -U pip setuptools wheel
+      - pip install -r requirements-dev.txt
+      - pytest -q --maxfail=1 --disable-warnings
+
+volumes:
+  - name: pip-cache
+    temp: {}
