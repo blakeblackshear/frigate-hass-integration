@@ -65,9 +65,9 @@ async def test_user_success(hass: HomeAssistant) -> None:
         CONF_USERNAME: "",
         "validate_ssl": True,
         "use_proxy_auth_secret": False,
-        "x_proxy_auth_secret": None,
-        "x_forwarded_user": None,
-        "x_forwarded_groups": None
+        "x_proxy_auth_secret": '',
+        "x_forwarded_user": '',
+        "x_forwarded_groups": ''
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
@@ -97,6 +97,10 @@ async def test_user_success_with_auth(hass: HomeAssistant) -> None:
                 CONF_URL: TEST_URL,
                 CONF_USERNAME: TEST_USERNAME,
                 "validate_ssl": True,
+                "use_proxy_auth_secret": False,
+                "x_proxy_auth_secret": '',
+                "x_forwarded_user": '',
+                "x_forwarded_groups": ''
             },
         )
         await hass.async_block_till_done()
@@ -108,6 +112,10 @@ async def test_user_success_with_auth(hass: HomeAssistant) -> None:
         CONF_PASSWORD: TEST_PASSWORD,
         CONF_USERNAME: TEST_USERNAME,
         "validate_ssl": True,
+        "use_proxy_auth_secret": False,
+        "x_proxy_auth_secret": '',
+        "x_forwarded_user": '',
+        "x_forwarded_groups": ''
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
