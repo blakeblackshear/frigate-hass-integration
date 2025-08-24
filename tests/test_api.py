@@ -556,7 +556,7 @@ async def test_set_auth_headers_for_proxy_secret_auth(
     )
     # Pre-fetch token
     await frigate_client._get_token()
-    headers = await frigate_client._get_auth_headers()
+    headers = await frigate_client.get_auth_headers()
 
     assert headers["X-Proxy-Secret"] == "superSecret"
     assert headers["x_forwarded_user"] == "frigate-admin"
