@@ -371,31 +371,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_review_summarize_service(
-    hass: HomeAssistant, call: ServiceCall
-) -> None:
+async def async_review_summarize_service(call: ServiceCall) -> None:
     """Handle review summarize service call."""
-    start_time = call.data[ATTR_START_TIME]
-    end_time = call.data[ATTR_END_TIME]
-
-    if start_time == "" or end_time == "":
-        raise ServiceValidationError("Start time and end time cannot be empty")
-
-    # Convert datetime strings to timestamps
-    start_timestamp = datetime.datetime.strptime(
-        start_time, "%Y-%m-%d %H:%M:%S"
-    ).timestamp()
-    end_timestamp = datetime.datetime.strptime(
-        end_time, "%Y-%m-%d %H:%M:%S"
-    ).timestamp()
-
-    # Get the Frigate client from the first config entry
-    if not hass.data[DOMAIN]:
-        raise ServiceValidationError("No Frigate integration configured")
+    hass = call.hass
 
     # Use the first available config entry
     config_entry_id = next(iter(hass.data[DOMAIN].keys()))
     client = hass.data[DOMAIN][config_entry_id][ATTR_CLIENT]
+
+    # Get the service data from the call
+    start_time = call.data[ATTR_START_TIME]
+    end_time = call.data[ATTR_END_TIME]
+
+    # Validate datetime format and convert to timestamps
+    try:
+        start_timestamp = datetime.datetime.strptime(
+            start_time, "%Y-%m-%d %H:%M:%S"
+        ).timestamp()
+        end_timestamp = datetime.datetime.strptime(
+            end_time, "%Y-%m-%d %H:%M:%S"
+        ).timestamp()
+    except ValueError as exc:
+        raise ServiceValidationError(
+            f"Invalid datetime format. Expected 'YYYY-MM-DD HH:MM:SS': {exc}"
+        )
 
     try:
         result = await client.async_review_summarize(start_timestamp, end_timestamp)

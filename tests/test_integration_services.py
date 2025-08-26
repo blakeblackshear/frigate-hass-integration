@@ -16,11 +16,7 @@ from custom_components.frigate.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 
-from . import (
-    create_mock_frigate_client,
-    create_mock_frigate_config_entry,
-    setup_mock_frigate_config_entry,
-)
+from . import create_mock_frigate_client, setup_mock_frigate_config_entry
 
 
 async def test_review_summarize_service_call(
@@ -52,6 +48,11 @@ async def test_review_summarize_service_call(
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
     )
 
+    # Verify the result is stored in hass.data
+    config_entry_id = next(iter(hass.data["frigate"].keys()))
+    assert "last_review_summary" in hass.data["frigate"][config_entry_id]
+    assert hass.data["frigate"][config_entry_id]["last_review_summary"] == post_success
+
 
 async def test_review_summarize_service_validation(
     hass: HomeAssistant,
@@ -60,30 +61,36 @@ async def test_review_summarize_service_validation(
     client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=client)
 
-    # Test empty start time
-    with pytest.raises(
-        ServiceValidationError, match="Start time and end time cannot be empty"
-    ):
+    # Test missing start time - schema validation should catch this
+    with pytest.raises(Exception, match="required"):
         await hass.services.async_call(
             "frigate",
             SERVICE_REVIEW_SUMMARIZE,
             {
-                ATTR_START_TIME: "",
                 ATTR_END_TIME: "2023-09-23 18:11:22",
             },
             blocking=True,
         )
 
-    # Test empty end time
-    with pytest.raises(
-        ServiceValidationError, match="Start time and end time cannot be empty"
-    ):
+    # Test missing end time - schema validation should catch this
+    with pytest.raises(Exception, match="required"):
         await hass.services.async_call(
             "frigate",
             SERVICE_REVIEW_SUMMARIZE,
             {
                 ATTR_START_TIME: "2023-09-23 13:33:44",
-                ATTR_END_TIME: "",
+            },
+            blocking=True,
+        )
+
+    # Test invalid datetime format
+    with pytest.raises(ServiceValidationError, match="Invalid datetime format"):
+        await hass.services.async_call(
+            "frigate",
+            SERVICE_REVIEW_SUMMARIZE,
+            {
+                ATTR_START_TIME: "invalid-date",
+                ATTR_END_TIME: "2023-09-23 18:11:22",
             },
             blocking=True,
         )
@@ -109,6 +116,55 @@ async def test_review_summarize_service_error_handling(
             {
                 ATTR_START_TIME: start_time,
                 ATTR_END_TIME: end_time,
+            },
+            blocking=True,
+        )
+
+
+async def test_review_summarize_service_version_check(
+    hass: HomeAssistant,
+) -> None:
+    """Test that review summarize service is only registered for Frigate 0.17+."""
+    # Test with version 0.16 (service should not be registered)
+    config_016 = {
+        "version": "0.16.0",
+        "cameras": {"test": {}},
+        "mqtt": {"topic_prefix": "frigate"},
+    }
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config_016)
+
+    # This should not register the service
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Verify service is not available (should not be registered for version < 0.17)
+    with pytest.raises(Exception, match="service_not_found"):
+        await hass.services.async_call(
+            "frigate",
+            SERVICE_REVIEW_SUMMARIZE,
+            {
+                ATTR_START_TIME: "2023-09-23 13:33:44",
+                ATTR_END_TIME: "2023-09-23 18:11:22",
+            },
+            blocking=True,
+        )
+
+
+async def test_review_summarize_service_no_integration(
+    hass: HomeAssistant,
+) -> None:
+    """Test review summarize service when no Frigate integration is configured."""
+    # Don't set up any Frigate integration
+
+    # When no integration is configured, the service won't exist
+    with pytest.raises(Exception, match="service_not_found"):
+        await hass.services.async_call(
+            "frigate",
+            SERVICE_REVIEW_SUMMARIZE,
+            {
+                ATTR_START_TIME: "2023-09-23 13:33:44",
+                ATTR_END_TIME: "2023-09-23 18:11:22",
             },
             blocking=True,
         )
