@@ -34,7 +34,13 @@ from homeassistant.const import (
     CONF_URL,
     CONF_USERNAME,
 )
-from homeassistant.core import HomeAssistant, ServiceCall, callback, valid_entity_id
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    SupportsResponse,
+    callback,
+    valid_entity_id,
+)
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -366,12 +372,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     vol.Required(ATTR_END_TIME): str,
                 }
             ),
+            supports_response=SupportsResponse.OPTIONAL,
         )
 
     return True
 
 
-async def async_review_summarize_service(call: ServiceCall) -> None:
+async def async_review_summarize_service(call: ServiceCall) -> Any:
     """Handle review summarize service call."""
     hass = call.hass
 
@@ -398,9 +405,7 @@ async def async_review_summarize_service(call: ServiceCall) -> None:
 
     try:
         result = await client.async_review_summarize(start_timestamp, end_timestamp)
-        # Store the result in hass.data for potential use by other components
-        hass.data[DOMAIN][config_entry_id]["last_review_summary"] = result
-        _LOGGER.info("Review summarize completed successfully")
+        return result
     except Exception as exc:
         _LOGGER.error("Review summarize failed: %s", exc)
         raise ServiceValidationError(f"Review summarize failed: {exc}") from exc

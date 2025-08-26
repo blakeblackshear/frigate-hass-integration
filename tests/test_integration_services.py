@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -16,7 +15,7 @@ from custom_components.frigate.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 
-from . import create_mock_frigate_client, setup_mock_frigate_config_entry
+from tests import create_mock_frigate_client, setup_mock_frigate_config_entry
 
 
 async def test_review_summarize_service_call(
@@ -33,7 +32,7 @@ async def test_review_summarize_service_call(
     end_time = "2023-09-23 18:11:22"
 
     # Call the service directly (not through entity)
-    await hass.services.async_call(
+    result = await hass.services.async_call(
         "frigate",
         SERVICE_REVIEW_SUMMARIZE,
         {
@@ -41,6 +40,7 @@ async def test_review_summarize_service_call(
             ATTR_END_TIME: end_time,
         },
         blocking=True,
+        return_response=True,
     )
 
     client.async_review_summarize.assert_called_with(
@@ -48,10 +48,8 @@ async def test_review_summarize_service_call(
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
     )
 
-    # Verify the result is stored in hass.data
-    config_entry_id = next(iter(hass.data["frigate"].keys()))
-    assert "last_review_summary" in hass.data["frigate"][config_entry_id]
-    assert hass.data["frigate"][config_entry_id]["last_review_summary"] == post_success
+    # Verify the service returns the result directly
+    assert result == post_success
 
 
 async def test_review_summarize_service_validation(
