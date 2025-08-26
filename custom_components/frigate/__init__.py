@@ -8,12 +8,14 @@ https://github.com/blakeblackshear/frigate-hass-integration
 from __future__ import annotations
 
 from collections.abc import Callable
+import datetime
 from datetime import timedelta
 import logging
 import re
 from typing import Any, Final
 
 from awesomeversion import AwesomeVersion
+import voluptuous as vol
 
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import ReceiveMessage
@@ -32,8 +34,8 @@ from homeassistant.const import (
     CONF_URL,
     CONF_USERNAME,
 )
-from homeassistant.core import HomeAssistant, callback, valid_entity_id
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant, ServiceCall, callback, valid_entity_id
+from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
@@ -47,6 +49,8 @@ from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
     ATTR_COORDINATOR,
+    ATTR_END_TIME,
+    ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
@@ -55,6 +59,7 @@ from .const import (
     FRIGATE_VERSION_ERROR_CUTOFF,
     NAME,
     PLATFORMS,
+    SERVICE_REVIEW_SUMMARIZE,
     STARTUP_MESSAGE,
     STATUS_ERROR,
     STATUS_RUNNING,
@@ -349,7 +354,57 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
+    # Register review summarize service if Frigate version is 0.17+
+    if verify_frigate_version(config, "0.17"):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_REVIEW_SUMMARIZE,
+            async_review_summarize_service,
+            vol.Schema(
+                {
+                    vol.Required(ATTR_START_TIME): str,
+                    vol.Required(ATTR_END_TIME): str,
+                }
+            ),
+        )
+
     return True
+
+
+async def async_review_summarize_service(
+    hass: HomeAssistant, call: ServiceCall
+) -> None:
+    """Handle review summarize service call."""
+    start_time = call.data[ATTR_START_TIME]
+    end_time = call.data[ATTR_END_TIME]
+
+    if start_time == "" or end_time == "":
+        raise ServiceValidationError("Start time and end time cannot be empty")
+
+    # Convert datetime strings to timestamps
+    start_timestamp = datetime.datetime.strptime(
+        start_time, "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    end_timestamp = datetime.datetime.strptime(
+        end_time, "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+
+    # Get the Frigate client from the first config entry
+    if not hass.data[DOMAIN]:
+        raise ServiceValidationError("No Frigate integration configured")
+
+    # Use the first available config entry
+    config_entry_id = next(iter(hass.data[DOMAIN].keys()))
+    client = hass.data[DOMAIN][config_entry_id][ATTR_CLIENT]
+
+    try:
+        result = await client.async_review_summarize(start_timestamp, end_timestamp)
+        # Store the result in hass.data for potential use by other components
+        hass.data[DOMAIN][config_entry_id]["last_review_summary"] = result
+        _LOGGER.info("Review summarize completed successfully")
+    except Exception as exc:
+        _LOGGER.error("Review summarize failed: %s", exc)
+        raise ServiceValidationError(f"Review summarize failed: {exc}") from exc
 
 
 class FrigateDataUpdateCoordinator(DataUpdateCoordinator):
