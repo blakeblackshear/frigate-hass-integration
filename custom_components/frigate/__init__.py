@@ -207,20 +207,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
 
-    ws_api_async_setup(hass)
-    views_async_setup(hass)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
+    validate_ssl = bool(entry.data.get("validate_ssl"))
+
     client = FrigateApiClient(
         str(entry.data.get(CONF_URL)),
         async_get_clientsession(hass),
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
-        bool(entry.data.get("validate_ssl")),
+        validate_ssl,
     )
+
+    ws_api_async_setup(hass)
+    views_async_setup(hass, validate_ssl)
+
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
 
