@@ -174,3 +174,24 @@ end_event:
       default: ""
       selector:
         text:
+
+review_summarize:
+  name: Review Summarize
+  description: >
+    Get a summary of review items for a specified time period.
+    Only available in Frigate 0.17+.
+  fields:
+    start_time:
+      name: Start Time
+      description: Start time for the review period
+      required: true
+      advanced: false
+      selector:
+        datetime:
+    end_time:
+      name: End Time
+      description: End time for the review period
+      required: true
+      advanced: false
+      selector:
+        datetime:

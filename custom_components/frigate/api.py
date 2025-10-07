@@ -262,6 +262,23 @@ class FrigateApiClient:
             ),
         )
 
+    async def async_review_summarize(
+        self,
+        start_time: float,
+        end_time: float,
+        decode_json: bool = True,
+    ) -> dict[str, Any] | str:
+        """Get review summary for a time period."""
+        result = await self.api_wrapper(
+            "post",
+            str(
+                URL(self._host)
+                / f"api/review/summarize/start/{start_time}/end/{end_time}"
+            ),
+            decode_json=decode_json,
+        )
+        return cast(dict[str, Any], result) if decode_json else result
+
     async def _get_token(self) -> None:
         """
         Obtain a new JWT token using the provided username and password.

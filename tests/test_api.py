@@ -335,6 +335,39 @@ async def test_async_export_recording(
     assert post_handler.called
 
 
+async def test_async_review_summarize(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_review_summarize."""
+
+    post_success = {"summary": "review_summary_data"}
+    post_handler = AsyncMock(return_value=web.json_response(post_success))
+
+    start_time = datetime.datetime.strptime(
+        "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    end_time = datetime.datetime.strptime(
+        "2023-09-23 18:11:22", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.post(
+                f"/api/review/summarize/start/{start_time}/end/{end_time}",
+                post_handler,
+            ),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_review_summarize(start_time, end_time)
+        == post_success
+    )
+    assert post_handler.called
+
+
 async def test_async_get_recordings_summary(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
