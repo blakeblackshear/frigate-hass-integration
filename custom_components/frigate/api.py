@@ -15,6 +15,7 @@ from yarl import URL
 from homeassistant.auth import jwt_wrapper
 
 TIMEOUT = 10
+REVIEW_SUMMARIZE_TIMEOUT = 60
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -276,6 +277,7 @@ class FrigateApiClient:
                 / f"api/review/summarize/start/{start_time}/end/{end_time}"
             ),
             decode_json=decode_json,
+            timeout=REVIEW_SUMMARIZE_TIMEOUT,
         )
         return cast(dict[str, Any], result) if decode_json else result
 
@@ -351,6 +353,7 @@ class FrigateApiClient:
         headers: dict | None = None,
         decode_json: bool = True,
         is_login_request: bool = False,
+        timeout: int | None = None,
     ) -> Any:
         """Get information from the API."""
         if data is None:
@@ -362,7 +365,8 @@ class FrigateApiClient:
             headers.update(await self.get_auth_headers())
 
         try:
-            async with async_timeout.timeout(TIMEOUT):
+            timeout_value = timeout if timeout is not None else TIMEOUT
+            async with async_timeout.timeout(timeout_value):
                 func = getattr(self._session, method)
                 if func:
                     response = await func(
