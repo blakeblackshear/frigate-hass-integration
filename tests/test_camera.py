@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.frigate import SCAN_INTERVAL
+from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
     ATTR_DURATION,
     ATTR_END_TIME,
@@ -682,6 +683,47 @@ async def test_export_recording_service_call(
         },
         blocking=True,
     )
+    client.async_export_recording.assert_called_with(
+        "front_door",
+        playback_factor,
+        datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+        datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+    )
+
+
+async def test_export_recording_service_call_error_handling(
+    hass: HomeAssistant,
+) -> None:
+    """Test export recording service call with API error (e.g., no recordings found)."""
+    client = create_mock_frigate_client()
+    client.async_export_recording = AsyncMock(
+        side_effect=FrigateApiClientError("No recordings found for time range")
+    )
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    playback_factor = "Realtime"
+    start_time = "2023-09-23 13:33:44"
+    end_time = "2023-09-23 18:11:22"
+
+    # Verify that the error is properly converted to a ServiceValidationError
+    with pytest.raises(ServiceValidationError) as exc_info:
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_EXPORT_RECORDING,
+            {
+                ATTR_ENTITY_ID: TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+                ATTR_PLAYBACK_FACTOR: playback_factor,
+                ATTR_START_TIME: start_time,
+                ATTR_END_TIME: end_time,
+            },
+            blocking=True,
+        )
+
+    # Verify the error message is user-friendly and mentions the possible cause
+    assert "front_door" in str(exc_info.value)
+    assert "no recordings exist" in str(exc_info.value).lower()
+
+    # Verify the API was called with correct parameters
     client.async_export_recording.assert_called_with(
         "front_door",
         playback_factor,
