@@ -63,6 +63,12 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
     entities: list[FrigateEntity] = []
+
+    # Create main Frigate device entities first, before any camera entities
+    # that reference it via via_device to avoid device registry warnings
+    entities.append(FrigateStatusSensor(coordinator, entry))
+    entities.append(FrigateUptimeSensor(coordinator, entry))
+
     for key, value in coordinator.data.items():
 
         if key.endswith("_fps"):
@@ -117,8 +123,6 @@ async def async_setup_entry(
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
-    entities.append(FrigateStatusSensor(coordinator, entry))
-    entities.append(FrigateUptimeSensor(coordinator, entry))
 
     if verify_frigate_version(frigate_config, "0.16"):
         if frigate_config.get("face_recognition", {}).get("enabled"):
