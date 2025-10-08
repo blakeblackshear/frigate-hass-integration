@@ -83,7 +83,11 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 session,
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
+                str(user_input.get("x_proxy_auth_secret", None)),
+                str(user_input.get("x_forwarded_user", None)),
+                str(user_input.get("x_forwarded_groups", None)),
                 bool(user_input.get("validate_ssl")),
+                bool(user_input.get("use_proxy_auth_secret", False)),
             )
             await client.async_get_stats()
         except FrigateApiClientError:
@@ -115,6 +119,22 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             user_input = {}
 
+        """Handle Proxy Auth Secret authentication in the UI gracefully."""
+        use_proxy_auth_secret = user_input.get("use_proxy_auth_secret", False)
+        ignored_if_proxy_auth = (
+            "(Ignored if 'Use Proxy Auth Secret' is checked)"
+            if use_proxy_auth_secret else ""
+        )
+        ignored_if_not_proxy_auth = (
+            ""
+            if use_proxy_auth_secret else "(Ignored if 'Use Proxy Auth Secret' is checked)"
+        )
+        username_description = ignored_if_proxy_auth
+        password_description = ignored_if_proxy_auth
+        x_proxy_auth_secret_description = ignored_if_not_proxy_auth
+        x_forwarded_user_description = ignored_if_not_proxy_auth
+        x_forwarded_groups_description = ignored_if_not_proxy_auth
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -126,14 +146,33 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         "validate_ssl", default=user_input.get("validate_ssl", True)
                     ): bool,
                     vol.Optional(
+                        "use_proxy_auth_secret", default=use_proxy_auth_secret
+                    ): bool,
+                    vol.Optional(
                         CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
                     ): str,
                     vol.Optional(
                         CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
                     ): str,
+                    vol.Optional(
+                        "x_proxy_auth_secret", default=user_input.get("x_proxy_auth_secret", "")
+                    ): str,
+                    vol.Optional(
+                        "x_forwarded_user", default=user_input.get("x_forwarded_user", "")
+                    ): str,
+                    vol.Optional(
+                        "x_forwarded_groups", default=user_input.get("x_forwarded_groups", "")
+                    ): str,
                 }
             ),
             errors=errors,
+            description_placeholders={
+                "username_description": username_description,
+                "password_description": password_description,
+                "x_proxy_auth_secret_description": x_proxy_auth_secret_description,
+                "x_forwarded_user_description": x_forwarded_user_description,
+                "x_forwarded_groups_description": x_forwarded_groups_description
+            },
         )
 
     @staticmethod
