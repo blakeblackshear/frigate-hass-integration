@@ -67,6 +67,21 @@ class FrigateApiClient:
             await self.api_wrapper("get", str(URL(self._host) / "api/stats")),
         )
 
+    async def async_get_event(
+        self,
+        event_id: str,
+        decode_json: bool = True,
+    ) -> dict[str, Any]:
+        """Get a single event by ID from the API."""
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "get",
+                str(URL(self._host) / f"api/events/{event_id}"),
+                decode_json=decode_json,
+            ),
+        )
+
     async def async_get_events(
         self,
         cameras: list[str] | None = None,

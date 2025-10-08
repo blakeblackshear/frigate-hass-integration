@@ -18,6 +18,7 @@ from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
     ATTR_MQTT,
     CONF_MEDIA_BROWSER_ENABLE,
+    DEFAULT_VOD_EVENT_PADDING,
     DOMAIN,
 )
 from custom_components.frigate.media_source import (
@@ -628,6 +629,20 @@ async def test_async_resolve_media(
 
     await setup_mock_frigate_config_entry(hass, client=frigate_client)
 
+    # Mock the async_get_event method to return event with timestamps
+    event_start_time = 1234567890
+    event_end_time = 1234567900
+    padding = DEFAULT_VOD_EVENT_PADDING
+
+    frigate_client.async_get_event = AsyncMock(
+        return_value={
+            "id": "CLIP-FOO",
+            "camera": "camera",
+            "start_time": event_start_time,
+            "end_time": event_end_time,
+        }
+    )
+
     # Test resolving a clip.
     media = await media_source.async_resolve_media(
         hass,
@@ -635,7 +650,7 @@ async def test_async_resolve_media(
         target_media_player="media_player.kitchen",
     )
     assert media == PlayMedia(
-        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/event/CLIP-FOO/index.m3u8",
+        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/camera/start/{event_start_time - padding}/end/{event_end_time + padding}/index.m3u8",
         mime_type="application/x-mpegURL",
     )
 
@@ -664,6 +679,45 @@ async def test_async_resolve_media(
             + date.strftime("%Y-%m/%d/%H")
             + "/front_door/utc/index.m3u8"
         ),
+        mime_type="application/x-mpegURL",
+    )
+
+    # Test resolving a clip with no end_time (ongoing event).
+    frigate_client.async_get_event = AsyncMock(
+        return_value={
+            "id": "CLIP-ONGOING",
+            "camera": "camera",
+            "start_time": event_start_time,
+            "end_time": None,  # Ongoing event
+        }
+    )
+
+    media = await media_source.async_resolve_media(
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/CLIP-ONGOING",
+        target_media_player="media_player.kitchen",
+    )
+
+    # Should use current time for end (we can't test exact value, just ensure it doesn't crash)
+    assert media.mime_type == "application/x-mpegURL"
+    assert (
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/camera/start/{event_start_time - padding}/end/"
+        in media.url
+    )
+    assert "/index.m3u8" in media.url
+
+    # Test resolving a clip when API fetch fails (should fall back to event-based VOD).
+    frigate_client.async_get_event = AsyncMock(
+        side_effect=FrigateApiClientError("API Error")
+    )
+
+    media = await media_source.async_resolve_media(
+        hass,
+        f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}/event/clips/camera/CLIP-FALLBACK",
+        target_media_player="media_player.kitchen",
+    )
+    assert media == PlayMedia(
+        url=f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/event/CLIP-FALLBACK/index.m3u8",
         mime_type="application/x-mpegURL",
     )
 
