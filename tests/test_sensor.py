@@ -52,6 +52,7 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE,
+    TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION,
     TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
@@ -917,3 +918,58 @@ async def test_recognized_plate_sensor(hass: HomeAssistant) -> None:
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
         assert entity_state
         assert entity_state.state == "None"
+
+
+async def test_classification_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateClassificationSensor state."""
+    await setup_mock_frigate_config_entry(hass)
+
+    # Check that classification sensor exists
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    # Make MQTT available
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+    assert entity_state
+    assert entity_state.state == "Unknown"
+
+    # Send a classification update for color
+    async_fire_mqtt_message(hass, "frigate/front_door/classification/color", "blue")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+    assert entity_state
+    assert entity_state.state == "blue"
+
+    # Update color again
+    async_fire_mqtt_message(hass, "frigate/front_door/classification/color", "red")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+    assert entity_state
+    assert entity_state.state == "red"
+
+    # Send an empty payload - state should remain unchanged
+    async_fire_mqtt_message(hass, "frigate/front_door/classification/color", "")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+    assert entity_state
+    assert entity_state.state == "red"
+
+
+async def test_classification_sensor_attributes(hass: HomeAssistant) -> None:
+    """Test FrigateClassificationSensor attributes."""
+    await setup_mock_frigate_config_entry(hass)
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+    assert entity_state
+    assert entity_state.name == "Front Door Color Classification"
+    assert entity_state.attributes["icon"] == "mdi:tag-text"
+    assert entity_state.attributes["friendly_name"] == "Front Door Color Classification"
