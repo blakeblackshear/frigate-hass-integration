@@ -164,6 +164,25 @@ def get_cameras_and_audio(config: dict[str, Any]) -> set[tuple[str, str]]:
     return camera_audio
 
 
+def get_classification_models_and_cameras(
+    config: dict[str, Any],
+) -> set[tuple[str, str]]:
+    """Get classification models and cameras tuples."""
+    model_cameras = set()
+    classification_config = config.get("classification", {}).get("custom", {})
+
+    for model_key, model_config in classification_config.items():
+        state_config = model_config.get("state_config")
+
+        if state_config:
+            cameras = state_config.get("cameras", {})
+
+            for camera_name in cameras.keys():
+                model_cameras.add((camera_name, model_key))
+
+    return model_cameras
+
+
 def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:
     """Get cameras/zones and tracking object tuples."""
     camera_objects = get_cameras_and_objects(config)
