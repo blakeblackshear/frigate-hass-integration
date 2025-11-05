@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -34,7 +34,6 @@ from custom_components.frigate.icons import (
     ICON_UPTIME,
     ICON_WAVEFORM,
 )
-from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
