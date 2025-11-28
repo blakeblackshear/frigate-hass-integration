@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -36,6 +36,7 @@ from custom_components.frigate.icons import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.components.sensor import RestoreSensor
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
 
@@ -973,3 +974,51 @@ async def test_classification_sensor_attributes(hass: HomeAssistant) -> None:
     assert entity_state.name == "Front Door Color Classification"
     assert entity_state.attributes["icon"] == "mdi:tag-text"
     assert entity_state.attributes["friendly_name"] == "Front Door Color Classification"
+
+
+async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> None:
+    """Test FrigateClassificationSensor state restoration after restart."""
+    # Test 1: Valid state should be restored (lines 1199-1200)
+    config_entry = await setup_mock_frigate_config_entry(hass)
+    await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    mock_last_sensor_data = MagicMock()
+    mock_last_sensor_data.native_value = "green"
+
+    with patch.object(
+        RestoreSensor,
+        "async_get_last_sensor_data",
+        new_callable=AsyncMock,
+        return_value=mock_last_sensor_data,
+    ):
+        await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+        assert entity_state
+        assert entity_state.state == "green"
+
+    # Test 2: "unknown" and "unavailable" should not be restored (line 1198)
+    for invalid_state in ("unknown", "unavailable"):
+        await hass.config_entries.async_unload(config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        mock_invalid_sensor_data = MagicMock()
+        mock_invalid_sensor_data.native_value = invalid_state
+        with patch.object(
+            RestoreSensor,
+            "async_get_last_sensor_data",
+            new_callable=AsyncMock,
+            return_value=mock_invalid_sensor_data,
+        ):
+            await hass.config_entries.async_setup(config_entry.entry_id)
+            await hass.async_block_till_done()
+            async_fire_mqtt_message(hass, "frigate/available", "online")
+            await hass.async_block_till_done()
+
+            entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+            assert entity_state
+            assert entity_state.state == "Unknown"
