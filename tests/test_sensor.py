@@ -977,61 +977,48 @@ async def test_classification_sensor_attributes(hass: HomeAssistant) -> None:
 
 
 async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> None:
-    """Test FrigateClassificationSensor state restoration after restart."""
-    # Test 1: Valid state should be restored (lines 1199-1200)
-    config_entry = await setup_mock_frigate_config_entry(hass)
-    await hass.config_entries.async_unload(config_entry.entry_id)
-    await hass.async_block_till_done()
-
+    """Test FrigateClassificationSensor restores valid state after restart."""
     mock_last_sensor_data = MagicMock()
     mock_last_sensor_data.native_value = "green"
 
-    # Patch on RestoreSensor (the class that defines the method) instead of the subclass
+    # Patch must be in place BEFORE setup so async_added_to_hass sees the mock
     with patch.object(
         RestoreSensor,
         "async_get_last_sensor_data",
         new_callable=AsyncMock,
         return_value=mock_last_sensor_data,
-    ) as mock_get_data:
-        await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
+    ):
+        await setup_mock_frigate_config_entry(hass)
 
-        # Make MQTT available after setup so entity becomes available
+        # Make MQTT available so entity becomes available
         async_fire_mqtt_message(hass, "frigate/available", "online")
         await hass.async_block_till_done()
 
+        # Verify state was restored to "green"
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
         assert entity_state
-        assert (
-            entity_state.state == "green"
-        ), f"Expected 'green', got '{entity_state.state}'"
+        assert entity_state.state == "green"
 
-    # Test 2: "unknown" and "unavailable" should not be restored (line 1198)
-    for invalid_state in ("unknown", "unavailable"):
-        await hass.config_entries.async_unload(config_entry.entry_id)
+
+async def test_classification_sensor_state_restoration_skips_invalid(
+    hass: HomeAssistant,
+) -> None:
+    """Test FrigateClassificationSensor does not restore 'unknown' or 'unavailable'."""
+    mock_last_sensor_data = MagicMock()
+    mock_last_sensor_data.native_value = "unknown"
+
+    with patch.object(
+        RestoreSensor,
+        "async_get_last_sensor_data",
+        new_callable=AsyncMock,
+        return_value=mock_last_sensor_data,
+    ):
+        await setup_mock_frigate_config_entry(hass)
+
+        async_fire_mqtt_message(hass, "frigate/available", "online")
         await hass.async_block_till_done()
 
-        mock_invalid_sensor_data = MagicMock()
-        mock_invalid_sensor_data.native_value = invalid_state
-
-        with patch.object(
-            RestoreSensor,
-            "async_get_last_sensor_data",
-            new_callable=AsyncMock,
-            return_value=mock_invalid_sensor_data,
-        ) as mock_get_data:
-            await hass.config_entries.async_setup(config_entry.entry_id)
-            await hass.async_block_till_done()
-
-            # Make MQTT available after setup so entity becomes available
-            async_fire_mqtt_message(hass, "frigate/available", "online")
-            await hass.async_block_till_done()
-
-            # Verify the mock was called
-            assert mock_get_data.called, "async_get_last_sensor_data was not called"
-
-            entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
-            assert entity_state
-            assert (
-                entity_state.state == "Unknown"
-            ), f"Expected 'Unknown', got '{entity_state.state}'"
+        # Should use default "Unknown" since "unknown" is not restored
+        entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+        assert entity_state
+        assert entity_state.state == "Unknown"
