@@ -986,14 +986,16 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
     mock_last_sensor_data = MagicMock()
     mock_last_sensor_data.native_value = "green"
 
+    # Make MQTT available before setup so entity is available during restoration
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
     with patch(
         "custom_components.frigate.sensor.FrigateClassificationSensor.async_get_last_sensor_data",
         new_callable=AsyncMock,
         return_value=mock_last_sensor_data,
     ):
         await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
-        async_fire_mqtt_message(hass, "frigate/available", "online")
         await hass.async_block_till_done()
 
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
@@ -1007,14 +1009,17 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
 
         mock_invalid_sensor_data = MagicMock()
         mock_invalid_sensor_data.native_value = invalid_state
+
+        # Make MQTT available before setup so entity is available during restoration
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
         with patch(
             "custom_components.frigate.sensor.FrigateClassificationSensor.async_get_last_sensor_data",
             new_callable=AsyncMock,
             return_value=mock_invalid_sensor_data,
         ):
             await hass.config_entries.async_setup(config_entry.entry_id)
-            await hass.async_block_till_done()
-            async_fire_mqtt_message(hass, "frigate/available", "online")
             await hass.async_block_till_done()
 
             entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
