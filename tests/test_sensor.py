@@ -34,9 +34,9 @@ from custom_components.frigate.icons import (
     ICON_UPTIME,
     ICON_WAVEFORM,
 )
+from homeassistant.components.sensor import RestoreSensor
 from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.components.sensor import RestoreSensor
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.util.dt as dt_util
 
@@ -986,9 +986,8 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
     mock_last_sensor_data = MagicMock()
     mock_last_sensor_data.native_value = "green"
 
-    with patch.object(
-        RestoreSensor,
-        "async_get_last_sensor_data",
+    with patch(
+        "custom_components.frigate.sensor.FrigateClassificationSensor.async_get_last_sensor_data",
         new_callable=AsyncMock,
         return_value=mock_last_sensor_data,
     ):
@@ -1008,9 +1007,8 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
 
         mock_invalid_sensor_data = MagicMock()
         mock_invalid_sensor_data.native_value = invalid_state
-        with patch.object(
-            RestoreSensor,
-            "async_get_last_sensor_data",
+        with patch(
+            "custom_components.frigate.sensor.FrigateClassificationSensor.async_get_last_sensor_data",
             new_callable=AsyncMock,
             return_value=mock_invalid_sensor_data,
         ):
