@@ -986,8 +986,10 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
     mock_last_sensor_data = MagicMock()
     mock_last_sensor_data.native_value = "green"
 
-    with patch(
-        "custom_components.frigate.sensor.FrigateClassificationSensor.async_get_last_sensor_data",
+    # Patch on RestoreSensor (the class that defines the method) instead of the subclass
+    with patch.object(
+        RestoreSensor,
+        "async_get_last_sensor_data",
         new_callable=AsyncMock,
         return_value=mock_last_sensor_data,
     ) as mock_get_data:
@@ -998,12 +1000,11 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
         async_fire_mqtt_message(hass, "frigate/available", "online")
         await hass.async_block_till_done()
 
-        # Verify the mock was called
-        assert mock_get_data.called
-
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
         assert entity_state
-        assert entity_state.state == "green"
+        assert (
+            entity_state.state == "green"
+        ), f"Expected 'green', got '{entity_state.state}'"
 
     # Test 2: "unknown" and "unavailable" should not be restored (line 1198)
     for invalid_state in ("unknown", "unavailable"):
@@ -1013,8 +1014,9 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
         mock_invalid_sensor_data = MagicMock()
         mock_invalid_sensor_data.native_value = invalid_state
 
-        with patch(
-            "custom_components.frigate.sensor.FrigateClassificationSensor.async_get_last_sensor_data",
+        with patch.object(
+            RestoreSensor,
+            "async_get_last_sensor_data",
             new_callable=AsyncMock,
             return_value=mock_invalid_sensor_data,
         ) as mock_get_data:
@@ -1026,8 +1028,10 @@ async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> N
             await hass.async_block_till_done()
 
             # Verify the mock was called
-            assert mock_get_data.called
+            assert mock_get_data.called, "async_get_last_sensor_data was not called"
 
             entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
             assert entity_state
-            assert entity_state.state == "Unknown"
+            assert (
+                entity_state.state == "Unknown"
+            ), f"Expected 'Unknown', got '{entity_state.state}'"
