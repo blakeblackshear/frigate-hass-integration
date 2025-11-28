@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -34,6 +34,7 @@ from custom_components.frigate.icons import (
     ICON_UPTIME,
     ICON_WAVEFORM,
 )
+from homeassistant.components.sensor import RestoreSensor
 from homeassistant.const import PERCENTAGE, UnitOfSoundPressure, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -973,3 +974,51 @@ async def test_classification_sensor_attributes(hass: HomeAssistant) -> None:
     assert entity_state.name == "Front Door Color Classification"
     assert entity_state.attributes["icon"] == "mdi:tag-text"
     assert entity_state.attributes["friendly_name"] == "Front Door Color Classification"
+
+
+async def test_classification_sensor_state_restoration(hass: HomeAssistant) -> None:
+    """Test FrigateClassificationSensor restores valid state after restart."""
+    mock_last_sensor_data = MagicMock()
+    mock_last_sensor_data.native_value = "green"
+
+    # Patch must be in place BEFORE setup so async_added_to_hass sees the mock
+    with patch.object(
+        RestoreSensor,
+        "async_get_last_sensor_data",
+        new_callable=AsyncMock,
+        return_value=mock_last_sensor_data,
+    ):
+        await setup_mock_frigate_config_entry(hass)
+
+        # Make MQTT available so entity becomes available
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        # Verify state was restored to "green"
+        entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+        assert entity_state
+        assert entity_state.state == "green"
+
+
+async def test_classification_sensor_state_restoration_skips_invalid(
+    hass: HomeAssistant,
+) -> None:
+    """Test FrigateClassificationSensor does not restore 'unknown' or 'unavailable'."""
+    mock_last_sensor_data = MagicMock()
+    mock_last_sensor_data.native_value = "unknown"
+
+    with patch.object(
+        RestoreSensor,
+        "async_get_last_sensor_data",
+        new_callable=AsyncMock,
+        return_value=mock_last_sensor_data,
+    ):
+        await setup_mock_frigate_config_entry(hass)
+
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        # Should use default "Unknown" since "unknown" is not restored
+        entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
+        assert entity_state
+        assert entity_state.state == "Unknown"

@@ -9,6 +9,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
@@ -1157,7 +1158,7 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity, SensorEntity):
         return ICON_LICENSE_PLATE
 
 
-class FrigateClassificationSensor(FrigateMQTTEntity, SensorEntity):
+class FrigateClassificationSensor(FrigateMQTTEntity, RestoreSensor):
     """Frigate Classification Sensor class."""
 
     def __init__(
@@ -1188,6 +1189,18 @@ class FrigateClassificationSensor(FrigateMQTTEntity, SensorEntity):
                 },
             },
         )
+
+    async def async_added_to_hass(self) -> None:
+        """Restore state when added to hass."""
+        await super().async_added_to_hass()
+        if (
+            last_sensor_data := await self.async_get_last_sensor_data()
+        ) and last_sensor_data.native_value:
+            # Only restore if state is not "unknown", "Unknown", or "unavailable"
+            native_value = str(last_sensor_data.native_value)
+            if native_value.lower() not in ("unknown", "unavailable"):
+                self._state = native_value
+                self.async_write_ha_state()
 
     @callback
     def _state_message_received(self, msg: ReceiveMessage) -> None:
