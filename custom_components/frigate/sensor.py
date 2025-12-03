@@ -9,6 +9,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
@@ -34,6 +35,7 @@ from . import (
     ReceiveMessage,
     get_cameras,
     get_cameras_zones_and_objects,
+    get_classification_models_and_cameras,
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
@@ -63,6 +65,12 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
 
     entities: list[FrigateEntity] = []
+
+    # Create main Frigate device entities first, before any camera entities
+    # that reference it via via_device to avoid device registry warnings
+    entities.append(FrigateStatusSensor(coordinator, entry))
+    entities.append(FrigateUptimeSensor(coordinator, entry))
+
     for key, value in coordinator.data.items():
 
         if key.endswith("_fps"):
@@ -117,8 +125,6 @@ async def async_setup_entry(
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
     )
-    entities.append(FrigateStatusSensor(coordinator, entry))
-    entities.append(FrigateUptimeSensor(coordinator, entry))
 
     if verify_frigate_version(frigate_config, "0.16"):
         if frigate_config.get("face_recognition", {}).get("enabled"):
@@ -138,6 +144,16 @@ async def async_setup_entry(
                     if cam_config.get("lpr", {}).get("enabled")
                 ]
             )
+
+    if verify_frigate_version(frigate_config, "0.17"):
+        entities.extend(
+            [
+                FrigateClassificationSensor(entry, frigate_config, cam_name, model_key)
+                for cam_name, model_key in get_classification_models_and_cameras(
+                    frigate_config
+                )
+            ]
+        )
 
     async_add_entities(entities)
 
@@ -1140,3 +1156,99 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity, SensorEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return ICON_LICENSE_PLATE
+
+
+class FrigateClassificationSensor(FrigateMQTTEntity, RestoreSensor):
+    """Frigate Classification Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        model_key: str,
+    ) -> None:
+        """Construct a FrigateClassificationSensor."""
+        self._cam_name = cam_name
+        self._model_key = model_key
+        self._state = "Unknown"
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/classification/{self._model_key}"
+                    ),
+                    "encoding": None,
+                },
+            },
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Restore state when added to hass."""
+        await super().async_added_to_hass()
+        if (
+            last_sensor_data := await self.async_get_last_sensor_data()
+        ) and last_sensor_data.native_value:
+            # Only restore if state is not "unknown", "Unknown", or "unavailable"
+            native_value = str(last_sensor_data.native_value)
+            if native_value.lower() not in ("unknown", "unavailable"):
+                self._state = native_value
+                self.async_write_ha_state()
+
+    @callback
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        payload = (
+            msg.payload.decode("utf-8")
+            if isinstance(msg.payload, bytes)
+            else str(msg.payload)
+        )
+
+        if payload:
+            self._state = payload
+            self.async_write_ha_state()
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_classification",
+            f"{self._cam_name}_{self._model_key}",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{get_friendly_name(self._model_key)} Classification"
+
+    @property
+    def native_value(self) -> str:
+        """Return the value of the sensor."""
+        return self._state
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return "mdi:tag-text"

@@ -57,6 +57,35 @@ async def test_async_get_stats(
     assert stats_in == await frigate_client.async_get_stats()
 
 
+async def test_async_get_event(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_event."""
+    event_in = {
+        "camera": "front_door",
+        "end_time": 1623643757.837382,
+        "false_positive": False,
+        "has_clip": True,
+        "has_snapshot": False,
+        "id": "1623643750.569992-64ji22",
+        "label": "person",
+        "start_time": 1623643750.569992,
+        "thumbnail": "thumbnail",
+        "data": {"top_score": 0.70703125},
+        "zones": [],
+    }
+    event_id = "1623643750.569992-64ji22"
+    event_handler = AsyncMock(return_value=web.json_response(event_in))
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get(f"/api/events/{event_id}", event_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert event_in == await frigate_client.async_get_event(event_id)
+    assert event_handler.called
+
+
 async def test_async_get_events(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
@@ -330,6 +359,39 @@ async def test_async_export_recording(
         await frigate_client.async_export_recording(
             "front_door", playback_factor, start_time, end_time
         )
+        == post_success
+    )
+    assert post_handler.called
+
+
+async def test_async_review_summarize(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_review_summarize."""
+
+    post_success = {"summary": "review_summary_data"}
+    post_handler = AsyncMock(return_value=web.json_response(post_success))
+
+    start_time = datetime.datetime.strptime(
+        "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    end_time = datetime.datetime.strptime(
+        "2023-09-23 18:11:22", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.post(
+                f"/api/review/summarize/start/{start_time}/end/{end_time}",
+                post_handler,
+            ),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_review_summarize(start_time, end_time)
         == post_success
     )
     assert post_handler.called
