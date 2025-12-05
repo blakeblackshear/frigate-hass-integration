@@ -24,7 +24,7 @@
       "init": {
         "data": {
           "enable_webrtc": "Frigate'in yerel WebRTC desteğini kullan",
-          "rtsp_url_template": "RTSP URL sablonu (dokumantasyona bakiniz)",
+          "rtsp_url_template": "RTSP URL şablonu (dokümantasyona bakınız)",
           "media_browser_enable": "Medya tarayıcısını etkinleştir",
           "notification_proxy_enable": "Kimlik dogrulamasi gerektirmeyen bildirim olay proxy'sini etkinlestir",
           "notification_proxy_expire_after_seconds": "Kimlik doğrulaması gerektirmeyen bildirim erişimini belirtilen saniye sonra devre dışı bırak (0=asla)"
