@@ -12,7 +12,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Baglanti kurulamadi",
+      "cannot_connect": "Bağlantı kurulamadi",
       "invalid_url": "Geçersiz URL"
     },
     "abort": {
