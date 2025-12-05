@@ -23,7 +23,7 @@
     "step": {
       "init": {
         "data": {
-          "enable_webrtc": "Frigate'in yerel WebRTC destegini kullan",
+          "enable_webrtc": "Frigate'in yerel WebRTC desteğini kullan",
           "rtsp_url_template": "RTSP URL sablonu (dokumantasyona bakiniz)",
           "media_browser_enable": "Medya tarayicisini etkinlestir",
           "notification_proxy_enable": "Kimlik dogrulamasi gerektirmeyen bildirim olay proxy'sini etkinlestir",
