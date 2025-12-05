@@ -6,8 +6,8 @@
         "data": {
           "url": "URL",
           "validate_ssl": "SSL Dogrula",
-          "username": "Kullanici Adi (istege bagli)",
-          "password": "Sifre (istege bagli)"
+          "username": "Kullanıcı Adı (isteğe bağlı)",
+          "password": "Şifre (isteğe bağlı)"
         }
       }
     },
