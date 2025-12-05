@@ -16,7 +16,7 @@
       "invalid_url": "Geçersiz URL"
     },
     "abort": {
-      "already_configured": "Cihaz zaten yapilandirilmis"
+      "already_configured": "Cihaz zaten yapılandırılmış"
     }
   },
   "options": {
