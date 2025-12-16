@@ -71,6 +71,9 @@ TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID = "sensor.front_door_sound_level"
 TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE = "sensor.front_door_last_recognized_face"
 TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE = "sensor.front_door_last_recognized_plate"
 TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION = "sensor.front_door_color_classification"
+TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION = (
+    "sensor.front_door_person_classifier_object_classification"
+)
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID = "sensor.frigate_uptime"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
@@ -218,7 +221,14 @@ TEST_CONFIG = {
                 "state_config": {
                     "cameras": {"front_door": {"crop": [0, 0.25, 0.172, 0.555]}}
                 }
-            }
+            },
+            "person_classifier": {
+                "threshold": 0.8,
+                "object_config": {
+                    "objects": ["person"],
+                    "classification_type": "sub_label",
+                },
+            },
         }
     },
 }
