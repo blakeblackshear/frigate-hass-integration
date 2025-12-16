@@ -183,6 +183,31 @@ def get_classification_models_and_cameras(
     return model_cameras
 
 
+def get_object_classification_models_and_cameras(
+    config: dict[str, Any],
+) -> set[tuple[str, str]]:
+    """Get object classification models and cameras tuples."""
+    model_cameras = set()
+    classification_config = config.get("classification", {}).get("custom", {})
+
+    for model_key, model_config in classification_config.items():
+        object_config = model_config.get("object_config")
+
+        if object_config:
+            # Get the objects this model classifies
+            objects_to_classify = object_config.get("objects", [])
+
+            # Find cameras that track these objects
+            for cam_name, cam_config in config.get("cameras", {}).items():
+                tracked_objects = cam_config.get("objects", {}).get("track", [])
+
+                # If any of the objects to classify are tracked by this camera, add it
+                if any(obj in tracked_objects for obj in objects_to_classify):
+                    model_cameras.add((cam_name, model_key))
+
+    return model_cameras
+
+
 def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:
     """Get cameras/zones and tracking object tuples."""
     camera_objects = get_cameras_and_objects(config)
