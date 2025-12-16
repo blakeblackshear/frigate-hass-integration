@@ -1315,9 +1315,9 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
 
             # Extract sub_label or attribute from the payload
             if "sub_label" in data:
-                self._state = str(data["sub_label"]).title()
+                self._state = str(data["sub_label"]).replace("_", " ").title()
             elif "attribute" in data:
-                self._state = str(data["attribute"]).title()
+                self._state = str(data["attribute"]).replace("_", " ").title()
             else:
                 return
 
