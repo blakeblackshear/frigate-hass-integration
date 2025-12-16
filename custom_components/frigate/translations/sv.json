@@ -1,0 +1,38 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "URL du använder för att komma åt Frigate (t.ex. `http://frigate:5000/`)\n\nOm du använder HassOS med tillägget ska URL:en vara `http://ccab4aaf-frigate:5000/`\n\nHome Assistant behöver åtkomst till port 5000 (api) och 8554/8555 (rtsp, webrtc) för alla funktioner.\n\nIntegrationen kommer att konfigurera sensorer, kameror och medialäsarfunktioner.\n\nSensorer:\n- Statistik för att övervaka frigates prestanda\n- Objekträkning för alla zoner och kameror\n\nKameror:\n- Kameror för bild av det senast detekterade objektet för varje kamera\n- Kameraenheter med strömningsstöd\n\nMedialäsare:\n- Rikt användargränssnitt med miniatyrbilder för att bläddra bland händelseklipp\n- Rikt användargränssnitt för att bläddra bland inspelningar dygnet runt efter månad, dag, kamera, tid\n\nAPI:\n- Aviserings-API med offentliga slutpunkter för bilder i aviseringar",
+        "data": {
+          "url": "URL",
+          "validate_ssl": "Validera SSL",
+          "username": "Användarnamn (valfritt)",
+          "password": "Lösenord (valfritt)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Misslyckades med att ansluta",
+      "invalid_url": "Ogiltig URL"
+    },
+    "abort": {
+      "already_configured": "Enheten är redan konfigurerad"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "enable_webrtc": "Använd Frigate-nativt WebRTC-stöd",
+          "rtsp_url_template": "RTSP URL-mall (se dokumentation)",
+          "media_browser_enable": "Aktivera medieläsaren",
+          "notification_proxy_enable": "Aktivera proxy för oautentiserade aviseringshändelser",
+          "notification_proxy_expire_after_seconds": "Tillåt inte åtkomst till oautentiserade aviseringar efter sekunder (0=aldrig)"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "Avancerat läge är inaktiverat och det finns bara avancerade alternativ"
+    }
+  }
+}
