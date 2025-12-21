@@ -9,6 +9,7 @@ from http import HTTPStatus
 import logging
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
+import ssl
 
 from aiohttp import web
 from hass_web_proxy_lib.tests.utils import response_handler, ws_response_handler
@@ -150,7 +151,7 @@ async def test_views_ssl_context(
     original_ssl_context = views.ssl_context
     try:
         # Ensure a known non-None starting state so the test is deterministic.
-        views.ssl_context = object()
+        views.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
         # Patch the clientsession factory and verify it's called with the expected flag.
         with patch("custom_components.frigate.views.async_get_clientsession") as (
