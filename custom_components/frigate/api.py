@@ -191,6 +191,7 @@ class FrigateApiClient:
         playback_factor: str,
         start_time: float,
         end_time: float,
+        name: str | None = None,
         decode_json: bool = True,
     ) -> dict[str, Any] | str:
         """Export recording."""
@@ -200,7 +201,7 @@ class FrigateApiClient:
                 URL(self._host)
                 / f"api/export/{camera}/start/{start_time}/end/{end_time}"
             ),
-            data={"playback": playback_factor},
+            data={"playback": playback_factor, "name": name},
             decode_json=decode_json,
         )
         return cast(dict[str, Any], result) if decode_json else result

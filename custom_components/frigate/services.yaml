@@ -34,6 +34,15 @@ export_recording:
       advanced: false
       selector:
         datetime:
+    name:
+      name: Name
+      description: >
+        Optional name for the exported recording. If not provided, the API will
+        generate one.
+      required: false
+      advanced: false
+      selector:
+        text:
 
 favorite_event:
   name: Favorite or unfavorite Event
