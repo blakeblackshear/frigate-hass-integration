@@ -798,3 +798,131 @@ async def test_end_event(
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert await frigate_client.async_end_event(event_id) == end_success
     assert end_handler.called
+
+
+async def test_async_get_faces_success(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_faces with successful response."""
+    faces_response = {
+        "bob": ["image1.jpg", "image2.jpg"],
+        "alice": ["image3.jpg"],
+        "train": ["train1.jpg"],
+    }
+    faces_handler = AsyncMock(return_value=web.json_response(faces_response))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get("/api/faces", faces_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_faces()
+    assert result == ["bob", "alice"]  # Should exclude "train"
+    assert faces_handler.called
+
+
+async def test_async_get_faces_non_dict_response(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_faces with non-dict response."""
+    faces_handler = AsyncMock(return_value=web.json_response(["bob", "alice"]))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get("/api/faces", faces_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_faces()
+    assert result == []
+
+
+async def test_async_get_faces_api_error(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_faces with API error."""
+    faces_handler = AsyncMock(return_value=web.Response(status=500))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get("/api/faces", faces_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_faces()
+    assert result == []
+
+
+async def test_async_get_classification_model_classes_success(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_classification_model_classes with successful response."""
+    model_name = "person_classifier"
+    classes_response: dict[str, Any] = {
+        "categories": {"delivery_person": {}, "red_shirt": {}}
+    }
+    classes_handler = AsyncMock(return_value=web.json_response(classes_response))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get(f"/api/classification/{model_name}/dataset", classes_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_classification_model_classes(model_name)
+    assert result == ["delivery_person", "red_shirt"]
+    assert classes_handler.called
+
+
+async def test_async_get_classification_model_classes_no_categories(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_classification_model_classes with response missing categories."""
+    model_name = "person_classifier"
+    classes_response = {"other_key": "value"}
+    classes_handler = AsyncMock(return_value=web.json_response(classes_response))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get(f"/api/classification/{model_name}/dataset", classes_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_classification_model_classes(model_name)
+    assert result == []
+
+
+async def test_async_get_classification_model_classes_categories_not_dict(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_classification_model_classes with categories not being a dict."""
+    model_name = "person_classifier"
+    classes_response = {"categories": ["delivery_person", "red_shirt"]}
+    classes_handler = AsyncMock(return_value=web.json_response(classes_response))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get(f"/api/classification/{model_name}/dataset", classes_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_classification_model_classes(model_name)
+    assert result == []
+
+
+async def test_async_get_classification_model_classes_api_error(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_classification_model_classes with API error."""
+    model_name = "person_classifier"
+    classes_handler = AsyncMock(return_value=web.Response(status=500))
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get(f"/api/classification/{model_name}/dataset", classes_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    result = await frigate_client.async_get_classification_model_classes(model_name)
+    assert result == []

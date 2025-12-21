@@ -1,0 +1,38 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Frigate'e erişmek için kullandığınız URL (örneğin `http://frigate:5000/`)\n\nHassOS ile eklentiyi kullanıyorsanız, URL `http://ccab4aaf-frigate:5000/` olmalıdır\n\nHome Assistant'ın tüm özellikleri kullanabilmesi için 5000 (api) ve 8554/8555 (rtsp, webrtc) portlarına erişimi olmalıdır.\n\nEntegrasyon sensörler, kameralar ve medya tarayıcısı işlevselliğini kuracaktır.\n\nSensörler:\n- Frigate performansını izlemek için istatistikler\n- Tüm bölgeler ve kameralar için nesne sayıları\n\nKameralar:\n- Her kamera için son Algılanan nesnenin görüntüsünü gösteren kameralar\n- Yayın destekli kamera varlıkları\n\nMedya Tarayıcısı:\n- Olay kliplerini göz atmak için küçük resimli zengin arayüz\n- Ay, gün, kamera ve zamana göre 7/24 kayıtları göz atmak için zengin arayüz\n\nAPI:\n- Bildirimlerde görüntüler için herkese açık uçlara sahip bildirim API'si",
+        "data": {
+          "url": "URL",
+          "validate_ssl": "SSL Doğrula",
+          "username": "Kullanıcı Adı (isteğe bağlı)",
+          "password": "Şifre (isteğe bağlı)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Bağlantı kurulamadi",
+      "invalid_url": "Geçersiz URL"
+    },
+    "abort": {
+      "already_configured": "Cihaz zaten yapılandırılmış"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "enable_webrtc": "Frigate'in yerel WebRTC desteğini kullan",
+          "rtsp_url_template": "RTSP URL şablonu (dokümantasyona bakınız)",
+          "media_browser_enable": "Medya tarayıcısını etkinleştir",
+          "notification_proxy_enable": "Kimlik dogrulamasi gerektirmeyen bildirim olay proxy'sini etkinlestir",
+          "notification_proxy_expire_after_seconds": "Kimlik doğrulaması gerektirmeyen bildirim erişimini belirtilen saniye sonra devre dışı bırak (0=asla)"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "Gelişmiş mod devre dışı ve sadece gelişmiş seçenekler mevcut"
+    }
+  }
+}

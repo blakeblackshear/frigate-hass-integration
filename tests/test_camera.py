@@ -688,6 +688,7 @@ async def test_export_recording_service_call(
         playback_factor,
         datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+        name=None,
     )
 
 
@@ -729,6 +730,7 @@ async def test_export_recording_service_call_error_handling(
         playback_factor,
         datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+        name=None,
     )
 
 
