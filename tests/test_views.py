@@ -24,6 +24,7 @@ from custom_components.frigate.const import (
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
+from custom_components.frigate.views import async_setup
 
 from . import (
     TEST_CONFIG,
@@ -141,7 +142,7 @@ async def test_views_ssl_context(
     validate_ssl: bool,
 ) -> None:
     """Test views setup with different SSL settings."""
-    await views_async_setup(hass, validate_ssl)  # Directly test the function
+    await async_setup(hass, validate_ssl)  # Directly test the function
     assert True  # Line 128 executes based on validate_ssl
 
 async def test_vod_segment_proxy_unauthorized(
