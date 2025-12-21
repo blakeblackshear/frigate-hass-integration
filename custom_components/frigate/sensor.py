@@ -116,6 +116,12 @@ async def async_setup_entry(
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     entities.extend(
         [
+            FrigateReviewStatusSensor(entry, frigate_config, cam_name)
+            for cam_name in get_cameras(frigate_config)
+        ]
+    )
+    entities.extend(
+        [
             FrigateObjectCountSensor(entry, frigate_config, cam_name, obj)
             for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
         ]
@@ -1380,3 +1386,84 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
     def icon(self) -> str:
         """Return the icon of the sensor."""
         return "mdi:tag-text"
+
+
+class FrigateReviewStatusSensor(FrigateMQTTEntity, SensorEntity):
+    """Frigate Review Status Sensor class."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+    ) -> None:
+        """Construct a FrigateReviewStatusSensor."""
+        self._cam_name = cam_name
+        self._state: str | None = None
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "state_topic": {
+                    "msg_callback": self._state_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/review_status"
+                    ),
+                    "encoding": None,
+                },
+            },
+        )
+
+    @callback
+    def _state_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT state message."""
+        payload = (
+            msg.payload.decode("utf-8")
+            if isinstance(msg.payload, bytes)
+            else str(msg.payload)
+        )
+
+        self._state = payload
+        self.async_write_ha_state()
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID to use for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "sensor_review_status",
+            f"{self._cam_name}",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Review Status"
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the value of the sensor."""
+        return self._state
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return "mdi:eye-check"

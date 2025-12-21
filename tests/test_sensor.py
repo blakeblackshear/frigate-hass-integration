@@ -63,6 +63,7 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE,
     TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE,
+    TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID,
     TEST_SENSOR_GPU_LOAD_ENTITY_ID,
@@ -689,6 +690,10 @@ async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
             TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
             f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped",
         ),
+        (
+            TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_review_status:front_door",
+        ),
     ],
 )
 async def test_camera_unique_id(
@@ -1218,3 +1223,67 @@ async def test_object_classification_sensor_attributes(hass: HomeAssistant) -> N
         entity_state.attributes["friendly_name"]
         == "Front Door Person Classifier Object Classification"
     )
+
+
+async def test_review_status_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateReviewStatusSensor state."""
+    await setup_mock_frigate_config_entry(hass)
+
+    # Check that review status sensor exists
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    # Make MQTT available
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    # Initial state should be unknown (None value)
+    assert entity_state.state == "unknown"
+
+    # Send NONE status
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "NONE")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "NONE"
+
+    # Send DETECTION status
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "DETECTION")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "DETECTION"
+
+    # Send ALERT status
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "ALERT")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "ALERT"
+
+    # Send NONE again
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "NONE")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "NONE"
+
+
+async def test_review_status_sensor_attributes(hass: HomeAssistant) -> None:
+    """Test FrigateReviewStatusSensor attributes."""
+    await setup_mock_frigate_config_entry(hass)
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.name == "Front Door Review Status"
+    assert entity_state.attributes["icon"] == "mdi:eye-check"
+    assert entity_state.attributes["friendly_name"] == "Front Door Review Status"
