@@ -15,6 +15,7 @@ import re
 from typing import Any, Final
 
 from awesomeversion import AwesomeVersion
+from titlecase import titlecase
 import voluptuous as vol
 
 from custom_components.frigate.config_flow import get_config_entry_title
@@ -111,7 +112,8 @@ def get_frigate_entity_unique_id(
 
 def get_friendly_name(name: str) -> str:
     """Get a friendly version of a name."""
-    return name.replace("_", " ").title()
+    result: str = titlecase(name.replace("_", " "))
+    return result
 
 
 def get_cameras(config: dict[str, Any]) -> set[str]:
@@ -210,7 +212,7 @@ def get_object_classification_models_and_cameras(
 
 def get_known_plates(config: dict[str, Any]) -> set[str]:
     """Get known license plates from configuration."""
-    known_plates = set()
+    known_plates: set[str] = set()
     lpr_config = config.get("lpr", {})
 
     known_plates_config = lpr_config.get("known_plates", {})

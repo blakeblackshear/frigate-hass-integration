@@ -59,6 +59,75 @@ from .icons import (
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+async def _create_global_face_sensors(
+    entry: ConfigEntry,
+    frigate_config: dict[str, Any],
+    client: Any,
+    entities: list[FrigateEntity],
+) -> None:
+    """Create global face sensors."""
+    if not frigate_config.get("face_recognition", {}).get("enabled"):
+        return
+    try:
+        known_faces = await client.async_get_faces()
+        entities.extend(
+            [
+                FrigateGlobalFaceSensor(entry, frigate_config, face_name)
+                for face_name in known_faces
+            ]
+        )
+    except Exception:
+        _LOGGER.warning(
+            "Failed to fetch known faces from API. Global face sensors will not be created."
+        )
+
+
+async def _create_global_plate_sensors(
+    entry: ConfigEntry,
+    frigate_config: dict[str, Any],
+    entities: list[FrigateEntity],
+) -> None:
+    """Create global plate sensors."""
+    if not frigate_config.get("lpr", {}).get("enabled"):
+        return
+    known_plates = get_known_plates(frigate_config)
+    entities.extend(
+        [
+            FrigateGlobalPlateSensor(entry, frigate_config, plate_name)
+            for plate_name in known_plates
+        ]
+    )
+
+
+async def _create_global_object_classification_sensors(
+    entry: ConfigEntry,
+    frigate_config: dict[str, Any],
+    client: Any,
+    entities: list[FrigateEntity],
+) -> None:
+    """Create global object classification sensors."""
+    classification_config = frigate_config.get("classification", {}).get("custom", {})
+    for model_key, model_config in classification_config.items():
+        object_config = model_config.get("object_config")
+        if object_config:
+            try:
+                classes = await client.async_get_classification_model_classes(model_key)
+                entities.extend(
+                    [
+                        FrigateGlobalObjectClassificationSensor(
+                            entry, frigate_config, model_key, class_name
+                        )
+                        for class_name in classes
+                    ]
+                )
+            except Exception:
+                _LOGGER.warning(
+                    "Failed to fetch classification classes for model %s. "
+                    "Global object classification sensors will not be created for this model.",
+                    model_key,
+                )
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -174,54 +243,12 @@ async def async_setup_entry(
             ]
         )
 
-        # Global face sensors - get known faces from API
-        if frigate_config.get("face_recognition", {}).get("enabled"):
-            try:
-                known_faces = await client.async_get_faces()
-                entities.extend(
-                    [
-                        FrigateGlobalFaceSensor(entry, frigate_config, face_name)
-                        for face_name in known_faces
-                    ]
-                )
-            except Exception:
-                _LOGGER.warning(
-                    "Failed to fetch known faces from API. Global face sensors will not be created."
-                )
-
-        if frigate_config.get("lpr", {}).get("enabled"):
-            known_plates = get_known_plates(frigate_config)
-            entities.extend(
-                [
-                    FrigateGlobalPlateSensor(entry, frigate_config, plate_name)
-                    for plate_name in known_plates
-                ]
-            )
-
-        classification_config = frigate_config.get("classification", {}).get(
-            "custom", {}
+        # Global sensors
+        await _create_global_face_sensors(entry, frigate_config, client, entities)
+        await _create_global_plate_sensors(entry, frigate_config, entities)
+        await _create_global_object_classification_sensors(
+            entry, frigate_config, client, entities
         )
-        for model_key, model_config in classification_config.items():
-            object_config = model_config.get("object_config")
-            if object_config:
-                try:
-                    classes = await client.async_get_classification_model_classes(
-                        model_key
-                    )
-                    entities.extend(
-                        [
-                            FrigateGlobalObjectClassificationSensor(
-                                entry, frigate_config, model_key, class_name
-                            )
-                            for class_name in classes
-                        ]
-                    )
-                except Exception:
-                    _LOGGER.warning(
-                        "Failed to fetch classification classes for model %s. "
-                        "Global object classification sensors will not be created for this model.",
-                        model_key,
-                    )
 
     async_add_entities(entities)
 
