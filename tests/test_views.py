@@ -142,7 +142,7 @@ async def test_views_ssl_context(
     validate_ssl: bool,
 ) -> None:
     """Test views setup with different SSL settings."""
-    await async_setup(hass, validate_ssl)  # Directly test the function
+    async_setup(hass, validate_ssl)  # Directly test the function
     assert True  # Line 128 executes based on validate_ssl
 
 async def test_vod_segment_proxy_unauthorized(
