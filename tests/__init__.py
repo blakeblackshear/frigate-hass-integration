@@ -77,6 +77,12 @@ TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION = (
 TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS = "sensor.front_door_review_status"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID = "sensor.frigate_uptime"
+TEST_SENSOR_GLOBAL_FACE_BOB = "sensor.frigate_bob_last_camera"
+TEST_SENSOR_GLOBAL_PLATE_ABC123 = "sensor.frigate_abc123_last_camera"
+TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON = (
+    "sensor.frigate_delivery_person_last_camera"
+)
+TEST_SENSOR_GLOBAL_CLASSIFICATION_RED_SHIRT = "sensor.frigate_red_shirt_last_camera"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
 TEST_SERVER_VERSION = "0.17.0"
@@ -184,6 +190,10 @@ TEST_CONFIG = {
     "logger": {"default": "INFO", "logs": {}},
     "lpr": {
         "enabled": True,
+        "known_plates": {
+            "ABC123": "Test Car",
+            "XYZ789": "Another Car",
+        },
     },
     "model": {
         "height": 320,
@@ -392,6 +402,10 @@ def create_mock_frigate_client() -> AsyncMock:
     mock_client.async_get_config = AsyncMock(return_value=TEST_CONFIG)
     mock_client.async_get_event_summary = AsyncMock(return_value=TEST_EVENT_SUMMARY)
     mock_client.async_get_version = AsyncMock(return_value=TEST_SERVER_VERSION)
+    mock_client.async_get_faces = AsyncMock(return_value=["bob", "alice"])
+    mock_client.async_get_classification_model_classes = AsyncMock(
+        return_value=["delivery_person", "red_shirt"]
+    )
     return mock_client
 
 

@@ -158,6 +158,39 @@ class FrigateApiClient:
             await self.api_wrapper("get", str(URL(self._host) / "api/config")),
         )
 
+    async def async_get_faces(self) -> list[str]:
+        """Get list of known faces."""
+        try:
+            result = await self.api_wrapper(
+                "get", str(URL(self._host) / "api/faces"), decode_json=True
+            )
+
+            if isinstance(result, dict):
+                return [name for name in result.keys() if name != "train"]
+
+            return []
+        except FrigateApiClientError:
+            return []
+
+    async def async_get_classification_model_classes(
+        self, model_name: str
+    ) -> list[str]:
+        """Get list of classification classes for a model."""
+        try:
+            result = await self.api_wrapper(
+                "get",
+                str(URL(self._host) / f"api/classification/{model_name}/dataset"),
+                decode_json=True,
+            )
+
+            if isinstance(result, dict) and "categories" in result:
+                categories = result["categories"]
+                if isinstance(categories, dict):
+                    return list(categories.keys())
+            return []
+        except FrigateApiClientError:
+            return []
+
     async def async_get_ptz_info(
         self,
         camera: str,
