@@ -21,10 +21,10 @@ from custom_components.frigate.const import (
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     DOMAIN,
 )
+from custom_components.frigate.views import async_setup
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
-from custom_components.frigate.views import async_setup
 
 from . import (
     TEST_CONFIG,
@@ -134,6 +134,7 @@ async def test_vod_segment_proxy(
     resp = await authenticated_hass_client.get(signed_path)
     assert resp.status == HTTPStatus.OK
 
+
 @pytest.mark.parametrize("validate_ssl", [True, False])
 async def test_views_ssl_context(
     local_frigate: Any,
@@ -172,6 +173,7 @@ async def test_views_ssl_context(
         assert hass.data.get("frigate_views_registered") is True
     finally:
         views.ssl_context = original_ssl_context
+
 
 async def test_vod_segment_proxy_unauthorized(
     hass: HomeAssistant,
