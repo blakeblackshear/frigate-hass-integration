@@ -7,9 +7,9 @@ import copy
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 import logging
+import ssl
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
-import ssl
 
 from aiohttp import web
 from hass_web_proxy_lib.tests.utils import response_handler, ws_response_handler
