@@ -22,7 +22,6 @@ from custom_components.frigate.const import (
     ATTR_EVENT_ID,
     ATTR_FAVORITE,
     ATTR_LABEL,
-    ATTR_NAME,
     ATTR_PLAYBACK_FACTOR,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
