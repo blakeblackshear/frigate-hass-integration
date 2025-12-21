@@ -50,6 +50,7 @@ from .const import (
     ATTR_FAVORITE,
     ATTR_INCLUDE_RECORDING,
     ATTR_LABEL,
+    ATTR_NAME,
     ATTR_PLAYBACK_FACTOR,
     ATTR_PTZ_ACTION,
     ATTR_PTZ_ARGUMENT,
@@ -113,6 +114,7 @@ async def async_setup_entry(
             vol.Required(ATTR_PLAYBACK_FACTOR, default="realtime"): str,
             vol.Required(ATTR_START_TIME): str,
             vol.Required(ATTR_END_TIME): str,
+            vol.Optional(ATTR_NAME, default=None): vol.Any(str, None),
         },
         SERVICE_EXPORT_RECORDING,
     )
@@ -408,7 +410,11 @@ class FrigateCamera(
         )
 
     async def export_recording(
-        self, playback_factor: str, start_time: str, end_time: str
+        self,
+        playback_factor: str,
+        start_time: str,
+        end_time: str,
+        name: str | None = None,
     ) -> None:
         """Export recording."""
         try:
@@ -417,6 +423,7 @@ class FrigateCamera(
                 playback_factor,
                 datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
                 datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
+                name=name,
             )
         except FrigateApiClientError as err:
             raise ServiceValidationError(

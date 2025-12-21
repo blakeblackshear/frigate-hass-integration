@@ -45,6 +45,7 @@ ATTR_LABEL = "label"
 ATTR_SUB_LABEL = "sub_label"
 ATTR_DURATION = "duration"
 ATTR_INCLUDE_RECORDING = "include_recording"
+ATTR_NAME = "name"
 
 # Configuration and options
 CONF_MEDIA_BROWSER_ENABLE = "media_browser_enable"
