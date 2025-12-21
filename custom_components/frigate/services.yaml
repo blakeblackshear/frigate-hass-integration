@@ -36,7 +36,9 @@ export_recording:
         datetime:
     name:
       name: Name
-      description: Optional name for the exported recording. If not provided, the API will generate one.
+      description: >
+        Optional name for the exported recording. If not provided, the API will
+        generate one.
       required: false
       advanced: false
       selector:
