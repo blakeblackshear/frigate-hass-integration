@@ -124,6 +124,7 @@ def get_frigate_instance_id_for_config_entry(
 def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
     """Set up the views."""
     if validate_ssl:
+        global ssl_context
         ssl_context = None
     session = async_get_clientsession(hass, verify_ssl=validate_ssl)
     hass.http.register_view(JSMPEGProxyView(session))
