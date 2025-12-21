@@ -126,16 +126,21 @@ def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
     if validate_ssl:
         global ssl_context
         ssl_context = None  # type: ignore[assignment]
+
     session = async_get_clientsession(hass, verify_ssl=validate_ssl)
-    hass.http.register_view(JSMPEGProxyView(session))
-    hass.http.register_view(MSEProxyView(session))
-    hass.http.register_view(WebRTCProxyView(session))
-    hass.http.register_view(NotificationsProxyView(session))
-    hass.http.register_view(SnapshotsProxyView(session))
-    hass.http.register_view(RecordingProxyView(session))
-    hass.http.register_view(ThumbnailsProxyView(session))
-    hass.http.register_view(VodProxyView(session))
-    hass.http.register_view(VodSegmentProxyView(session))
+
+    # FIX: Only register views once
+    if not hass.data.get("frigate_views_registered", False):
+        hass.http.register_view(JSMPEGProxyView(session))
+        hass.http.register_view(MSEProxyView(session))
+        hass.http.register_view(WebRTCProxyView(session))
+        hass.http.register_view(NotificationsProxyView(session))
+        hass.http.register_view(SnapshotsProxyView(session))
+        hass.http.register_view(RecordingProxyView(session))
+        hass.http.register_view(ThumbnailsProxyView(session))
+        hass.http.register_view(VodProxyView(session))
+        hass.http.register_view(VodSegmentProxyView(session))
+        hass.data["frigate_views_registered"] = True
 
 
 class FrigateProxyViewMixin:
