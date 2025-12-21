@@ -43,6 +43,22 @@ async def async_setup_entry(
                 FrigateSwitch(entry, frigate_config, camera, "recordings", True),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots", True),
                 FrigateSwitch(entry, frigate_config, camera, "improve_contrast", False),
+                FrigateSwitch(
+                    entry,
+                    frigate_config,
+                    camera,
+                    "review_alerts",
+                    True,
+                    "review_alerts",
+                ),
+                FrigateSwitch(
+                    entry,
+                    frigate_config,
+                    camera,
+                    "review_detections",
+                    True,
+                    "review_detections",
+                ),
             ]
         )
 
