@@ -74,6 +74,7 @@ TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION = "sensor.front_door_color_classific
 TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION = (
     "sensor.front_door_person_classifier_object_classification"
 )
+TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS = "sensor.front_door_review_status"
 TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID = "sensor.frigate_status"
 TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID = "sensor.frigate_uptime"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
