@@ -208,6 +208,19 @@ def get_object_classification_models_and_cameras(
     return model_cameras
 
 
+def get_known_plates(config: dict[str, Any]) -> set[str]:
+    """Get known license plates from configuration."""
+    known_plates = set()
+    lpr_config = config.get("lpr", {})
+
+    known_plates_config = lpr_config.get("known_plates", {})
+
+    if isinstance(known_plates_config, dict):
+        known_plates.update(known_plates_config.keys())
+
+    return known_plates
+
+
 def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:
     """Get cameras/zones and tracking object tuples."""
     camera_objects = get_cameras_and_objects(config)
