@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import ssl
 from collections.abc import Mapping
 import datetime
 import logging
 import os
+import ssl
 from typing import Any, Optional, cast
 
 from aiohttp import web
