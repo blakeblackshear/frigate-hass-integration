@@ -186,7 +186,7 @@ class FrigateApiClient:
             if isinstance(result, dict) and "categories" in result:
                 categories = result["categories"]
                 if isinstance(categories, dict):
-                    return list(categories.keys())
+                    return [name for name in categories.keys() if name != "none"]
             return []
         except FrigateApiClientError:
             return []
