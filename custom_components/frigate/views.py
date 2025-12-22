@@ -6,6 +6,7 @@ from collections.abc import Mapping
 import datetime
 import logging
 import os
+import ssl
 from typing import Any, Optional, cast
 
 from aiohttp import web
@@ -39,6 +40,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
+
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+# Disable certificate verification
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
 
 
 def get_default_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -114,20 +121,28 @@ def get_frigate_instance_id_for_config_entry(
     return get_frigate_instance_id(config) if config else None
 
 
-def async_setup(hass: HomeAssistant) -> None:
+def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
     """Set up the views."""
-    session = async_get_clientsession(hass)
-    hass.http.register_view(JSMPEGProxyView(session))
-    hass.http.register_view(MSEProxyView(session))
-    hass.http.register_view(WebRTCProxyView(session))
-    hass.http.register_view(Go2RTCAPIWebsocketProxyView(session))
-    hass.http.register_view(Go2RTCAPIProxyView(session))
-    hass.http.register_view(NotificationsProxyView(session))
-    hass.http.register_view(SnapshotsProxyView(session))
-    hass.http.register_view(RecordingProxyView(session))
-    hass.http.register_view(ThumbnailsProxyView(session))
-    hass.http.register_view(VodProxyView(session))
-    hass.http.register_view(VodSegmentProxyView(session))
+    if validate_ssl:
+        global ssl_context
+        ssl_context = None  # type: ignore[assignment]
+
+    session = async_get_clientsession(hass, verify_ssl=validate_ssl)
+
+    # FIX: Only register views once
+    if not hass.data.get("frigate_views_registered", False):
+        hass.http.register_view(JSMPEGProxyView(session))
+        hass.http.register_view(MSEProxyView(session))
+        hass.http.register_view(WebRTCProxyView(session))
+        hass.http.register_view(Go2RTCAPIWebsocketProxyView(session))
+        hass.http.register_view(Go2RTCAPIProxyView(session))
+        hass.http.register_view(NotificationsProxyView(session))
+        hass.http.register_view(SnapshotsProxyView(session))
+        hass.http.register_view(RecordingProxyView(session))
+        hass.http.register_view(ThumbnailsProxyView(session))
+        hass.http.register_view(VodProxyView(session))
+        hass.http.register_view(VodSegmentProxyView(session))
+        hass.data["frigate_views_registered"] = True
 
 
 class FrigateProxyViewMixin:
@@ -215,6 +230,7 @@ class SnapshotsProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -239,6 +255,7 @@ class RecordingProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -259,6 +276,7 @@ class ThumbnailsProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -322,6 +340,7 @@ class NotificationsProxyView(FrigateProxyView):
             ),
             allow_unauthenticated=True,
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -389,6 +408,7 @@ class VodProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -414,6 +434,7 @@ class VodSegmentProxyView(FrigateProxyView):
             ),
             allow_unauthenticated=True,
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -461,6 +482,7 @@ class JSMPEGProxyView(FrigateWebsocketProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -486,6 +508,7 @@ class MSEProxyView(FrigateWebsocketProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 
@@ -507,6 +530,7 @@ class WebRTCProxyView(FrigateWebsocketProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
+            ssl_context=ssl_context,
             query_params=self._get_query_params(request),
         )
 

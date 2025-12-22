@@ -7,6 +7,7 @@ import copy
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 import logging
+import ssl
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -21,6 +22,7 @@ from custom_components.frigate.const import (
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     DOMAIN,
 )
+from custom_components.frigate.views import async_setup
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
@@ -135,6 +137,46 @@ async def test_vod_segment_proxy(
     authenticated_hass_client = await hass_client()
     resp = await authenticated_hass_client.get(signed_path)
     assert resp.status == HTTPStatus.OK
+
+
+@pytest.mark.parametrize("validate_ssl", [True, False])
+async def test_views_ssl_context(
+    local_frigate: Any,
+    hass_client: Any,
+    hass: Any,
+    validate_ssl: bool,
+) -> None:
+    """Test views setup with different SSL settings."""
+    # Import the views module so we can inspect and control module-level state.
+    import custom_components.frigate.views as views
+
+    # Save/restore module state to avoid affecting other tests.
+    original_ssl_context = views.ssl_context
+    try:
+        # Ensure a known non-None starting state so the test is deterministic.
+        views.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+        # Patch the clientsession factory and verify it's called with the expected flag.
+        with patch("custom_components.frigate.views.async_get_clientsession") as (
+            mock_get_session
+        ):
+            async_setup(hass, validate_ssl)
+            mock_get_session.assert_called_once_with(hass, verify_ssl=validate_ssl)
+
+        # When SSL validation is requested, the module should set `ssl_context` to None.
+        if validate_ssl:
+            assert views.ssl_context is None
+        else:
+            assert views.ssl_context is not None
+
+        # Views registration flag should be set.
+        assert hass.data.get("frigate_views_registered") is True
+
+        # Calling setup again should be idempotent and not raise.
+        async_setup(hass, validate_ssl)
+        assert hass.data.get("frigate_views_registered") is True
+    finally:
+        views.ssl_context = original_ssl_context
 
 
 async def test_vod_segment_proxy_unauthorized(
