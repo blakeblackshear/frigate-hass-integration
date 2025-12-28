@@ -4,6 +4,6 @@
   "python.testing.pytestArgs": ["--no-cov", "-p", "no:sugar"],
   "python.testing.pytestEnabled": true,
   "[python]": {
-    "editor.defaultFormatter": "mikoz.black-py"
+    "editor.defaultFormatter": "ms-python.black-formatter"
   }
 }

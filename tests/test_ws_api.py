@@ -655,3 +655,333 @@ async def test_unload_unsubscribes_from_events(
     with pytest.raises(asyncio.exceptions.TimeoutError):
         async with async_timeout.timeout(0):
             response = await ws_client.receive_json()
+
+
+async def test_get_reviews_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving reviews successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    reviews_json = {
+        "id": 1,
+        "type": "frigate/reviews/get",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "cameras": [TEST_CAMERA],
+        "labels": [TEST_LABEL],
+        "zones": [TEST_ZONE],
+        "severity": "alert",
+        "after": 1735000000.0,
+        "before": 1735100000.0,
+        "limit": 10,
+        "reviewed": False,
+    }
+
+    reviews_success = {"reviews": "data"}
+    mock_client.async_get_reviews = AsyncMock(return_value=reviews_success)
+    await ws_client.send_json(reviews_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_reviews.assert_called_with(
+        [TEST_CAMERA],
+        [TEST_LABEL],
+        [TEST_ZONE],
+        "alert",
+        1735000000.0,
+        1735100000.0,
+        10,
+        False,
+        decode_json=False,
+    )
+    assert response["success"]
+    assert response["result"] == reviews_success
+
+
+async def test_get_reviews_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving reviews from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    reviews_json = {
+        "id": 1,
+        "type": "frigate/reviews/get",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+    }
+
+    await ws_client.send_json(reviews_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_get_reviews_api_error(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test retrieving reviews when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    reviews_json = {
+        "id": 1,
+        "type": "frigate/reviews/get",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+    }
+
+    mock_client.async_get_reviews = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(reviews_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+
+async def test_set_reviews_viewed_success(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test marking reviews as viewed successfully."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    reviews_viewed_json = {
+        "id": 1,
+        "type": "frigate/reviews/viewed",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "ids": ["review_id_1", "review_id_2"],
+        "viewed": True,
+    }
+
+    viewed_success = {"success": True, "message": "Reviews updated"}
+    mock_client.async_set_reviews_viewed = AsyncMock(return_value=viewed_success)
+    await ws_client.send_json(reviews_viewed_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_set_reviews_viewed.assert_called_with(
+        ["review_id_1", "review_id_2"], True
+    )
+    assert response["success"]
+    assert response["result"] == viewed_success
+
+
+async def test_set_reviews_viewed_instance_not_found(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test marking reviews as viewed from a non-existent instance."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    reviews_viewed_json = {
+        "id": 1,
+        "type": "frigate/reviews/viewed",
+        "instance_id": "THIS-IS-NOT-A-REAL-INSTANCE-ID",
+        "ids": ["review_id_1"],
+    }
+
+    await ws_client.send_json(reviews_viewed_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_set_reviews_viewed_api_error(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test marking reviews as viewed when the API has an error."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    reviews_viewed_json = {
+        "id": 1,
+        "type": "frigate/reviews/viewed",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "ids": ["review_id_1"],
+    }
+
+    mock_client.async_set_reviews_viewed = AsyncMock(side_effect=FrigateApiClientError)
+
+    await ws_client.send_json(reviews_viewed_json)
+    response = await ws_client.receive_json()
+    assert not response["success"]
+    assert response["error"]["code"] == "frigate_error"
+
+
+TEST_REVIEW_DATA = "REVIEW_DATA"
+
+
+async def test_subscribe_reviews(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test subscribing to reviews."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client_1 = await hass_ws_client()
+    await ws_client_1.send_json(
+        {
+            "id": 1,
+            "type": "frigate/reviews/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client_1.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    ws_client_2 = await hass_ws_client()
+    await ws_client_2.send_json(
+        {
+            "id": 2,
+            "type": "frigate/reviews/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client_2.receive_json()
+    assert response["success"]
+    assert response["result"] == 2
+
+    async_fire_mqtt_message(hass, "frigate/reviews", TEST_REVIEW_DATA)
+    await hass.async_block_till_done()
+
+    response = await ws_client_1.receive_json()
+    assert response["event"] == TEST_REVIEW_DATA
+
+    response = await ws_client_2.receive_json()
+    assert response["event"] == TEST_REVIEW_DATA
+
+
+async def test_subscribe_reviews_invalid_instance_id(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test subscribing to reviews with an invalid instance id"""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/reviews/subscribe",
+            "instance_id": "DOES_NOT_EXIST",
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unsubscribe_reviews(hass: HomeAssistant, hass_ws_client: Any) -> None:
+    """Test unsubscribing from reviews."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/reviews/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    await ws_client.send_json(
+        {
+            "id": 2,
+            "type": "frigate/reviews/unsubscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+            "subscription_id": 1,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+
+    async_fire_mqtt_message(hass, "frigate/reviews", TEST_REVIEW_DATA)
+    await hass.async_block_till_done()
+
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        async with async_timeout.timeout(0):
+            response = await ws_client.receive_json()
+
+
+async def test_unsubscribe_reviews_invalid_instance_id(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test unsubscribing reviews from an invalid instance id."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/reviews/unsubscribe",
+            "instance_id": "DOES_NOT_EXIST",
+            "subscription_id": 1,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unsubscribe_reviews_from_invalid_subscription(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test unsubscribing reviews from a subscription that does not exist."""
+
+    await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/reviews/unsubscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+            "subscription_id": 20000,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_unload_unsubscribes_from_reviews(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test to verify unload unsubscribes from reviews."""
+
+    config_entry = await setup_mock_frigate_config_entry(hass)
+
+    ws_client = await hass_ws_client()
+    await ws_client.send_json(
+        {
+            "id": 1,
+            "type": "frigate/reviews/subscribe",
+            "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["success"]
+    assert response["result"] == 1
+
+    await hass.config_entries.async_unload(config_entry.entry_id)
+
+    async_fire_mqtt_message(hass, "frigate/reviews", TEST_REVIEW_DATA)
+    await hass.async_block_till_done()
+
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        async with async_timeout.timeout(0):
+            response = await ws_client.receive_json()

@@ -59,6 +59,7 @@ from .const import (
     ATTR_END_TIME,
     ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
+    ATTR_WS_REVIEW_PROXY,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
     DOMAIN,
@@ -74,7 +75,7 @@ from .const import (
 )
 from .views import async_setup as views_async_setup
 from .ws_api import async_setup as ws_api_async_setup
-from .ws_event_proxy import WSEventProxy
+from .ws_proxy import WSEventProxy, WSReviewProxy
 
 SCAN_INTERVAL = timedelta(seconds=5)
 
@@ -318,12 +319,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     ws_event_proxy = WSEventProxy(hass, config["mqtt"]["topic_prefix"])
     entry.async_on_unload(lambda: ws_event_proxy.unsubscribe_all(hass))
 
+    ws_review_proxy = WSReviewProxy(hass, config["mqtt"]["topic_prefix"])
+    entry.async_on_unload(lambda: ws_review_proxy.unsubscribe_all(hass))
+
     hass.data[DOMAIN][entry.entry_id] = {
         ATTR_COORDINATOR: coordinator,
         ATTR_CLIENT: client,
         ATTR_CONFIG: config,
         ATTR_MODEL: model,
         ATTR_WS_EVENT_PROXY: ws_event_proxy,
+        ATTR_WS_REVIEW_PROXY: ws_review_proxy,
     }
 
     # Remove old devices associated with cameras that have since been removed
