@@ -7,12 +7,16 @@ import logging
 import voluptuous as vol
 
 from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
-from custom_components.frigate.const import ATTR_WS_EVENT_PROXY, DOMAIN
+from custom_components.frigate.const import (
+    ATTR_WS_EVENT_PROXY,
+    ATTR_WS_REVIEW_PROXY,
+    DOMAIN,
+)
 from custom_components.frigate.views import (
     get_client_for_frigate_instance_id,
     get_config_entry_for_frigate_instance_id,
 )
-from custom_components.frigate.ws_event_proxy import WSEventProxy
+from custom_components.frigate.ws_proxy import WSEventProxy, WSReviewProxy
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
@@ -26,9 +30,13 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_recordings_summary)
     websocket_api.async_register_command(hass, ws_get_events)
     websocket_api.async_register_command(hass, ws_get_events_summary)
+    websocket_api.async_register_command(hass, ws_get_reviews)
+    websocket_api.async_register_command(hass, ws_set_reviews_viewed)
     websocket_api.async_register_command(hass, ws_get_ptz_info)
     websocket_api.async_register_command(hass, ws_subscribe_events)
     websocket_api.async_register_command(hass, ws_unsubscribe_events)
+    websocket_api.async_register_command(hass, ws_subscribe_reviews)
+    websocket_api.async_register_command(hass, ws_unsubscribe_reviews)
 
 
 def _get_client_or_send_error(
@@ -207,6 +215,86 @@ async def ws_get_events(
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): "frigate/reviews/get",
+        vol.Required("instance_id"): str,
+        vol.Optional("cameras"): [str],
+        vol.Optional("labels"): [str],
+        vol.Optional("zones"): [str],
+        vol.Optional("severity"): str,
+        vol.Optional("after"): vol.Coerce(float),
+        vol.Optional("before"): vol.Coerce(float),
+        vol.Optional("limit"): int,
+        vol.Optional("reviewed"): bool,
+    }
+)
+@websocket_api.async_response
+async def ws_get_reviews(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Get review items."""
+    client = _get_client_or_send_error(hass, msg["instance_id"], msg["id"], connection)
+    if not client:
+        return
+
+    try:
+        connection.send_result(
+            msg["id"],
+            await client.async_get_reviews(
+                msg.get("cameras"),
+                msg.get("labels"),
+                msg.get("zones"),
+                msg.get("severity"),
+                msg.get("after"),
+                msg.get("before"),
+                msg.get("limit"),
+                msg.get("reviewed", False),
+                decode_json=False,
+            ),
+        )
+    except FrigateApiClientError:
+        connection.send_error(
+            msg["id"],
+            "frigate_error",
+            f"API error whilst retrieving reviews for Frigate instance {msg['instance_id']}",
+        )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "frigate/reviews/viewed",
+        vol.Required("instance_id"): str,
+        vol.Required("ids"): [str],
+        vol.Optional("viewed"): bool,
+    }
+)
+@websocket_api.async_response
+async def ws_set_reviews_viewed(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Mark reviews as viewed."""
+    client = _get_client_or_send_error(hass, msg["instance_id"], msg["id"], connection)
+    if not client:
+        return
+
+    try:
+        result = await client.async_set_reviews_viewed(
+            msg["ids"], msg.get("viewed", True)
+        )
+        connection.send_result(msg["id"], result)
+    except FrigateApiClientError:
+        connection.send_error(
+            msg["id"],
+            "frigate_error",
+            f"API error whilst marking reviews as viewed for Frigate instance {msg['instance_id']}",
+        )
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): "frigate/events/summary",
         vol.Required("instance_id"): str,
         vol.Optional("has_clip"): bool,
@@ -340,4 +428,72 @@ async def ws_get_ptz_info(
             "frigate_error",
             f"API error whilst retrieving PTZ info for camera "
             f"{msg['camera']} for Frigate instance {msg['instance_id']}",
+        )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "frigate/reviews/subscribe",
+        vol.Required("instance_id"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_subscribe_reviews(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Subscribe to reviews."""
+
+    entry = get_config_entry_for_frigate_instance_id(hass, msg["instance_id"])
+    if not entry:
+        connection.send_error(
+            msg["id"],
+            "not_found",
+            f"API error whilst subscribing to reviews for unknown Frigate instance "
+            f"{msg['instance_id']}",
+        )
+        return
+
+    review_proxy: WSReviewProxy = hass.data[DOMAIN][entry.entry_id][
+        ATTR_WS_REVIEW_PROXY
+    ]
+    connection.send_result(
+        msg["id"], await review_proxy.subscribe(hass, msg["id"], connection)
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "frigate/reviews/unsubscribe",
+        vol.Required("instance_id"): str,
+        vol.Required("subscription_id"): int,
+    }
+)
+@websocket_api.async_response
+async def ws_unsubscribe_reviews(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Unsubscribe from reviews."""
+
+    entry = get_config_entry_for_frigate_instance_id(hass, msg["instance_id"])
+    if not entry:
+        connection.send_error(
+            msg["id"],
+            "not_found",
+            f"API error whilst unsubscribing from reviews for unknown Frigate instance "
+            f"{msg['instance_id']}",
+        )
+        return
+
+    review_proxy: WSReviewProxy = hass.data[DOMAIN][entry.entry_id][
+        ATTR_WS_REVIEW_PROXY
+    ]
+    if review_proxy.unsubscribe(hass, msg["subscription_id"]):
+        connection.send_result(msg["id"])
+    else:
+        connection.send_error(
+            msg["id"], websocket_api.const.ERR_NOT_FOUND, "Subscription not found."
         )

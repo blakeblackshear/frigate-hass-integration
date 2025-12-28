@@ -126,6 +126,7 @@ def async_setup(hass: HomeAssistant) -> None:
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(RecordingProxyView(session))
     hass.http.register_view(ThumbnailsProxyView(session))
+    hass.http.register_view(ReviewClipsProxyView(session))
     hass.http.register_view(VodProxyView(session))
     hass.http.register_view(VodSegmentProxyView(session))
 
@@ -244,7 +245,7 @@ class RecordingProxyView(FrigateProxyView):
 
 
 class ThumbnailsProxyView(FrigateProxyView):
-    """A proxy for snapshots."""
+    """A proxy for event thumbnails."""
 
     url = "/api/frigate/{frigate_instance_id:.+}/thumbnail/{eventid:.*}"
 
@@ -256,6 +257,30 @@ class ThumbnailsProxyView(FrigateProxyView):
             url=self._get_fqdn_path(
                 request,
                 f"api/events/{kwargs['eventid']}/thumbnail.jpg",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            headers=kwargs["headers"],
+            query_params=self._get_query_params(request),
+        )
+
+
+class ReviewClipsProxyView(FrigateProxyView):
+    """A proxy for review thumbnails and clips.
+
+    Frigate stores review thumbnails as static files at /media/frigate/clips/.
+    This proxy serves those files through Home Assistant.
+    """
+
+    url = "/api/frigate/{frigate_instance_id:.+}/clips/{path:.*}"
+
+    name = "api:frigate:clips"
+
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"clips/{kwargs['path']}",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
