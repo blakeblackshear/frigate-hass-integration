@@ -124,6 +124,58 @@ class FrigateApiClient:
             ),
         )
 
+    async def async_get_reviews(
+        self,
+        cameras: list[str] | None = None,
+        labels: list[str] | None = None,
+        zones: list[str] | None = None,
+        severity: str | None = None,
+        after: float | None = None,
+        before: float | None = None,
+        limit: int | None = None,
+        reviewed: bool = False,
+        decode_json: bool = True,
+    ) -> list[dict[str, Any]]:
+        """Get review items from the API."""
+        params = {
+            "cameras": ",".join(cameras) if cameras else None,
+            "labels": ",".join(labels) if labels else None,
+            "zones": ",".join(zones) if zones else None,
+            "severity": severity,
+            "after": after,
+            "before": before,
+            "limit": limit,
+            "reviewed": int(reviewed),
+        }
+
+        return cast(
+            list[dict[str, Any]],
+            await self.api_wrapper(
+                "get",
+                str(
+                    URL(self._host)
+                    / "api/review"
+                    % {k: v for k, v in params.items() if v is not None}
+                ),
+                decode_json=decode_json,
+            ),
+        )
+
+    async def async_set_reviews_viewed(
+        self,
+        ids: list[str],
+        viewed: bool = True,
+    ) -> dict[str, Any]:
+        """Mark reviews as viewed/unviewed."""
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "post",
+                str(URL(self._host) / "api/reviews/viewed"),
+                data={"ids": ids, "reviewed": viewed},
+            ),
+        )
+
     async def async_get_event_summary(
         self,
         has_clip: bool | None = None,
@@ -186,7 +238,7 @@ class FrigateApiClient:
             if isinstance(result, dict) and "categories" in result:
                 categories = result["categories"]
                 if isinstance(categories, dict):
-                    return list(categories.keys())
+                    return [name for name in categories.keys() if name != "none"]
             return []
         except FrigateApiClientError:
             return []

@@ -1,7 +1,8 @@
-"""Frigate event proxy."""
+"""Frigate MQTT to WebSocket proxy."""
 
 from __future__ import annotations
 
+from abc import ABC
 import logging
 
 from homeassistant.components import websocket_api
@@ -18,20 +19,20 @@ from homeassistant.core import HomeAssistant
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
-class WSEventProxy:
-    """Frigate event MQTT to WS proxy.
+class WSMQTTProxy(ABC):
+    """Base class for Frigate MQTT to WS proxy.
 
-    This class subscribes to the MQTT events topic for a given Frigate topic and
+    This class subscribes to an MQTT topic for a given Frigate topic and
     forwards the messages to a list of subscribers. MQTT payload is directly
     passed to subscribers to avoid JSON serialization/deserialization overhead
     within HA.
     """
 
-    def __init__(self, hass: HomeAssistant, topic_prefix: str) -> None:
+    def __init__(self, hass: HomeAssistant, topic: str) -> None:
         self._subscriptions: dict[int, websocket_api.ActiveConnection] = {}
         self._topics = {
-            "events": {
-                "topic": f"{topic_prefix}/events",
+            "topic": {
+                "topic": topic,
                 "msg_callback": lambda msg: self._receive_message(hass, msg),
                 "qos": 0,
             }
@@ -44,7 +45,7 @@ class WSEventProxy:
         subscription_id: int,
         connection: websocket_api.ActiveConnection,
     ) -> int:
-        """Subscribe to events."""
+        """Subscribe to the topic."""
 
         if self._sub_state is None:
             self._sub_state = async_prepare_subscribe_topics(
@@ -60,7 +61,7 @@ class WSEventProxy:
         return subscription_id
 
     def unsubscribe(self, hass: HomeAssistant, subscription_id: int) -> bool:
-        """Unsubscribe from events."""
+        """Unsubscribe from the topic."""
 
         if (
             subscription_id in self._subscriptions
@@ -70,7 +71,7 @@ class WSEventProxy:
         return self._unsubscribe_internal(hass, subscription_id)
 
     def _unsubscribe_internal(self, hass: HomeAssistant, subscription_id: int) -> bool:
-        """Unsubscribe from events.
+        """Unsubscribe from the topic.
 
         May be called from the websocket connection close handler. As a result
         must not change the size of connection.subscriptions which is iterated
@@ -101,3 +102,17 @@ class WSEventProxy:
         # Must proxy in the executor pool to ensure threadsafety. Otherwise:
         # `RuntimeError: Non-thread-safe operation invoked on an event loop other than the current one``
         hass.create_task(proxy())
+
+
+class WSEventProxy(WSMQTTProxy):
+    """Frigate event MQTT to WS proxy."""
+
+    def __init__(self, hass: HomeAssistant, topic_prefix: str) -> None:
+        super().__init__(hass, f"{topic_prefix}/events")
+
+
+class WSReviewProxy(WSMQTTProxy):
+    """Frigate review MQTT to WS proxy."""
+
+    def __init__(self, hass: HomeAssistant, topic_prefix: str) -> None:
+        super().__init__(hass, f"{topic_prefix}/reviews")

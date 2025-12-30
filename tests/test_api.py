@@ -926,3 +926,79 @@ async def test_async_get_classification_model_classes_api_error(
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     result = await frigate_client.async_get_classification_model_classes(model_name)
     assert result == []
+
+
+async def test_async_get_reviews(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_reviews."""
+    reviews_in = [
+        {
+            "id": "1735000000.123456-abc123",
+            "camera": "front_door",
+            "start_time": 1735000000.0,
+            "end_time": 1735000060.0,
+            "severity": "alert",
+            "thumb_path": "/media/frigate/clips/review/thumb.webp",
+            "data": {"detections": ["person"], "objects": ["person"]},
+        }
+    ]
+
+    async def reviews_handler(request: web.Request) -> web.Response:
+        """Reviews handler."""
+        _assert_request_params(
+            request,
+            {
+                "cameras": "test_camera1,test_camera2",
+                "labels": "test_label1,test_label2",
+                "zones": "test_zone1,test_zone2",
+                "severity": "alert",
+                "after": "1735000000.0",
+                "before": "1735100000.0",
+                "limit": "10",
+                "reviewed": "0",
+            },
+        )
+        return web.json_response(reviews_in)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get("/api/review", reviews_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert reviews_in == await frigate_client.async_get_reviews(
+        cameras=["test_camera1", "test_camera2"],
+        labels=["test_label1", "test_label2"],
+        zones=["test_zone1", "test_zone2"],
+        severity="alert",
+        after=1735000000.0,
+        before=1735100000.0,
+        limit=10,
+        reviewed=False,
+    )
+
+
+async def test_async_set_reviews_viewed(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_set_reviews_viewed."""
+    post_success = {"success": True, "message": "Reviews updated"}
+
+    async def reviews_viewed_handler(request: web.Request) -> web.Response:
+        """Reviews viewed handler."""
+        body = await request.json()
+        assert body == {"ids": ["review_id_1", "review_id_2"], "reviewed": True}
+        return web.json_response(post_success)
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.post("/api/reviews/viewed", reviews_viewed_handler)],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_set_reviews_viewed(
+            ["review_id_1", "review_id_2"], viewed=True
+        )
+        == post_success
+    )

@@ -67,7 +67,7 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/vod/event/event_id/master.m3u8", response_handler),
             web.get("/api/events/event_id/preview.gif", response_handler),
             web.get("/api/review/event_id/preview", response_handler),
-            web.get("/clips/review/thumb-event_id.webp", response_handler),
+            web.get("/clips/review/thumb-camera_name-event_id.webp", response_handler),
             web.get(
                 "/api/events/1577854800.123456-random/snapshot.jpg", response_handler
             ),
@@ -89,6 +89,7 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
                 "/api/front_door/start/1664067600.02/end/1664068200.03/clip.mp4",
                 response_handler,
             ),
+            web.get("/clips/review/thumb-abc123.webp", response_handler),
         ],
     )
 
@@ -342,7 +343,7 @@ async def test_notifications_proxy_view_review_thumbnail(
     unauthenticated_hass_client = await hass_client_no_auth()
 
     resp = await unauthenticated_hass_client.get(
-        "/api/frigate/notifications/event_id/review_thumbnail.webp"
+        "/api/frigate/notifications/event_id/camera_name/review_thumbnail.webp"
     )
     assert resp.status == HTTPStatus.OK
 
@@ -874,5 +875,49 @@ async def test_go2rtc_api_proxy_view(
     # Test with invalid instance ID
     resp = await authenticated_hass_client.get(
         "/api/frigate/NOT_A_REAL_ID/go2rtc/api/streams"
+    )
+    assert resp.status == HTTPStatus.NOT_FOUND
+
+
+async def test_review_clips_proxy_view(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test review clips proxy."""
+
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/review/thumb-abc123.webp"
+    )
+    assert resp.status == HTTPStatus.OK
+
+    resp = await authenticated_hass_client.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/not_present.webp"
+    )
+    assert resp.status == HTTPStatus.NOT_FOUND
+
+
+async def test_review_clips_with_frigate_instance_id(
+    local_frigate: Any,
+    hass_client: Any,
+    hass: Any,
+) -> None:
+    """Test review clips with config entry ids."""
+
+    frigate_entries = hass.config_entries.async_entries(DOMAIN)
+    assert frigate_entries
+
+    authenticated_hass_client = await hass_client()
+
+    # A Frigate instance id is specified.
+    resp = await authenticated_hass_client.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/clips/review/thumb-abc123.webp"
+    )
+    assert resp.status == HTTPStatus.OK
+
+    # An invalid instance id is specified.
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/NOT_A_REAL_ID/clips/review/thumb-abc123.webp"
     )
     assert resp.status == HTTPStatus.NOT_FOUND
