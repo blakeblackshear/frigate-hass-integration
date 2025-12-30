@@ -162,6 +162,47 @@ async def test_views_ssl_context(
     assert hass.data.get("frigate_views_registered") is True
 
 
+@pytest.mark.parametrize("validate_ssl", [True, False])
+async def test_get_ssl_context_function(validate_ssl: bool) -> None:
+    """Test _get_ssl_context function with different SSL validation settings."""
+    from custom_components.frigate.views import _get_ssl_context
+
+    ssl_context = _get_ssl_context(validate_ssl)
+
+    if validate_ssl:
+        # When validation is enabled, should return None (use default SSL context)
+        assert ssl_context is None
+    else:
+        # When validation is disabled, should return a context with verification disabled
+        assert ssl_context is not None
+        assert isinstance(ssl_context, ssl.SSLContext)
+        assert ssl_context.check_hostname is False
+        assert ssl_context.verify_mode == ssl.CERT_NONE
+
+
+async def test_get_ssl_context_for_request_no_config_entry(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+) -> None:
+    """Test _get_ssl_context_for_request when no config entry is found."""
+    from custom_components.frigate.views import SnapshotsProxyView
+    from homeassistant.components.http.const import KEY_HASS
+
+    # Create a mock request with hass but no frigate config entries
+    mock_request = AsyncMock(spec=web.Request)
+    mock_request.app = {KEY_HASS: hass}
+
+    # Create a view instance and test the method
+    view = SnapshotsProxyView()
+    ssl_context = view._get_ssl_context_for_request(mock_request)
+
+    # When no config entry is found, should return a permissive SSL context
+    assert ssl_context is not None
+    assert isinstance(ssl_context, ssl.SSLContext)
+    assert ssl_context.check_hostname is False
+    assert ssl_context.verify_mode == ssl.CERT_NONE
+
+
 async def test_vod_segment_proxy_unauthorized(
     hass: HomeAssistant,
     hass_access_token: Any,
