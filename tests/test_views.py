@@ -192,9 +192,13 @@ async def test_get_ssl_context_for_request_no_config_entry(
     mock_request = AsyncMock(spec=web.Request)
     mock_request.app = {KEY_HASS: hass}
 
-    # Create a view instance and test the method
-    view = SnapshotsProxyView()
-    ssl_context = view._get_ssl_context_for_request(mock_request)
+    # Create a view instance with a mock websession
+    mock_websession = AsyncMock()
+    view = SnapshotsProxyView(mock_websession)
+
+    # Patch _get_config_entry_for_request to return None
+    with patch.object(view, "_get_config_entry_for_request", return_value=None):
+        ssl_context = view._get_ssl_context_for_request(mock_request)
 
     # When no config entry is found, should return a permissive SSL context
     assert ssl_context is not None
