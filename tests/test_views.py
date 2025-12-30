@@ -147,36 +147,19 @@ async def test_views_ssl_context(
     validate_ssl: bool,
 ) -> None:
     """Test views setup with different SSL settings."""
-    # Import the views module so we can inspect and control module-level state.
-    import custom_components.frigate.views as views
-
-    # Save/restore module state to avoid affecting other tests.
-    original_ssl_context = views.ssl_context
-    try:
-        # Ensure a known non-None starting state so the test is deterministic.
-        views.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
-        # Patch the clientsession factory and verify it's called with the expected flag.
-        with patch("custom_components.frigate.views.async_get_clientsession") as (
-            mock_get_session
-        ):
-            async_setup(hass, validate_ssl)
-            mock_get_session.assert_called_once_with(hass, verify_ssl=validate_ssl)
-
-        # When SSL validation is requested, the module should set `ssl_context` to None.
-        if validate_ssl:
-            assert views.ssl_context is None
-        else:
-            assert views.ssl_context is not None
-
-        # Views registration flag should be set.
-        assert hass.data.get("frigate_views_registered") is True
-
-        # Calling setup again should be idempotent and not raise.
+    # Patch the clientsession factory and verify it's called with the expected flag.
+    with patch("custom_components.frigate.views.async_get_clientsession") as (
+        mock_get_session
+    ):
         async_setup(hass, validate_ssl)
-        assert hass.data.get("frigate_views_registered") is True
-    finally:
-        views.ssl_context = original_ssl_context
+        mock_get_session.assert_called_once_with(hass, verify_ssl=validate_ssl)
+
+    # Views registration flag should be set.
+    assert hass.data.get("frigate_views_registered") is True
+
+    # Calling setup again should be idempotent and not raise.
+    async_setup(hass, validate_ssl)
+    assert hass.data.get("frigate_views_registered") is True
 
 
 async def test_vod_segment_proxy_unauthorized(

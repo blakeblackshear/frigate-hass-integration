@@ -172,7 +172,6 @@ class FrigateProxyViewMixin:
         Returns:
             SSL context (with verification disabled) or None (to validate SSL).
         """
-        hass = request.app[KEY_HASS]
         config_entry = self._get_config_entry_for_request(
             request, frigate_instance_id=frigate_instance_id
         )
