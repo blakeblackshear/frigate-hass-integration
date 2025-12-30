@@ -41,12 +41,6 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
-# Disable certificate verification
-ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
-
 
 def get_default_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
     """Get the default Frigate config entry.
@@ -121,12 +115,26 @@ def get_frigate_instance_id_for_config_entry(
     return get_frigate_instance_id(config) if config else None
 
 
+def _get_ssl_context(validate_ssl: bool) -> ssl.SSLContext | None:
+    """Get SSL context based on validation setting.
+
+    Args:
+        validate_ssl: Whether to validate SSL certificates.
+
+    Returns:
+        SSL context that disables verification, or None if validation is enabled.
+    """
+    if validate_ssl:
+        return None
+
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
 def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
     """Set up the views."""
-    if validate_ssl:
-        global ssl_context
-        ssl_context = None  # type: ignore[assignment]
-
     session = async_get_clientsession(hass, verify_ssl=validate_ssl)
 
     # FIX: Only register views once
@@ -145,6 +153,42 @@ def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
 
 class FrigateProxyViewMixin:
     """A mixin for proxying Frigate."""
+
+    def _get_ssl_context_for_request(
+        self, request: web.Request, frigate_instance_id: str | None = None
+    ) -> ssl.SSLContext | None:
+        """Get the SSL context for a specific Frigate instance.
+
+        Each Frigate instance can have different SSL validation settings.
+        This method retrieves the appropriate SSL context based on the instance.
+
+        Args:
+            request: The HTTP request.
+            frigate_instance_id: Optional Frigate instance ID. If not provided,
+                the default instance is used.
+
+        Returns:
+            SSL context (with verification disabled) or None (to validate SSL).
+        """
+        hass = request.app[KEY_HASS]
+        config_entry = self._get_config_entry_for_request(
+            request, frigate_instance_id=frigate_instance_id
+        )
+
+        if not config_entry:
+            # If no config entry found, create a permissive SSL context
+            # (disable verification) as a fallback
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            return context
+
+        # Check if this instance has SSL validation enabled
+        # For now, we check the config entry's data for any SSL settings.
+        # If not specified, we default to permissive (disable verification)
+        validate_ssl = config_entry.data.get("validate_ssl", False)
+
+        return _get_ssl_context(validate_ssl)
 
     def _get_query_params(self, request: web.Request) -> Mapping[str, str]:
         """Get the query params to send upstream."""
@@ -228,7 +272,9 @@ class SnapshotsProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -253,7 +299,9 @@ class RecordingProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -274,7 +322,9 @@ class ThumbnailsProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -336,7 +386,9 @@ class NotificationsProxyView(FrigateProxyView):
             ),
             allow_unauthenticated=True,
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -404,7 +456,9 @@ class VodProxyView(FrigateProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -430,7 +484,9 @@ class VodSegmentProxyView(FrigateProxyView):
             ),
             allow_unauthenticated=True,
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -478,7 +534,9 @@ class JSMPEGProxyView(FrigateWebsocketProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -500,7 +558,9 @@ class MSEProxyView(FrigateWebsocketProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
 
@@ -522,6 +582,8 @@ class WebRTCProxyView(FrigateWebsocketProxyView):
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
-            ssl_context=ssl_context,
+            ssl_context=self._get_ssl_context_for_request(
+                request, frigate_instance_id=kwargs.get("frigate_instance_id")
+            ),
             query_params=self._get_query_params(request),
         )
