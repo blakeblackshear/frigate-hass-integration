@@ -67,6 +67,7 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/vod/event/event_id/master.m3u8", response_handler),
             web.get("/api/events/event_id/preview.gif", response_handler),
             web.get("/api/review/event_id/preview", response_handler),
+            web.get("/clips/review/thumb-event_id.webp", response_handler),
             web.get(
                 "/api/events/1577854800.123456-random/snapshot.jpg", response_handler
             ),
@@ -82,6 +83,8 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/live/mse/querystring", ws_response_handler),
             web.get("/live/webrtc/front_door", ws_response_handler),
             web.get("/live/webrtc/querystring", ws_response_handler),
+            web.get("/api/go2rtc/api/streams", response_handler),
+            web.get("/api/go2rtc/api/ws", ws_response_handler),
             web.get(
                 "/api/front_door/start/1664067600.02/end/1664068200.03/clip.mp4",
                 response_handler,
@@ -298,6 +301,20 @@ async def test_notifications_proxy_view_review_preview(
 
     resp = await unauthenticated_hass_client.get(
         "/api/frigate/notifications/event_id/review_preview.gif"
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_notifications_proxy_view_review_thumbnail(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test notification review thumbnail."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        "/api/frigate/notifications/event_id/review_thumbnail.webp"
     )
     assert resp.status == HTTPStatus.OK
 
@@ -786,3 +803,48 @@ async def test_auth_headers_are_sent_to_frigate_server(
 
     data = await resp.json()
     assert data["headers"]["Authorization"] == "Bearer token 2"
+
+
+async def test_go2rtc_api_ws_proxy_view(
+    hass: Any,
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test Go2RTC API websocket proxying."""
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/go2rtc/ws/api/ws"
+    ) as ws:
+        # First message from the fixture will be the URL and headers.
+        request = await ws.receive_json()
+        assert request["url"].endswith("/api/go2rtc/api/ws")
+
+        # Subsequent messages will echo back.
+        await ws.send_str("Hello!")
+        assert (await ws.receive_str()) == "Hello!"
+
+
+async def test_go2rtc_api_proxy_view(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test Go2RTC API HTTP proxying."""
+
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/go2rtc/api/streams"
+    )
+    assert resp.status == HTTPStatus.OK
+
+    # Test with default Frigate instance (no instance ID specified)
+    resp = await authenticated_hass_client.get("/api/frigate/go2rtc/api/streams")
+    assert resp.status == HTTPStatus.OK
+
+    # Test with invalid instance ID
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/NOT_A_REAL_ID/go2rtc/api/streams"
+    )
+    assert resp.status == HTTPStatus.NOT_FOUND

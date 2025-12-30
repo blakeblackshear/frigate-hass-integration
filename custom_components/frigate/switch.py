@@ -20,6 +20,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    verify_frigate_version,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
 from .icons import get_icon_from_switch
@@ -42,6 +43,22 @@ async def async_setup_entry(
                 FrigateSwitch(entry, frigate_config, camera, "recordings", True),
                 FrigateSwitch(entry, frigate_config, camera, "snapshots", True),
                 FrigateSwitch(entry, frigate_config, camera, "improve_contrast", False),
+                FrigateSwitch(
+                    entry,
+                    frigate_config,
+                    camera,
+                    "review_alerts",
+                    True,
+                    "review_alerts",
+                ),
+                FrigateSwitch(
+                    entry,
+                    frigate_config,
+                    camera,
+                    "review_detections",
+                    True,
+                    "review_detections",
+                ),
             ]
         )
 
@@ -71,6 +88,27 @@ async def async_setup_entry(
                     True,
                     "ptz_autotracker",
                 ),
+            )
+
+        # GenAI switches require Frigate 0.17+
+        if verify_frigate_version(frigate_config, "0.17"):
+            entities.extend(
+                [
+                    FrigateSwitch(
+                        entry,
+                        frigate_config,
+                        camera,
+                        "object_descriptions",
+                        False,
+                    ),
+                    FrigateSwitch(
+                        entry,
+                        frigate_config,
+                        camera,
+                        "review_descriptions",
+                        False,
+                    ),
+                ]
             )
 
     async_add_entities(entities)

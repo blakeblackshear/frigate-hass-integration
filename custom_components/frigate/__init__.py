@@ -15,6 +15,7 @@ import re
 from typing import Any, Final
 
 from awesomeversion import AwesomeVersion
+from titlecase import titlecase
 import voluptuous as vol
 
 from custom_components.frigate.config_flow import get_config_entry_title
@@ -111,7 +112,8 @@ def get_frigate_entity_unique_id(
 
 def get_friendly_name(name: str) -> str:
     """Get a friendly version of a name."""
-    return name.replace("_", " ").title()
+    result: str = titlecase(name.replace("_", " "))
+    return result
 
 
 def get_cameras(config: dict[str, Any]) -> set[str]:
@@ -181,6 +183,44 @@ def get_classification_models_and_cameras(
                 model_cameras.add((camera_name, model_key))
 
     return model_cameras
+
+
+def get_object_classification_models_and_cameras(
+    config: dict[str, Any],
+) -> set[tuple[str, str]]:
+    """Get object classification models and cameras tuples."""
+    model_cameras = set()
+    classification_config = config.get("classification", {}).get("custom", {})
+
+    for model_key, model_config in classification_config.items():
+        object_config = model_config.get("object_config")
+
+        if object_config:
+            # Get the objects this model classifies
+            objects_to_classify = object_config.get("objects", [])
+
+            # Find cameras that track these objects
+            for cam_name, cam_config in config.get("cameras", {}).items():
+                tracked_objects = cam_config.get("objects", {}).get("track", [])
+
+                # If any of the objects to classify are tracked by this camera, add it
+                if any(obj in tracked_objects for obj in objects_to_classify):
+                    model_cameras.add((cam_name, model_key))
+
+    return model_cameras
+
+
+def get_known_plates(config: dict[str, Any]) -> set[str]:
+    """Get known license plates from configuration."""
+    known_plates: set[str] = set()
+    lpr_config = config.get("lpr", {})
+
+    known_plates_config = lpr_config.get("known_plates", {})
+
+    if isinstance(known_plates_config, dict):
+        known_plates.update(known_plates_config.keys())
+
+    return known_plates
 
 
 def get_cameras_zones_and_objects(config: dict[str, Any]) -> set[tuple[str, str]]:

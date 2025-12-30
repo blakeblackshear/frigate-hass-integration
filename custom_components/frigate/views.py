@@ -142,6 +142,8 @@ def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
         hass.http.register_view(JSMPEGProxyView(session))
         hass.http.register_view(MSEProxyView(session))
         hass.http.register_view(WebRTCProxyView(session))
+        hass.http.register_view(Go2RTCAPIWebsocketProxyView(session))
+        hass.http.register_view(Go2RTCAPIProxyView(session))
         hass.http.register_view(NotificationsProxyView(session))
         hass.http.register_view(SnapshotsProxyView(session))
         hass.http.register_view(RecordingProxyView(session))
@@ -365,6 +367,8 @@ class NotificationsProxyView(FrigateProxyView):
             url_path = f"api/events/{event_id}/preview.gif"
         elif path.endswith("review_preview.gif"):
             url_path = f"api/review/{event_id}/preview"
+        elif path.endswith("review_thumbnail.webp"):
+            url_path = f"clips/review/thumb-{event_id}.webp"
         elif (
             path.endswith(".m3u8")
             or path.endswith(".ts")
@@ -542,7 +546,11 @@ class JSMPEGProxyView(FrigateWebsocketProxyView):
 
 
 class MSEProxyView(FrigateWebsocketProxyView):
-    """A proxy for MSE websocket."""
+    """A proxy for MSE websocket.
+
+    Note: This path is deprecated and may be removed in future versions. Please use
+    Go2RTCAPIWebsocketProxyView instead
+    """
 
     url = "/api/frigate/{frigate_instance_id:.+}/mse/{path:.+}"
     extra_urls = ["/api/frigate/mse/{path:.+}"]
@@ -587,3 +595,37 @@ class WebRTCProxyView(FrigateWebsocketProxyView):
             ),
             query_params=self._get_query_params(request),
         )
+
+
+class Go2RTCAPIBaseProxyView(FrigateProxyViewMixin):
+    """A base class for go2rtc proxy views."""
+
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"api/go2rtc/{kwargs['path']}",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            headers=kwargs["headers"],
+            query_params=self._get_query_params(request),
+        )
+
+
+class Go2RTCAPIWebsocketProxyView(Go2RTCAPIBaseProxyView, FrigateWebsocketProxyView):
+    """A proxy for go2rtc API (websocket)."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/go2rtc/ws/{path:.*}"
+    extra_urls = ["/api/frigate/go2rtc/ws/{path:.*}"]
+
+    name = "api:frigate:go2rtc:ws"
+
+
+class Go2RTCAPIProxyView(Go2RTCAPIBaseProxyView, FrigateProxyView):
+    """A proxy for go2rtc API (http)."""
+
+    url = "/api/frigate/{frigate_instance_id:.+}/go2rtc/{path:.*}"
+    extra_urls = ["/api/frigate/go2rtc/{path:.*}"]
+
+    name = "api:frigate:go2rtc"

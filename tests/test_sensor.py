@@ -58,12 +58,18 @@ from . import (
     TEST_SENSOR_FRONT_DOOR_DETECTION_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE,
     TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID,
+    TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION,
     TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_PROCESS_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE,
     TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE,
+    TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS,
     TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID,
+    TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON,
+    TEST_SENSOR_GLOBAL_CLASSIFICATION_RED_SHIRT,
+    TEST_SENSOR_GLOBAL_FACE_BOB,
+    TEST_SENSOR_GLOBAL_PLATE_ABC123,
     TEST_SENSOR_GPU_LOAD_ENTITY_ID,
     TEST_SENSOR_STEPS_ALL_ACTIVE_ENTITY_ID,
     TEST_SENSOR_STEPS_ALL_ENTITY_ID,
@@ -688,6 +694,10 @@ async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
             TEST_SENSOR_FRONT_DOOR_SKIPPED_FPS_ENTITY_ID,
             f"{TEST_CONFIG_ENTRY_ID}:sensor_fps:front_door_skipped",
         ),
+        (
+            TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS,
+            f"{TEST_CONFIG_ENTRY_ID}:sensor_review_status:front_door",
+        ),
     ],
 )
 async def test_camera_unique_id(
@@ -1022,3 +1032,601 @@ async def test_classification_sensor_state_restoration_skips_invalid(
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_COLOR_CLASSIFICATION)
         assert entity_state
         assert entity_state.state == "Unknown"
+
+
+async def test_object_classification_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateObjectClassificationSensor state."""
+    with patch(
+        "custom_components.frigate.sensor.async_call_later"
+    ) as mock_async_call_later:
+        await setup_mock_frigate_config_entry(hass)
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "unavailable"
+
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        # Test with sub_label
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "id": "1607123955.475377-mxklsc",
+                    "camera": "front_door",
+                    "timestamp": 1607123958.748393,
+                    "model": "person_classifier",
+                    "sub_label": "delivery_person",
+                    "score": 0.87,
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Delivery Person"
+
+        # Assert that async_call_later was called
+        mock_async_call_later.assert_called_once()
+
+        # Test that other camera update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "not_front_door",
+                    "model": "person_classifier",
+                    "sub_label": "test",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Delivery Person"
+
+        # Test that other model update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "front_door",
+                    "model": "other_model",
+                    "sub_label": "test",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Delivery Person"
+
+        # Test that other type update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "face",
+                    "camera": "front_door",
+                    "model": "person_classifier",
+                    "sub_label": "test",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Delivery Person"
+
+        # Test with attribute instead of sub_label
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "id": "1607123955.475377-mxklsc",
+                    "camera": "front_door",
+                    "timestamp": 1607123958.748393,
+                    "model": "person_classifier",
+                    "attribute": "yes",
+                    "score": 0.92,
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Yes"
+
+        # Test bad value
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            "something",
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Yes"
+
+        # Test message without sub_label or attribute
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "front_door",
+                    "model": "person_classifier",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "Yes"
+
+        # Ensure that clearing the value works
+        last_call_args, _ = mock_async_call_later.call_args_list[-1]
+        callable_to_execute = last_call_args[2]
+        callable_to_execute(datetime.datetime.now())
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+        )
+        assert entity_state
+        assert entity_state.state == "None"
+
+
+async def test_object_classification_sensor_attributes(hass: HomeAssistant) -> None:
+    """Test FrigateObjectClassificationSensor attributes."""
+    await setup_mock_frigate_config_entry(hass)
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(
+        TEST_SENSOR_FRONT_DOOR_PERSON_CLASSIFIER_OBJECT_CLASSIFICATION
+    )
+    assert entity_state
+    assert entity_state.name == "Front Door Person Classifier Object Classification"
+    assert entity_state.attributes["icon"] == "mdi:tag-text"
+    assert (
+        entity_state.attributes["friendly_name"]
+        == "Front Door Person Classifier Object Classification"
+    )
+
+
+async def test_review_status_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateReviewStatusSensor state."""
+    await setup_mock_frigate_config_entry(hass)
+
+    # Check that review status sensor exists
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "unavailable"
+
+    # Make MQTT available
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    # Initial state should be unknown (None value)
+    assert entity_state.state == "unknown"
+
+    # Send NONE status
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "NONE")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "NONE"
+
+    # Send DETECTION status
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "DETECTION")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "DETECTION"
+
+    # Send ALERT status
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "ALERT")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "ALERT"
+
+    # Send NONE again
+    async_fire_mqtt_message(hass, "frigate/front_door/review_status", "NONE")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.state == "NONE"
+
+
+async def test_review_status_sensor_attributes(hass: HomeAssistant) -> None:
+    """Test FrigateReviewStatusSensor attributes."""
+    await setup_mock_frigate_config_entry(hass)
+    async_fire_mqtt_message(hass, "frigate/available", "online")
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_REVIEW_STATUS)
+    assert entity_state
+    assert entity_state.name == "Front Door Review Status"
+    assert entity_state.attributes["icon"] == "mdi:eye-check"
+    assert entity_state.attributes["friendly_name"] == "Front Door Review Status"
+
+
+async def test_global_face_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateGlobalFaceSensor state."""
+    # Patch async_call_later to prevent timer interference from per-camera
+    # FrigateRecognizedFaceSensor which creates timers that linger after test teardown
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass)
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_FACE_BOB)
+        assert entity_state
+        assert entity_state.state == "unavailable"
+
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        # Test face detection on front_door camera
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "face", "camera": "front_door", "name": "bob"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_FACE_BOB)
+        assert entity_state
+        assert entity_state.state == "Front Door"
+
+        # Test face detection on different camera
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "face", "camera": "steps", "name": "bob"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_FACE_BOB)
+        assert entity_state
+        assert entity_state.state == "Steps"
+
+        # Test that other face is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "face", "camera": "front_door", "name": "alice"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_FACE_BOB)
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+        # Test that other type update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "lpr", "camera": "front_door", "name": "bob"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_FACE_BOB)
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+
+async def test_global_plate_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateGlobalPlateSensor state."""
+    # Patch async_call_later to prevent timer interference from per-camera
+    # FrigateRecognizedPlateSensor which creates timers that linger after test teardown
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass)
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_PLATE_ABC123)
+        assert entity_state
+        assert entity_state.state == "unavailable"
+
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        # Test plate detection on front_door camera
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "lpr", "camera": "front_door", "name": "ABC123"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_PLATE_ABC123)
+        assert entity_state
+        assert entity_state.state == "Front Door"
+
+        # Test plate detection on different camera
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "lpr", "camera": "steps", "name": "ABC123"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_PLATE_ABC123)
+        assert entity_state
+        assert entity_state.state == "Steps"
+
+        # Test that other plate is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "lpr", "camera": "front_door", "name": "XYZ789"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_PLATE_ABC123)
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+        # Test that other type update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps({"type": "face", "camera": "front_door", "name": "ABC123"}),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_PLATE_ABC123)
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+
+async def test_global_object_classification_sensor(hass: HomeAssistant) -> None:
+    """Test FrigateGlobalObjectClassificationSensor state."""
+    # Patch async_call_later to prevent timer interference from per-camera
+    # FrigateObjectClassificationSensor which creates timers that linger after test teardown
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass)
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON
+        )
+        assert entity_state
+        assert entity_state.state == "unavailable"
+
+        async_fire_mqtt_message(hass, "frigate/available", "online")
+        await hass.async_block_till_done()
+
+        # Test classification detection on front_door camera with sub_label
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "front_door",
+                    "model": "person_classifier",
+                    "sub_label": "delivery_person",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON
+        )
+        assert entity_state
+        assert entity_state.state == "Front Door"
+
+        # Test classification detection on different camera
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "steps",
+                    "model": "person_classifier",
+                    "sub_label": "delivery_person",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON
+        )
+        assert entity_state
+        assert entity_state.state == "Steps"
+
+        # Test that other classification is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "front_door",
+                    "model": "person_classifier",
+                    "sub_label": "red_shirt",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON
+        )
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+        # Test that other model update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "front_door",
+                    "model": "other_model",
+                    "sub_label": "delivery_person",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON
+        )
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+        # Test that other type update is not picked up
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "face",
+                    "camera": "front_door",
+                    "model": "person_classifier",
+                    "sub_label": "delivery_person",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(
+            TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON
+        )
+        assert entity_state
+        assert entity_state.state == "Steps"  # Should still be Steps
+
+        # Test with attribute instead of sub_label
+        async_fire_mqtt_message(
+            hass,
+            "frigate/tracked_object_update",
+            json.dumps(
+                {
+                    "type": "classification",
+                    "camera": "front_door",
+                    "model": "person_classifier",
+                    "attribute": "red_shirt",
+                }
+            ),
+        )
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(TEST_SENSOR_GLOBAL_CLASSIFICATION_RED_SHIRT)
+        assert entity_state
+        assert entity_state.state == "Front Door"
+
+
+async def test_global_face_sensor_api_error(hass: HomeAssistant) -> None:
+    """Test that global face sensors handle API errors gracefully."""
+    client = create_mock_frigate_client()
+    # Make API call raise an error
+    client.async_get_faces = AsyncMock(side_effect=Exception("API Error"))
+
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass, client=client)
+
+        # Verify no global face sensors were created due to API error
+        registry = er.async_get(hass)
+        unique_id = f"{TEST_CONFIG_ENTRY_ID}:sensor_global_face:bob"
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        assert entity_id is None
+
+
+async def test_global_object_classification_sensor_api_error(
+    hass: HomeAssistant,
+) -> None:
+    """Test that global object classification sensors handle API errors gracefully."""
+    client = create_mock_frigate_client()
+    # Make API call raise an error
+    client.async_get_classification_model_classes = AsyncMock(
+        side_effect=Exception("API Error")
+    )
+
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass, client=client)
+
+        # Verify no global classification sensors were created due to API error
+        registry = er.async_get(hass)
+        unique_id = f"{TEST_CONFIG_ENTRY_ID}:sensor_global_object_classification:person_classifier_delivery_person"
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        assert entity_id is None
+
+
+async def test_global_face_sensor_disabled_feature(hass: HomeAssistant) -> None:
+    """Test that global face sensors are not created when face_recognition is disabled."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["face_recognition"]["enabled"] = False
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass, client=client)
+
+        # Verify no global face sensors were created when feature is disabled
+        registry = er.async_get(hass)
+        unique_id = f"{TEST_CONFIG_ENTRY_ID}:sensor_global_face:bob"
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        assert entity_id is None
+
+
+async def test_global_plate_sensor_disabled_feature(hass: HomeAssistant) -> None:
+    """Test that global plate sensors are not created when lpr is disabled."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["lpr"]["enabled"] = False
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+
+    with patch("custom_components.frigate.sensor.async_call_later"):
+        await setup_mock_frigate_config_entry(hass, client=client)
+
+        # Verify no global plate sensors were created when feature is disabled
+        registry = er.async_get(hass)
+        unique_id = f"{TEST_CONFIG_ENTRY_ID}:sensor_global_plate:abc123"
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        assert entity_id is None
