@@ -85,3 +85,35 @@ async def test_cameras_setup_correctly_in_registry(
             TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID,
         },
     )
+
+
+async def test_lite_mode_filters_image_entities(hass: HomeAssistant) -> None:
+    """Test that lite mode filters out individual object image entities."""
+    from . import create_mock_frigate_config_entry
+    from custom_components.frigate.const import CONF_LITE_MODE
+
+    # Create config entry with lite mode enabled
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_LITE_MODE: True}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    # Verify individual object image entities were NOT created
+    entity_state = hass.states.get(TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
+    assert entity_state is None
+
+
+async def test_normal_mode_creates_image_entities(hass: HomeAssistant) -> None:
+    """Test that normal mode (lite mode disabled) creates image entities."""
+    from . import create_mock_frigate_config_entry
+    from custom_components.frigate.const import CONF_LITE_MODE
+
+    # Create config entry with lite mode explicitly disabled
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_LITE_MODE: False}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    # Verify individual object image entities WERE created
+    entity_state = hass.states.get(TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
+    assert entity_state is not None

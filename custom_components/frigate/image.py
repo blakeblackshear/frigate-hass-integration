@@ -21,7 +21,7 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
 )
-from .const import ATTR_CONFIG, DOMAIN, NAME
+from .const import ATTR_CONFIG, CONF_LITE_MODE, DOMAIN, NAME
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -32,13 +32,16 @@ async def async_setup_entry(
     """Image entry setup."""
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    lite_mode = entry.options.get(CONF_LITE_MODE, False)
 
-    async_add_entities(
-        [
-            FrigateMqttSnapshots(hass, entry, frigate_config, cam_name, obj_name)
-            for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
-        ]
-    )
+    # In lite mode, don't create individual object image entities
+    if not lite_mode:
+        async_add_entities(
+            [
+                FrigateMqttSnapshots(hass, entry, frigate_config, cam_name, obj_name)
+                for cam_name, obj_name in get_cameras_and_objects(frigate_config, False)
+            ]
+        )
 
 
 class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
