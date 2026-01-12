@@ -28,7 +28,7 @@ from . import (
     get_frigate_entity_unique_id,
     get_zones,
 )
-from .const import ATTR_CONFIG, DOMAIN, NAME
+from .const import ATTR_CONFIG, CONF_LITE_MODE, DOMAIN, NAME
 from .icons import get_dynamic_icon_from_type
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -39,15 +39,26 @@ async def async_setup_entry(
 ) -> None:
     """Binary sensor entry setup."""
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    lite_mode = entry.options.get(CONF_LITE_MODE, False)
     entities: list[FrigateEntity] = []
 
     # Add object sensors for cameras and zones.
-    entities.extend(
-        [
-            FrigateObjectOccupancySensor(entry, frigate_config, cam_name, obj)
-            for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
-        ]
-    )
+    # In lite mode, only create sensors for "all" objects
+    if lite_mode:
+        entities.extend(
+            [
+                FrigateObjectOccupancySensor(entry, frigate_config, cam_name, obj)
+                for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+                if obj == "all"
+            ]
+        )
+    else:
+        entities.extend(
+            [
+                FrigateObjectOccupancySensor(entry, frigate_config, cam_name, obj)
+                for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+            ]
+        )
 
     # Add audio sensors for cameras.
     entities.extend(

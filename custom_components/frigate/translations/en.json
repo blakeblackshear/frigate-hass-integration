@@ -23,6 +23,7 @@
     "step": {
       "init": {
         "data": {
+          "lite_mode": "Lite mode (only create 'All' object sensors)",
           "enable_webrtc": "Use Frigate-native WebRTC support",
           "rtsp_url_template": "RTSP URL template (see documentation)",
           "media_browser_enable": "Enable the media browser",

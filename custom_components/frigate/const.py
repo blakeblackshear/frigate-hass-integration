@@ -49,6 +49,7 @@ ATTR_INCLUDE_RECORDING = "include_recording"
 ATTR_NAME = "name"
 
 # Configuration and options
+CONF_LITE_MODE = "lite_mode"
 CONF_MEDIA_BROWSER_ENABLE = "media_browser_enable"
 CONF_NOTIFICATION_PROXY_ENABLE = "notification_proxy_enable"
 CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS = "notification_proxy_expire_after_seconds"

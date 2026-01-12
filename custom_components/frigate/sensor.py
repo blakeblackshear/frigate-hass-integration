@@ -44,7 +44,16 @@ from . import (
     get_zones,
     verify_frigate_version,
 )
-from .const import ATTR_CLIENT, ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
+from .const import (
+    ATTR_CLIENT,
+    ATTR_CONFIG,
+    ATTR_COORDINATOR,
+    CONF_LITE_MODE,
+    DOMAIN,
+    FPS,
+    MS,
+    NAME,
+)
 from .icons import (
     ICON_CORAL,
     ICON_FACE,
@@ -185,24 +194,45 @@ async def async_setup_entry(
                     entities.append(CameraSoundSensor(coordinator, entry, name))
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
+    lite_mode = entry.options.get(CONF_LITE_MODE, False)
+    
     entities.extend(
         [
             FrigateReviewStatusSensor(entry, frigate_config, cam_name)
             for cam_name in get_cameras(frigate_config)
         ]
     )
-    entities.extend(
-        [
-            FrigateObjectCountSensor(entry, frigate_config, cam_name, obj)
-            for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
-        ]
-    )
-    entities.extend(
-        [
-            FrigateActiveObjectCountSensor(entry, frigate_config, cam_name, obj)
-            for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
-        ]
-    )
+    
+    # In lite mode, only create sensors for "all" objects
+    # Otherwise, create sensors for all object types
+    if lite_mode:
+        entities.extend(
+            [
+                FrigateObjectCountSensor(entry, frigate_config, cam_name, obj)
+                for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+                if obj == "all"
+            ]
+        )
+        entities.extend(
+            [
+                FrigateActiveObjectCountSensor(entry, frigate_config, cam_name, obj)
+                for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+                if obj == "all"
+            ]
+        )
+    else:
+        entities.extend(
+            [
+                FrigateObjectCountSensor(entry, frigate_config, cam_name, obj)
+                for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+            ]
+        )
+        entities.extend(
+            [
+                FrigateActiveObjectCountSensor(entry, frigate_config, cam_name, obj)
+                for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+            ]
+        )
 
     if verify_frigate_version(frigate_config, "0.16"):
         if frigate_config.get("face_recognition", {}).get("enabled"):
