@@ -195,14 +195,14 @@ async def async_setup_entry(
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     lite_mode = entry.options.get(CONF_LITE_MODE, False)
-    
+
     entities.extend(
         [
             FrigateReviewStatusSensor(entry, frigate_config, cam_name)
             for cam_name in get_cameras(frigate_config)
         ]
     )
-    
+
     # In lite mode, only create sensors for "all" objects
     # Otherwise, create sensors for all object types
     if lite_mode:
