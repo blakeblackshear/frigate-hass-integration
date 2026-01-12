@@ -222,3 +222,51 @@ async def test_binary_sensors_setup_correctly_in_registry(
             TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID,
         },
     )
+
+
+async def test_lite_mode_filters_occupancy_sensors(hass: HomeAssistant) -> None:
+    """Test that lite mode only creates 'all' occupancy sensors."""
+    from . import create_mock_frigate_config_entry
+    from custom_components.frigate.const import CONF_LITE_MODE
+
+    # Create config entry with lite mode enabled
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_LITE_MODE: True}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    # Verify "all" occupancy sensors were created
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID)
+    assert entity_state is not None
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_STEPS_ALL_OCCUPANCY_ENTITY_ID)
+    assert entity_state is not None
+
+    # Verify individual object occupancy sensors were NOT created
+    entity_state = hass.states.get(
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID
+    )
+    assert entity_state is None
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_STEPS_PERSON_OCCUPANCY_ENTITY_ID)
+    assert entity_state is None
+
+
+async def test_normal_mode_creates_all_occupancy_sensors(hass: HomeAssistant) -> None:
+    """Test that normal mode (lite mode disabled) creates all occupancy sensors."""
+    from . import create_mock_frigate_config_entry
+    from custom_components.frigate.const import CONF_LITE_MODE
+
+    # Create config entry with lite mode explicitly disabled
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_LITE_MODE: False}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    # Verify "all" occupancy sensors were created
+    entity_state = hass.states.get(TEST_BINARY_SENSOR_FRONT_DOOR_ALL_OCCUPANCY_ENTITY_ID)
+    assert entity_state is not None
+
+    # Verify individual object occupancy sensors WERE created
+    entity_state = hass.states.get(
+        TEST_BINARY_SENSOR_FRONT_DOOR_PERSON_OCCUPANCY_ENTITY_ID
+    )
+    assert entity_state is not None

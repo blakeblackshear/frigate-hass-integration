@@ -1630,3 +1630,57 @@ async def test_global_plate_sensor_disabled_feature(hass: HomeAssistant) -> None
         unique_id = f"{TEST_CONFIG_ENTRY_ID}:sensor_global_plate:abc123"
         entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
         assert entity_id is None
+
+
+async def test_lite_mode_filters_object_sensors(hass: HomeAssistant) -> None:
+    """Test that lite mode only creates 'all' object sensors."""
+    from custom_components.frigate.const import CONF_LITE_MODE
+
+    # Create config entry with lite mode enabled
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_LITE_MODE: True}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    # Verify "all" sensors were created
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID)
+    assert entity_state is not None
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID)
+    assert entity_state is not None
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_ALL_ENTITY_ID)
+    assert entity_state is not None
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_ALL_ACTIVE_ENTITY_ID)
+    assert entity_state is not None
+
+    # Verify individual object sensors were NOT created
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID)
+    assert entity_state is None
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state is None
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_PERSON_ENTITY_ID)
+    assert entity_state is None
+    entity_state = hass.states.get(TEST_SENSOR_STEPS_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state is None
+
+
+async def test_normal_mode_creates_all_object_sensors(hass: HomeAssistant) -> None:
+    """Test that normal mode (lite mode disabled) creates all object sensors."""
+    from custom_components.frigate.const import CONF_LITE_MODE
+
+    # Create config entry with lite mode explicitly disabled
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_LITE_MODE: False}
+    )
+    await setup_mock_frigate_config_entry(hass, config_entry=config_entry)
+
+    # Verify "all" sensors were created
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_ALL_ENTITY_ID)
+    assert entity_state is not None
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID)
+    assert entity_state is not None
+
+    # Verify individual object sensors WERE created
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID)
+    assert entity_state is not None
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state is not None
