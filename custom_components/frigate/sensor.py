@@ -144,6 +144,7 @@ async def async_setup_entry(
     frigate_config: dict[str, Any] = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
     coordinator = hass.data[DOMAIN][entry.entry_id][ATTR_COORDINATOR]
     client = hass.data[DOMAIN][entry.entry_id][ATTR_CLIENT]
+    lite_mode = entry.options.get(CONF_LITE_MODE, False)
 
     entities: list[FrigateEntity] = []
 
@@ -191,10 +192,11 @@ async def async_setup_entry(
                 )
 
                 if frigate_config["cameras"][name]["audio"]["enabled_in_config"]:
-                    entities.append(CameraSoundSensor(coordinator, entry, name))
+                    # In lite mode, don't create audio level sensors
+                    if not lite_mode:
+                        entities.append(CameraSoundSensor(coordinator, entry, name))
 
     frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
-    lite_mode = entry.options.get(CONF_LITE_MODE, False)
 
     entities.extend(
         [

@@ -1662,6 +1662,10 @@ async def test_lite_mode_filters_object_sensors(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_STEPS_PERSON_ACTIVE_ENTITY_ID)
     assert entity_state is None
 
+    # Verify sound level sensor was NOT created
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
+    assert entity_state is None
+
 
 async def test_normal_mode_creates_all_object_sensors(hass: HomeAssistant) -> None:
     """Test that normal mode (lite mode disabled) creates all object sensors."""
@@ -1683,4 +1687,8 @@ async def test_normal_mode_creates_all_object_sensors(hass: HomeAssistant) -> No
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID)
     assert entity_state is not None
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
+    assert entity_state is not None
+
+    # Verify sound level sensor WAS created
+    entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
     assert entity_state is not None

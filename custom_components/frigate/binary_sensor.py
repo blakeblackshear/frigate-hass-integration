@@ -61,12 +61,14 @@ async def async_setup_entry(
         )
 
     # Add audio sensors for cameras.
-    entities.extend(
-        [
-            FrigateAudioSensor(entry, frigate_config, cam_name, audio)
-            for cam_name, audio in get_cameras_and_audio(frigate_config)
-        ]
-    )
+    # In lite mode, don't create audio detection sensors
+    if not lite_mode:
+        entities.extend(
+            [
+                FrigateAudioSensor(entry, frigate_config, cam_name, audio)
+                for cam_name, audio in get_cameras_and_audio(frigate_config)
+            ]
+        )
 
     # Add generic motion sensors for cameras.
     entities.extend(
