@@ -196,8 +196,6 @@ async def async_setup_entry(
                     if not lite_mode:
                         entities.append(CameraSoundSensor(coordinator, entry, name))
 
-    frigate_config = hass.data[DOMAIN][entry.entry_id][ATTR_CONFIG]
-
     entities.extend(
         [
             FrigateReviewStatusSensor(entry, frigate_config, cam_name)
