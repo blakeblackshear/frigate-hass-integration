@@ -78,6 +78,7 @@ from . import (
     TEST_SERVER_VERSION,
     TEST_STATS,
     create_mock_frigate_client,
+    create_mock_frigate_config_entry,
     enable_and_load_entity,
     setup_mock_frigate_config_entry,
     verify_entities_are_setup_correctly_in_registry,
