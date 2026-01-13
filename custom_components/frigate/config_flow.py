@@ -164,13 +164,6 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_abort(reason="only_advanced_options")
 
         schema: dict[Any, Any] = {
-            vol.Optional(
-                CONF_LITE_MODE,
-                default=self._config_entry.options.get(
-                    CONF_LITE_MODE,
-                    False,
-                ),
-            ): bool,
             # Whether to enable Frigate-native WebRTC for camera streaming
             vol.Optional(
                 CONF_ENABLE_WEBRTC,
@@ -210,6 +203,15 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
                     0,
                 ),
             ): All(int, Range(min=0)),
+            # Lite mode is a simplified integration without individual detection entities
+            vol.Optional(
+                CONF_LITE_MODE,
+                default=self._config_entry.options.get(
+                    CONF_LITE_MODE,
+                    False,
+                ),
+            ): bool,
+
         }
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
