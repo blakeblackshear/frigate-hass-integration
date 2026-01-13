@@ -27,7 +27,8 @@
           "rtsp_url_template": "RTSP URL-mall (se dokumentation)",
           "media_browser_enable": "Aktivera medieläsaren",
           "notification_proxy_enable": "Aktivera proxy för oautentiserade aviseringshändelser",
-          "notification_proxy_expire_after_seconds": "Tillåt inte åtkomst till oautentiserade aviseringar efter sekunder (0=aldrig)"
+          "notification_proxy_expire_after_seconds": "Tillåt inte åtkomst till oautentiserade aviseringar efter sekunder (0=aldrig)",
+          "lite_mode": "Skapa bara grundläggande kamerarenheter"
         }
       }
     },

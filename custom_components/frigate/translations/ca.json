@@ -23,7 +23,8 @@
           "rtsp_url_template": "Plantilla de l'URL del RTSP (vegeu la documentació)",
           "media_browser_enable": "Habiliteu el navegador multimèdia",
           "notification_proxy_enable": "Habiliteu el servidor intermediari no autenticat d'esdeveniments de notificacions",
-          "notification_proxy_expire_after_seconds": "No permetre l'accés a notificacions no autenticades després dels segons especificats (0=mai)"
+          "notification_proxy_expire_after_seconds": "No permetre l'accés a notificacions no autenticades després dels segons especificats (0=mai)",
+          "lite_mode": "Només crea entitats bàsiques de càmera"
         }
       }
     },

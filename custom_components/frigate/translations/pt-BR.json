@@ -23,7 +23,8 @@
           "rtsp_url_template": "Modelo de URL RTSP (consulte a documentação)",
           "notification_proxy_enable": "Habilitar o proxy de evento de notificação não autenticado",
           "notification_proxy_expire_after_seconds": "Proibir acesso de notificação não autenticado após segundos (0=nunca)",
-          "media_browser_enable": "Ative o navegador de mídia"
+          "media_browser_enable": "Ative o navegador de mídia",
+          "lite_mode": "Criar apenas entidades básicas de câmera"
         }
       }
     },

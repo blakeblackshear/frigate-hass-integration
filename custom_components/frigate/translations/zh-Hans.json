@@ -27,7 +27,8 @@
           "rtsp_url_template": "RTSP URL 模板（参见文档）",
           "media_browser_enable": "启用媒体浏览器",
           "notification_proxy_enable": "启用未经身份验证的通知事件代理",
-          "notification_proxy_expire_after_seconds": "在指定秒数后禁止未经身份验证的通知访问（0=永不）"
+          "notification_proxy_expire_after_seconds": "在指定秒数后禁止未经身份验证的通知访问（0=永不）",
+          "lite_mode": "仅创建基础的摄像头实体"
         }
       }
     },

@@ -20,7 +20,8 @@
         "step": {
             "init": {
                 "data": {
-                    "notification_proxy_enable": "Activar o proxy de evento de notificação não autenticado"
+                    "notification_proxy_enable": "Activar o proxy de evento de notificação não autenticado",
+                    "lite_mode": "Criar apenas entidades básicas de câmara"
                 }
             }
         },

@@ -23,7 +23,8 @@
           "rtsp_url_template": "RTSP-URL-Vorlage (siehe Dokumentation)",
           "media_browser_enable": "Aktivieren Sie den Medienbrowser",
           "notification_proxy_enable": "Aktivieren Sie den Proxy für nicht authentifizierte Benachrichtigungsereignisse",
-          "notification_proxy_expire_after_seconds": "Zugriff auf nicht authentifizierte Benachrichtigungen nach Sekunden verbieten (0=nie)"
+          "notification_proxy_expire_after_seconds": "Zugriff auf nicht authentifizierte Benachrichtigungen nach Sekunden verbieten (0=nie)",
+          "lite_mode": "Nur grundlegende Kameraentitäten erstellen"
         }
       }
     },
