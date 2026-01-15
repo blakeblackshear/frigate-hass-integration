@@ -148,6 +148,7 @@ def async_setup(hass: HomeAssistant, validate_ssl: bool) -> None:
         hass.http.register_view(NotificationsProxyView(session))
         hass.http.register_view(SnapshotsProxyView(session))
         hass.http.register_view(RecordingProxyView(session))
+        hass.http.register_view(ReviewClipsProxyView(session))
         hass.http.register_view(ThumbnailsProxyView(session))
         hass.http.register_view(VodProxyView(session))
         hass.http.register_view(VodSegmentProxyView(session))
