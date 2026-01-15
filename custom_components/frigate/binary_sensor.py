@@ -65,6 +65,14 @@ async def async_setup_entry(
         ]
     )
 
+    # Add alert occupancy sensors for cameras and zones.
+    entities.extend(
+        [
+            FrigateAlertOccupancySensor(entry, frigate_config, cam_name, obj)
+            for cam_name, obj in get_cameras_zones_and_objects(frigate_config)
+        ]
+    )
+
     async_add_entities(entities)
 
 
@@ -303,3 +311,113 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     def device_class(self) -> BinarySensorDeviceClass:
         """Return the device class."""
         return BinarySensorDeviceClass.MOTION
+
+
+class FrigateAlertOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
+    """Frigate Alert Occupancy Sensor class - only shows occupancy when review status is ALERT."""
+
+    def __init__(
+        self,
+        config_entry: ConfigEntry,
+        frigate_config: dict[str, Any],
+        cam_name: str,
+        obj_name: str,
+    ) -> None:
+        """Construct a new FrigateAlertOccupancySensor."""
+        self._cam_name = cam_name
+        self._obj_name = obj_name
+        self._occupancy_count = 0
+        self._review_status: str | None = None
+        self._frigate_config = frigate_config
+
+        super().__init__(
+            config_entry,
+            frigate_config,
+            {
+                "occupancy_topic": {
+                    "msg_callback": self._occupancy_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/{self._obj_name}"
+                    ),
+                    "encoding": None,
+                },
+                "review_status_topic": {
+                    "msg_callback": self._review_status_message_received,
+                    "qos": 0,
+                    "topic": (
+                        f"{self._frigate_config['mqtt']['topic_prefix']}"
+                        f"/{self._cam_name}/review_status"
+                    ),
+                    "encoding": None,
+                },
+            },
+        )
+
+    @callback
+    def _occupancy_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT occupancy message."""
+        try:
+            self._occupancy_count = int(msg.payload)
+        except ValueError:
+            self._occupancy_count = 0
+        self.async_write_ha_state()
+
+    @callback
+    def _review_status_message_received(self, msg: ReceiveMessage) -> None:
+        """Handle a new received MQTT review status message."""
+        payload = (
+            msg.payload.decode("utf-8")
+            if isinstance(msg.payload, bytes)
+            else str(msg.payload)
+        )
+        self._review_status = payload.strip()
+        self.async_write_ha_state()
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
+        return get_frigate_entity_unique_id(
+            self._config_entry.entry_id,
+            "alert_occupancy_sensor",
+            f"{self._cam_name}_{self._obj_name}",
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device information."""
+        return {
+            "identifiers": {
+                get_frigate_device_identifier(self._config_entry, self._cam_name)
+            },
+            "via_device": get_frigate_device_identifier(self._config_entry),
+            "name": get_friendly_name(self._cam_name),
+            "model": self._get_model(),
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
+            "manufacturer": NAME,
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{get_friendly_name(self._obj_name)} alert occupancy"
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if the binary sensor is on."""
+        return (
+            self._occupancy_count > 0
+            and self._review_status is not None
+            and self._review_status.strip().upper() == "ALERT"
+        )
+
+    @property
+    def device_class(self) -> BinarySensorDeviceClass:
+        """Return the device class."""
+        return BinarySensorDeviceClass.OCCUPANCY
+
+    @property
+    def icon(self) -> str:
+        """Return the icon of the sensor."""
+        return get_dynamic_icon_from_type(self._obj_name, self.is_on)
