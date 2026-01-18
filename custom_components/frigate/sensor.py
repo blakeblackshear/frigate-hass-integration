@@ -39,13 +39,13 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
     get_known_plates,
     get_object_classification_models_and_cameras,
-    get_zones,
-    get_zone_parent_camera,
-    get_frigate_friendly_name,
     get_object_name_translation,
     get_object_translation_placeholders,
+    get_zone_parent_camera,
+    get_zones,
     set_object_name_translation,
     verify_frigate_version,
 )
@@ -882,8 +882,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation placeholders for the sensor."""
         # Use the common translation function to get the translated object name
         return get_object_translation_placeholders(
-            self.hass if hasattr(self, 'hass') else None,
-            self._obj_name
+            self.hass if hasattr(self, "hass") else None, self._obj_name
         )
 
     async def async_added_to_hass(self) -> None:
@@ -1009,8 +1008,7 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation placeholders for the sensor."""
         # Use the common translation function to get the translated object name
         return get_object_translation_placeholders(
-            self.hass if hasattr(self, 'hass') else None,
-            self._obj_name
+            self.hass if hasattr(self, "hass") else None, self._obj_name
         )
 
     async def async_added_to_hass(self) -> None:
@@ -2036,13 +2034,17 @@ class FrigateGlobalObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
         # Use the translated class name if available, otherwise fall back to friendly name
-        class_name = getattr(self, '_translated_class_name', get_friendly_name(self._class_name))
+        class_name = getattr(
+            self, "_translated_class_name", get_friendly_name(self._class_name)
+        )
         return {"class": class_name}
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
         # Set the translated class name using the common translation function
-        set_object_name_translation(self, self.hass, self._class_name, "_translated_class_name")
+        set_object_name_translation(
+            self, self.hass, self._class_name, "_translated_class_name"
+        )
 
         await super().async_added_to_hass()
 

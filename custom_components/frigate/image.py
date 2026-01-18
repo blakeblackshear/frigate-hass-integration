@@ -113,9 +113,9 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
     def name(self) -> str:
         """Return the name of the sensor."""
         return get_object_name_translation(
-            self.hass if hasattr(self, 'hass') else None,
+            self.hass if hasattr(self, "hass") else None,
             self._obj_name,
-            get_friendly_name
+            get_friendly_name,
         )
 
     @property

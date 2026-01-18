@@ -27,10 +27,9 @@ from . import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
     get_frigate_friendly_name,
+    get_object_translation_placeholders,
     get_zone_parent_camera,
     get_zones,
-    get_object_name_translation,
-    get_object_translation_placeholders,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
 from .icons import get_dynamic_icon_from_type
@@ -163,8 +162,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
         """Return the translation placeholders for the sensor."""
         # Use the common translation function to get the translated object name
         return get_object_translation_placeholders(
-            self.hass if hasattr(self, 'hass') else None,
-            self._obj_name
+            self.hass if hasattr(self, "hass") else None, self._obj_name
         )
 
     @property

@@ -12,9 +12,9 @@ import datetime
 from datetime import timedelta
 import json
 import logging
+from pathlib import Path
 import re
 from typing import Any, Final
-from pathlib import Path
 
 from awesomeversion import AwesomeVersion
 from titlecase import titlecase
@@ -714,7 +714,9 @@ class FrigateMQTTEntity(FrigateEntity):
         self.async_write_ha_state()
 
 
-def get_object_name_translation(hass: HomeAssistant | None, obj_name: str, get_friendly_name_func) -> str:
+def get_object_name_translation(
+    hass: HomeAssistant | None, obj_name: str, get_friendly_name_func
+) -> str:
     """Get the translated name for an object, handling special cases like 'all'.
 
     Args:
@@ -732,7 +734,7 @@ def get_object_name_translation(hass: HomeAssistant | None, obj_name: str, get_f
         return obj_name_result
 
     # Determine translation file and key based on object type
-    if obj_name == 'all':
+    if obj_name == "all":
         # Special case: 'all' object uses main translation file under 'label' section
         translation_file_pattern = "translations/{language}.json"
         translation_section = "label"
@@ -748,22 +750,26 @@ def get_object_name_translation(hass: HomeAssistant | None, obj_name: str, get_f
     component_dir = Path(__file__).parent
 
     # Try primary language
-    primary_path = component_dir / translation_file_pattern.format(language=current_lang)
+    primary_path = component_dir / translation_file_pattern.format(
+        language=current_lang
+    )
     obj_name_result = _load_translation_from_file(
         primary_path, translation_section, translation_key, obj_name_result
     )
 
     # If not found and language has a region code (e.g., en-US), try base language (e.g., en)
-    if obj_name_result == get_friendly_name_func(obj_name) and '-' in current_lang:
-        base_lang = current_lang.split('-')[0]
-        fallback_path = component_dir / translation_file_pattern.format(language=base_lang)
+    if obj_name_result == get_friendly_name_func(obj_name) and "-" in current_lang:
+        base_lang = current_lang.split("-")[0]
+        fallback_path = component_dir / translation_file_pattern.format(
+            language=base_lang
+        )
         obj_name_result = _load_translation_from_file(
             fallback_path, translation_section, translation_key, obj_name_result
         )
 
     # If still not found, try English as ultimate fallback
-    if obj_name_result == get_friendly_name_func(obj_name) and current_lang != 'en':
-        english_path = component_dir / translation_file_pattern.format(language='en')
+    if obj_name_result == get_friendly_name_func(obj_name) and current_lang != "en":
+        english_path = component_dir / translation_file_pattern.format(language="en")
         obj_name_result = _load_translation_from_file(
             english_path, translation_section, translation_key, obj_name_result
         )
@@ -771,7 +777,9 @@ def get_object_name_translation(hass: HomeAssistant | None, obj_name: str, get_f
     return obj_name_result
 
 
-def _load_translation_from_file(file_path: Path, section: str | None, key: str, default_value: str) -> str:
+def _load_translation_from_file(
+    file_path: Path, section: str | None, key: str, default_value: str
+) -> str:
     """Helper function to load translation from a specific file.
 
     Args:
@@ -793,7 +801,7 @@ def _load_translation_from_file(file_path: Path, section: str | None, key: str, 
             return default_value
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 translations = json.load(f)
 
             # Cache the translations for this file
@@ -814,7 +822,9 @@ def _load_translation_from_file(file_path: Path, section: str | None, key: str, 
     return default_value
 
 
-def get_object_translation_placeholders(hass: HomeAssistant | None, obj_name: str) -> dict[str, str]:
+def get_object_translation_placeholders(
+    hass: HomeAssistant | None, obj_name: str
+) -> dict[str, str]:
     """Generic helper function to get object translation placeholders
 
     Args:
@@ -828,7 +838,12 @@ def get_object_translation_placeholders(hass: HomeAssistant | None, obj_name: st
     return {"object": translated_name}
 
 
-def set_object_name_translation(entity, hass: HomeAssistant | None, obj_name: str, attr_name: str = "_translated_obj_name") -> None:
+def set_object_name_translation(
+    entity,
+    hass: HomeAssistant | None,
+    obj_name: str,
+    attr_name: str = "_translated_obj_name",
+) -> None:
     """Set the translated object name for an entity
 
     Args:

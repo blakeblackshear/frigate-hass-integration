@@ -207,7 +207,9 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
             "object_descriptions": "frigate_switch_object_descriptions",
             "review_descriptions": "frigate_switch_review_descriptions",
         }
-        return switch_translation_keys.get(self._switch_name, f"frigate_switch_{self._switch_name}")
+        return switch_translation_keys.get(
+            self._switch_name, f"frigate_switch_{self._switch_name}"
+        )
 
     @property
     def translation_placeholders(self) -> dict[str, str]:
