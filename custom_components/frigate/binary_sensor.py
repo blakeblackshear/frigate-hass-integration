@@ -26,6 +26,8 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
+    get_zone_parent_camera,
     get_zones,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
@@ -121,12 +123,29 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
+        if self._cam_name in get_zones(self._frigate_config):
+            entity_type = "zone"
+            # 2. Get the parent camera of the Zone (using get_zone_parent_camera utility function)
+            parent_camera = get_zone_parent_camera(self._frigate_config, self._cam_name)
+            # 3. Get the friendly_name of the Zone (passing the parent camera)
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config,
+                entity_type,
+                self._cam_name,  # Zone name
+                parent_camera,  # Parent camera name
+            )
+        else:
+            entity_type = "camera"
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config, entity_type, self._cam_name
+            )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,
@@ -283,12 +302,29 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
+        if self._cam_name in get_zones(self._frigate_config):
+            entity_type = "zone"
+            # 2. Get the parent camera of the Zone (using get_zone_parent_camera utility function)
+            parent_camera = get_zone_parent_camera(self._frigate_config, self._cam_name)
+            # 3. Get the friendly_name of the Zone (passing the parent camera)
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config,
+                entity_type,
+                self._cam_name,  # Zone name
+                parent_camera,  # Parent camera name
+            )
+        else:
+            entity_type = "camera"
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config, entity_type, self._cam_name
+            )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,  # Replaced original get_friendly_name(self._cam_name)
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,

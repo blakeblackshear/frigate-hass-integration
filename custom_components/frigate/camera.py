@@ -38,6 +38,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
     verify_frigate_version,
 )
 from .const import (
@@ -323,7 +324,9 @@ class FrigateCamera(
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": get_frigate_friendly_name(
+                self._frigate_config, "camera", self._cam_name
+            ),
             "model": self._get_model(),
             "configuration_url": f"{self._url}/#{self._cam_name}",
             "manufacturer": NAME,

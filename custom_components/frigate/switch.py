@@ -20,6 +20,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
     verify_frigate_version,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
@@ -174,12 +175,16 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
+        friendly_name = get_frigate_friendly_name(
+            self._frigate_config, "camera", self._cam_name
+        )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,  # Replaced original get_friendly_name(self._cam_name)
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
             "manufacturer": NAME,

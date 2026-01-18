@@ -111,6 +111,64 @@ def get_frigate_entity_unique_id(
     return f"{config_entry_id}:{type_name}:{name}"
 
 
+def get_zone_parent_camera(frigate_config: dict, zone_name: str) -> str | None:
+    """Find the parent camera that contains the specified zone by iterating through all cameras in the Frigate config.
+
+    Args:
+        frigate_config: Complete Frigate config dictionary (obtained from API)
+        zone_name: Name of the zone to find the parent for
+
+    Returns:
+        Parent camera name (str) or None if not found
+    """
+    # Validate config structure
+    if not isinstance(frigate_config, dict):
+        return None
+
+    cameras = frigate_config.get("cameras")
+    if not cameras:
+        return None
+
+    # Iterate through all camera zone configurations
+    for camera_name, camera_config in cameras.items():
+        # Check if the current camera has zones configured and if the target zone exists
+        zones = camera_config.get("zones", {})
+        if isinstance(zones, dict) and zone_name in zones:
+            return camera_name
+
+    # No matching zone found
+    return None
+
+
+def get_frigate_friendly_name(
+    frigate_config: dict, entity_type: str, entity_name: str, parent_camera: str = None
+) -> str:
+    """Get a friendly version of a name, prefer frigate's friendly_name if exists.
+
+    Get friendly name with priority:
+    1. frigate config's friendly_name (camera / camera->zone)
+    2. default get_friendly_name method
+    """
+    # Early return if cameras config is not present
+    if "cameras" not in frigate_config:
+        return get_friendly_name(entity_name)
+
+    friendly_name = None
+
+    if entity_type == "camera":
+        friendly_name = (
+            frigate_config["cameras"].get(entity_name, {}).get("friendly_name")
+        )
+    elif entity_type == "zone" and parent_camera:
+        camera_config = frigate_config["cameras"].get(parent_camera, {})
+        zones_config = camera_config.get("zones", {})
+        friendly_name = zones_config.get(entity_name, {}).get("friendly_name")
+
+    if friendly_name and isinstance(friendly_name, str) and friendly_name.strip():
+        return friendly_name.strip()
+    return get_friendly_name(entity_name)
+
+
 def get_friendly_name(name: str) -> str:
     """Get a friendly version of a name."""
     result: str = titlecase(name.replace("_", " "))
