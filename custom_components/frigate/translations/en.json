@@ -34,5 +34,115 @@
     "abort": {
       "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
     }
+  },
+  "label": {
+    "all": "All"
+  },
+  "entity": {
+    "sensor": {
+      "frigate_status": {
+        "name": "Status"
+      },
+      "frigate_uptime": {
+        "name": "Uptime"
+      },
+      "frigate_review_status": {
+        "name": "Review Status"
+      },
+      "frigate_object_count": {
+        "name": "{object} Count"
+      },
+      "frigate_active_object_count": {
+        "name": "{object} Active Count"
+      },
+      "frigate_fps": {
+        "name": "{type} FPS"
+      },
+      "frigate_detector_speed": {
+        "name": "{detector} Inference Speed"
+      },
+      "frigate_gpu_load": {
+        "name": "{gpu} GPU Load"
+      },
+      "frigate_camera_fps": {
+        "name": "{type} FPS"
+      },
+      "frigate_sound_level": {
+        "name": "Sound Level"
+      },
+      "frigate_temp": {
+        "name": "{device} Temperature"
+      },
+      "frigate_cpu_usage": {
+        "name": "{process} CPU Usage"
+      },
+      "frigate_recognized_face": {
+        "name": "Last Recognized Face"
+      },
+      "frigate_recognized_plate": {
+        "name": "Last Recognized Plate"
+      },
+      "frigate_classification": {
+        "name": "{model} Classification"
+      },
+      "frigate_object_classification": {
+        "name": "{model} Object Classification"
+      },
+      "frigate_global_face": {
+        "name": "{face} Last Camera"
+      },
+      "frigate_global_plate": {
+        "name": "{plate} Last Camera"
+      },
+      "frigate_global_object_classification": {
+        "name": "{class} Last Camera"
+      },
+      "frigate_object_occupancy": {
+        "name": "{object} Occupancy"
+      }
+    },
+    "binary_sensor": {
+      "frigate_binary_sensor_object_occupancy": {
+        "name": "{object} Occupancy"
+      },
+      "frigate_binary_sensor_motion": {
+        "name": "Motion"
+      }
+    },
+    "switch": {
+      "frigate_switch_detect": {
+        "name": "Detect"
+      },
+      "frigate_switch_motion": {
+        "name": "Motion"
+      },
+      "frigate_switch_recordings": {
+        "name": "Recordings"
+      },
+      "frigate_switch_snapshots": {
+        "name": "Snapshots"
+      },
+      "frigate_switch_improve_contrast": {
+        "name": "Improve Contrast"
+      },
+      "frigate_switch_review_alerts": {
+        "name": "Review Alerts"
+      },
+      "frigate_switch_review_detections": {
+        "name": "Review Detections"
+      },
+      "frigate_switch_audio": {
+        "name": "Audio Detection"
+      },
+      "frigate_switch_ptz_autotracker": {
+        "name": "PTZ Autotracker"
+      },
+      "frigate_switch_object_descriptions": {
+        "name": "Object Descriptions"
+      },
+      "frigate_switch_review_descriptions": {
+        "name": "Review Descriptions"
+      }
+    }
   }
 }

@@ -10,13 +10,18 @@ from __future__ import annotations
 from collections.abc import Callable
 import datetime
 from datetime import timedelta
+import json
 import logging
 import re
 from typing import Any, Final
+from pathlib import Path
 
 from awesomeversion import AwesomeVersion
 from titlecase import titlecase
 import voluptuous as vol
+
+# Simple cache for translation files to improve performance
+_TRANSLATION_CACHE: dict[str, dict] = {}
 
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import ReceiveMessage
@@ -707,3 +712,130 @@ class FrigateMQTTEntity(FrigateEntity):
         """Handle a new received MQTT availability message."""
         self._available = decode_if_necessary(msg.payload) == "online"
         self.async_write_ha_state()
+
+
+def get_object_name_translation(hass: HomeAssistant | None, obj_name: str, get_friendly_name_func) -> str:
+    """Get the translated name for an object, handling special cases like 'all'.
+
+    Args:
+        hass: HomeAssistant instance
+        obj_name: Original object name
+        get_friendly_name_func: Function to get friendly name
+
+    Returns:
+        Translated object name
+    """
+    # Default to friendly name
+    obj_name_result = get_friendly_name_func(obj_name)
+
+    if not hass:
+        return obj_name_result
+
+    # Determine translation file and key based on object type
+    if obj_name == 'all':
+        # Special case: 'all' object uses main translation file under 'label' section
+        translation_file_pattern = "translations/{language}.json"
+        translation_section = "label"
+        translation_key = obj_name
+    else:
+        # Regular objects use objects translation file
+        translation_file_pattern = "translations/objects/{language}.json"
+        translation_section = None  # Use the obj_name directly as the key
+        translation_key = obj_name
+
+    # Attempt to load translation
+    current_lang = hass.config.language
+    component_dir = Path(__file__).parent
+
+    # Try primary language
+    primary_path = component_dir / translation_file_pattern.format(language=current_lang)
+    obj_name_result = _load_translation_from_file(
+        primary_path, translation_section, translation_key, obj_name_result
+    )
+
+    # If not found and language has a region code (e.g., en-US), try base language (e.g., en)
+    if obj_name_result == get_friendly_name_func(obj_name) and '-' in current_lang:
+        base_lang = current_lang.split('-')[0]
+        fallback_path = component_dir / translation_file_pattern.format(language=base_lang)
+        obj_name_result = _load_translation_from_file(
+            fallback_path, translation_section, translation_key, obj_name_result
+        )
+
+    # If still not found, try English as ultimate fallback
+    if obj_name_result == get_friendly_name_func(obj_name) and current_lang != 'en':
+        english_path = component_dir / translation_file_pattern.format(language='en')
+        obj_name_result = _load_translation_from_file(
+            english_path, translation_section, translation_key, obj_name_result
+        )
+
+    return obj_name_result
+
+
+def _load_translation_from_file(file_path: Path, section: str | None, key: str, default_value: str) -> str:
+    """Helper function to load translation from a specific file.
+
+    Args:
+        file_path: Path to the translation file
+        section: Section in the translation file (None if key is top-level)
+        key: Translation key to look for
+        default_value: Value to return if translation is not found
+
+    Returns:
+        Translated value or default value
+    """
+    file_path_str = str(file_path)
+
+    # Check if we have cached translations for this file
+    if file_path_str in _TRANSLATION_CACHE:
+        translations = _TRANSLATION_CACHE[file_path_str]
+    else:
+        if not file_path.exists():
+            return default_value
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                translations = json.load(f)
+
+            # Cache the translations for this file
+            _TRANSLATION_CACHE[file_path_str] = translations
+        except (json.JSONDecodeError, OSError):
+            # If there's an error reading the file, return the default value
+            return default_value
+
+    if section:
+        # Nested translation (e.g., "label" -> "all")
+        if section in translations and key in translations[section]:
+            return translations[section][key]
+    else:
+        # Top-level translation (e.g., "person" -> "Person")
+        if key in translations:
+            return translations[key]
+
+    return default_value
+
+
+def get_object_translation_placeholders(hass: HomeAssistant | None, obj_name: str) -> dict[str, str]:
+    """Generic helper function to get object translation placeholders
+
+    Args:
+        hass: HomeAssistant instance
+        obj_name: Object name
+
+    Returns:
+        Dictionary containing translation placeholders
+    """
+    translated_name = get_object_name_translation(hass, obj_name, get_friendly_name)
+    return {"object": translated_name}
+
+
+def set_object_name_translation(entity, hass: HomeAssistant | None, obj_name: str, attr_name: str = "_translated_obj_name") -> None:
+    """Set the translated object name for an entity
+
+    Args:
+        entity: Entity object
+        hass: HomeAssistant instance
+        obj_name: Object name
+        attr_name: Attribute name, defaults to "_translated_obj_name"
+    """
+    translated_name = get_object_name_translation(hass, obj_name, get_friendly_name)
+    setattr(entity, attr_name, translated_name)

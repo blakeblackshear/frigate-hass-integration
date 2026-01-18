@@ -42,6 +42,11 @@ from . import (
     get_known_plates,
     get_object_classification_models_and_cameras,
     get_zones,
+    get_zone_parent_camera,
+    get_frigate_friendly_name,
+    get_object_name_translation,
+    get_object_translation_placeholders,
+    set_object_name_translation,
     verify_frigate_version,
 )
 from .const import ATTR_CLIENT, ATTR_CONFIG, ATTR_COORDINATOR, DOMAIN, FPS, MS, NAME
@@ -278,6 +283,16 @@ class FrigateFpsSensor(
         return f"{self._fps_type} fps"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_fps"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"type": get_friendly_name(self._fps_type)}
+
+    @property
     def unique_id(self) -> str:
         """Return a unique ID to use for this entity."""
         return get_frigate_entity_unique_id(
@@ -324,7 +339,6 @@ class FrigateStatusSensor(
     """Frigate Status Sensor class."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name = "Status"
 
     def __init__(
         self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
@@ -333,6 +347,16 @@ class FrigateStatusSensor(
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Status"
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_status"
 
     @property
     def unique_id(self) -> str:
@@ -371,7 +395,6 @@ class FrigateUptimeSensor(
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_device_class = SensorDeviceClass.DURATION
-    _attr_name = "Uptime"
 
     def __init__(
         self, coordinator: FrigateDataUpdateCoordinator, config_entry: ConfigEntry
@@ -380,6 +403,16 @@ class FrigateUptimeSensor(
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Uptime"
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_uptime"
 
     @property
     def unique_id(self) -> str:
@@ -466,6 +499,16 @@ class DetectorSpeedSensor(
         return f"{get_friendly_name(self._detector_name)} inference speed"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_detector_speed"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"detector": get_friendly_name(self._detector_name)}
+
+    @property
     def native_value(self) -> int | None:
         """Return the value of the sensor."""
         if self.coordinator.data:
@@ -508,10 +551,24 @@ class GpuLoadSensor(
     ) -> None:
         """Construct a GpuLoadSensor."""
         self._gpu_name = gpu_name
-        self._attr_name = f"{get_friendly_name(self._gpu_name)} gpu load"
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{get_friendly_name(self._gpu_name)} gpu load"
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_gpu_load"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"gpu": get_friendly_name(self._gpu_name)}
 
     @property
     def unique_id(self) -> str:
@@ -613,6 +670,16 @@ class CameraFpsSensor(
         return f"{self._fps_type} fps"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_camera_fps"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"type": get_friendly_name(self._fps_type)}
+
+    @property
     def native_unit_of_measurement(self) -> str:
         """Return the native unit of measurement of the sensor."""
         return FPS
@@ -688,6 +755,11 @@ class CameraSoundSensor(
         return "sound level"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_sound_level"
+
+    @property
     def native_unit_of_measurement(self) -> Any:
         """Return the native unit of measurement of the sensor."""
         return UnitOfSoundPressure.DECIBEL
@@ -732,6 +804,8 @@ class FrigateObjectCountSensor(FrigateMQTTEntity, SensorEntity):
         self._state = 0
         self._frigate_config = frigate_config
         self._icon = get_icon_from_type(self._obj_name)
+        # Initialize with friendly name as fallback, will be updated in async_added_to_hass with translation if available
+        self._translated_obj_name = get_friendly_name(obj_name)
 
         super().__init__(
             config_entry,
@@ -770,21 +844,57 @@ class FrigateObjectCountSensor(FrigateMQTTEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
+        if self._cam_name in get_zones(self._frigate_config):
+            entity_type = "zone"
+            # Get the parent camera of the Zone (using get_zone_parent_camera utility function)
+            parent_camera = get_zone_parent_camera(self._frigate_config, self._cam_name)
+            # Get the friendly_name of the Zone (passing the parent camera)
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config,
+                entity_type,
+                self._cam_name,  # Zone name
+                parent_camera,  # Parent camera name
+            )
+        else:
+            entity_type = "camera"
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config, entity_type, self._cam_name
+            )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._obj_name)} count"
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_object_count"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        # Use the common translation function to get the translated object name
+        return get_object_translation_placeholders(
+            self.hass if hasattr(self, 'hass') else None,
+            self._obj_name
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added to hass."""
+        # Set the translated object name using the common translation function
+        set_object_name_translation(self, self.hass, self._obj_name)
+
+        await super().async_added_to_hass()
+
+        # Refresh the entity to ensure the translated name is used
+        self.async_write_ha_state()
 
     @property
     def native_value(self) -> int:
@@ -820,6 +930,8 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity, SensorEntity):
         self._state = 0
         self._frigate_config = frigate_config
         self._icon = get_icon_from_type(self._obj_name)
+        # Initialize with friendly name as fallback, will be updated in async_added_to_hass with translation if available
+        self._translated_obj_name = get_friendly_name(obj_name)
 
         super().__init__(
             config_entry,
@@ -859,21 +971,57 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
+        if self._cam_name in get_zones(self._frigate_config):
+            entity_type = "zone"
+            # Get the parent camera of the Zone (using get_zone_parent_camera utility function)
+            parent_camera = get_zone_parent_camera(self._frigate_config, self._cam_name)
+            # Get the friendly_name of the Zone (passing the parent camera)
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config,
+                entity_type,
+                self._cam_name,  # Zone name
+                parent_camera,  # Parent camera name
+            )
+        else:
+            entity_type = "camera"
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config, entity_type, self._cam_name
+            )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._obj_name)} active count".title()
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_active_object_count"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        # Use the common translation function to get the translated object name
+        return get_object_translation_placeholders(
+            self.hass if hasattr(self, 'hass') else None,
+            self._obj_name
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added to hass."""
+        # Set the translated object name using the common translation function
+        set_object_name_translation(self, self.hass, self._obj_name)
+
+        await super().async_added_to_hass()
+
+        # Refresh the entity to ensure the translated name is used
+        self.async_write_ha_state()
 
     @property
     def native_value(self) -> int:
@@ -936,6 +1084,16 @@ class DeviceTempSensor(
         return f"{get_friendly_name(self._name)} temperature"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_temp"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"device": get_friendly_name(self._name)}
+
+    @property
     def native_value(self) -> float | None:
         """Return the value of the sensor."""
         if self.coordinator.data:
@@ -979,10 +1137,24 @@ class CameraProcessCpuSensor(
         """Construct a CoralTempSensor."""
         self._cam_name = cam_name
         self._process_type = process_type
-        self._attr_name = f"{self._process_type} cpu usage"
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return f"{self._process_type} cpu usage"
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_cpu_usage"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"process": get_friendly_name(self._process_type)}
 
     @property
     def unique_id(self) -> str:
@@ -1137,6 +1309,11 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity, SensorEntity):
         return "Last Recognized Face"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_recognized_face"
+
+    @property
     def native_value(self) -> str:
         """Return the value of the sensor."""
         return str(self._state).title()
@@ -1243,6 +1420,11 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity, SensorEntity):
         return "Last Recognized Plate"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_recognized_plate"
+
+    @property
     def native_value(self) -> str:
         """Return the value of the sensor."""
         return self._state
@@ -1337,6 +1519,16 @@ class FrigateClassificationSensor(FrigateMQTTEntity, RestoreSensor):
     def name(self) -> str:
         """Return the name of the sensor."""
         return f"{get_friendly_name(self._model_key)} Classification"
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_classification"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"model": get_friendly_name(self._model_key)}
 
     @property
     def native_value(self) -> str:
@@ -1456,6 +1648,16 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
         return f"{get_friendly_name(self._model_key)} Object Classification"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_object_classification"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"model": get_friendly_name(self._model_key)}
+
+    @property
     def native_value(self) -> str:
         """Return the value of the sensor."""
         return self._state
@@ -1532,9 +1734,9 @@ class FrigateReviewStatusSensor(FrigateMQTTEntity, SensorEntity):
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return "Review Status"
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_review_status"
 
     @property
     def native_value(self) -> str | None:
@@ -1621,6 +1823,16 @@ class FrigateGlobalFaceSensor(FrigateMQTTEntity, SensorEntity):
     def name(self) -> str:
         """Return the name of the sensor."""
         return f"{get_friendly_name(self._face_name)} Last Camera"
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_global_face"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"face": get_friendly_name(self._face_name)}
 
     @property
     def native_value(self) -> str:
@@ -1711,6 +1923,16 @@ class FrigateGlobalPlateSensor(FrigateMQTTEntity, SensorEntity):
         return f"{get_friendly_name(self._plate_name)} Last Camera"
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_global_plate"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        return {"plate": get_friendly_name(self._plate_name)}
+
+    @property
     def native_value(self) -> str:
         """Return the value of the sensor."""
         return self._state
@@ -1736,6 +1958,8 @@ class FrigateGlobalObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
         self._class_name = class_name
         self._state = "Unknown"
         self._frigate_config = frigate_config
+        # Initialize with friendly name as fallback, will be updated in async_added_to_hass with translation if available
+        self._translated_class_name = get_friendly_name(class_name)
 
         super().__init__(
             config_entry,
@@ -1804,10 +2028,26 @@ class FrigateGlobalObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        formatted_class = get_friendly_name(self._class_name)
-        return f"{formatted_class} Last Camera"
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_global_object_classification"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        # Use the translated class name if available, otherwise fall back to friendly name
+        class_name = getattr(self, '_translated_class_name', get_friendly_name(self._class_name))
+        return {"class": class_name}
+
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added to hass."""
+        # Set the translated class name using the common translation function
+        set_object_name_translation(self, self.hass, self._class_name, "_translated_class_name")
+
+        await super().async_added_to_hass()
+
+        # Refresh the entity to ensure the translated name is used
+        self.async_write_ha_state()
 
     @property
     def native_value(self) -> str:

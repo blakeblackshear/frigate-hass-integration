@@ -191,9 +191,28 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._descriptive_name)}".title()
+    def translation_key(self) -> str:
+        """Return the translation key for the switch."""
+        # Map switch names to translation keys
+        switch_translation_keys = {
+            "detect": "frigate_switch_detect",
+            "motion": "frigate_switch_motion",
+            "recordings": "frigate_switch_recordings",
+            "snapshots": "frigate_switch_snapshots",
+            "improve_contrast": "frigate_switch_improve_contrast",
+            "review_alerts": "frigate_switch_review_alerts",
+            "review_detections": "frigate_switch_review_detections",
+            "audio": "frigate_switch_audio",
+            "ptz_autotracker": "frigate_switch_ptz_autotracker",
+            "object_descriptions": "frigate_switch_object_descriptions",
+            "review_descriptions": "frigate_switch_review_descriptions",
+        }
+        return switch_translation_keys.get(self._switch_name, f"frigate_switch_{self._switch_name}")
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the switch."""
+        return {}
 
     @property
     def is_on(self) -> bool:

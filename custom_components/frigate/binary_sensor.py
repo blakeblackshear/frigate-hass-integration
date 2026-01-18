@@ -29,6 +29,8 @@ from . import (
     get_frigate_friendly_name,
     get_zone_parent_camera,
     get_zones,
+    get_object_name_translation,
+    get_object_translation_placeholders,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
 from .icons import get_dynamic_icon_from_type
@@ -152,19 +154,23 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._obj_name)} occupancy"
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_binary_sensor_object_occupancy"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        # Use the common translation function to get the translated object name
+        return get_object_translation_placeholders(
+            self.hass if hasattr(self, 'hass') else None,
+            self._obj_name
+        )
 
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._is_on
-
-    @property
-    def device_class(self) -> BinarySensorDeviceClass:
-        """Return the device class."""
-        return BinarySensorDeviceClass.OCCUPANCY
 
     @property
     def icon(self) -> str:
@@ -256,8 +262,6 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     """Frigate Motion Sensor class."""
 
-    _attr_name = "Motion"
-
     def __init__(
         self,
         config_entry: ConfigEntry,
@@ -298,6 +302,16 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
             "motion_sensor",
             f"{self._cam_name}",
         )
+
+    @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_binary_sensor_motion"
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the switch."""
+        return {}
 
     @property
     def device_info(self) -> DeviceInfo:
