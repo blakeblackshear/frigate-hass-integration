@@ -35,10 +35,10 @@
       "only_advanced_options": "高级模式已禁用，且只有高级选项可用"
     }
   },
-  "label": {
-    "all": "全部"
-  },
   "entity": {
+    "label": {
+      "all": "全部"
+    },
     "sensor": {
       "frigate_status": {
         "name": "状态"

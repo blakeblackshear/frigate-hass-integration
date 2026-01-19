@@ -35,10 +35,10 @@
       "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
     }
   },
-  "label": {
-    "all": "All"
-  },
   "entity": {
+    "label": {
+      "all": "All"
+    },
     "sensor": {
       "frigate_status": {
         "name": "Status"

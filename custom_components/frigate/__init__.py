@@ -738,9 +738,9 @@ def get_object_name_translation(
 
     # Determine translation file and key based on object type
     if obj_name == "all":
-        # Special case: 'all' object uses main translation file under 'label' section
+        # Special case: 'all' object uses main translation file under 'entity.label' section
         translation_file_pattern = "translations/{language}.json"
-        translation_section = "label"
+        translation_section = "entity.label"
         translation_key = obj_name
     else:
         # Regular objects use objects translation file
@@ -787,7 +787,7 @@ def _load_translation_from_file(
 
     Args:
         file_path: Path to the translation file
-        section: Section in the translation file (None if key is top-level)
+        section: Section in the translation file (None if key is top-level, dot notation for nested)
         key: Translation key to look for
         default_value: Value to return if translation is not found
 
@@ -814,9 +814,21 @@ def _load_translation_from_file(
             return default_value
 
     if section:
-        # Nested translation (e.g., "label" -> "all")
-        if section in translations and key in translations[section]:
-            return str(translations[section][key])
+        # Handle nested sections (e.g., "entity.label" -> "all")
+        section_parts = section.split(".")
+        current_dict = translations
+
+        # Navigate through the nested structure
+        for part in section_parts:
+            if isinstance(current_dict, dict) and part in current_dict:
+                current_dict = current_dict[part]
+            else:
+                # If any part of the path is missing, fall back to default
+                return default_value
+
+        # Now current_dict should be the final nested dictionary
+        if isinstance(current_dict, dict) and key in current_dict:
+            return str(current_dict[key])
     else:
         # Top-level translation (e.g., "person" -> "Person")
         if key in translations:
