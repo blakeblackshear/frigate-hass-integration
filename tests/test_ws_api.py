@@ -657,8 +657,10 @@ async def test_unload_unsubscribes_from_events(
             response = await ws_client.receive_json()
 
 
-async def test_get_reviews_success(hass: HomeAssistant, hass_ws_client: Any) -> None:
-    """Test retrieving reviews successfully."""
+async def test_get_reviews_unreviewed_success(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving unreviewed reviews (reviewed=False)."""
 
     mock_client = create_mock_frigate_client()
     await setup_mock_frigate_config_entry(hass, client=mock_client)
@@ -692,6 +694,80 @@ async def test_get_reviews_success(hass: HomeAssistant, hass_ws_client: Any) -> 
         1735100000.0,
         10,
         False,
+        decode_json=False,
+    )
+    assert response["success"]
+    assert response["result"] == reviews_success
+
+
+async def test_get_reviews_reviewed_success(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving reviewed reviews (reviewed=True)."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    reviews_json = {
+        "id": 1,
+        "type": "frigate/reviews/get",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "cameras": [TEST_CAMERA],
+        "reviewed": True,
+    }
+
+    reviews_success = {"reviews": "data"}
+    mock_client.async_get_reviews = AsyncMock(return_value=reviews_success)
+    await ws_client.send_json(reviews_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_reviews.assert_called_with(
+        [TEST_CAMERA],
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        True,
+        decode_json=False,
+    )
+    assert response["success"]
+    assert response["result"] == reviews_success
+
+
+async def test_get_reviews_no_filter_success(
+    hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    """Test retrieving all reviews (no reviewed filter)."""
+
+    mock_client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=mock_client)
+
+    ws_client = await hass_ws_client()
+    reviews_json = {
+        "id": 1,
+        "type": "frigate/reviews/get",
+        "instance_id": TEST_FRIGATE_INSTANCE_ID,
+        "cameras": [TEST_CAMERA],
+        # No "reviewed" field - should pass None to the API
+    }
+
+    reviews_success = {"reviews": "data"}
+    mock_client.async_get_reviews = AsyncMock(return_value=reviews_success)
+    await ws_client.send_json(reviews_json)
+
+    response = await ws_client.receive_json()
+    mock_client.async_get_reviews.assert_called_with(
+        [TEST_CAMERA],
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,  # No reviewed filter
         decode_json=False,
     )
     assert response["success"]

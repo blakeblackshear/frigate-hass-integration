@@ -249,7 +249,7 @@ async def ws_get_reviews(
                 msg.get("after"),
                 msg.get("before"),
                 msg.get("limit"),
-                msg.get("reviewed", False),
+                msg.get("reviewed"),
                 decode_json=False,
             ),
         )
