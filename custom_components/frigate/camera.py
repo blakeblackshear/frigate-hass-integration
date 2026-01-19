@@ -35,7 +35,6 @@ from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
     decode_if_necessary,
-    get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
     get_frigate_friendly_name,
