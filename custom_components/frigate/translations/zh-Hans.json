@@ -36,10 +36,10 @@
     }
   },
   "entity": {
-    "label": {
-      "all": "全部"
-    },
     "sensor": {
+      "all_label": {
+        "name": "全部"
+      },
       "frigate_status": {
         "name": "状态"
       },
@@ -111,7 +111,7 @@
         "name": "目标检测"
       },
       "frigate_switch_motion": {
-        "name": "运动检测"
+        "name": "画面变动检测"
       },
       "frigate_switch_recordings": {
         "name": "录制"

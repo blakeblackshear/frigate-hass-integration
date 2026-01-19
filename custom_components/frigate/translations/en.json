@@ -36,10 +36,10 @@
     }
   },
   "entity": {
-    "label": {
-      "all": "All"
-    },
     "sensor": {
+      "all_label": {
+        "name": "All"
+      },
       "frigate_status": {
         "name": "Status"
       },

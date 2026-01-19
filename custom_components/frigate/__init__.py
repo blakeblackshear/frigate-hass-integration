@@ -740,8 +740,8 @@ def get_object_name_translation(
     if obj_name == "all":
         # Special case: 'all' object uses main translation file under 'entity.label' section
         translation_file_pattern = "translations/{language}.json"
-        translation_section = "entity.label"
-        translation_key = obj_name
+        translation_section = "entity.sensor.all_label"
+        translation_key = "name"
     else:
         # Regular objects use objects translation file
         translation_file_pattern = "translations/objects/{language}.json"
