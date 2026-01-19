@@ -1646,3 +1646,176 @@ async def test_global_plate_sensor_disabled_feature(hass: HomeAssistant) -> None
         unique_id = f"{TEST_CONFIG_ENTRY_ID}:sensor_global_plate:abc123"
         entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
         assert entity_id is None
+
+
+async def test_fps_sensor_translation_placeholders(hass: HomeAssistant) -> None:
+    """Test FrigateFpsSensor translation_placeholders property."""
+    from custom_components.frigate import FrigateDataUpdateCoordinator
+    from custom_components.frigate.sensor import FrigateFpsSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Get coordinator from hass.data
+    frigate_data = hass.data.get(DOMAIN, {})
+    coordinator = frigate_data.get(config_entry.entry_id, {}).get("coordinator")
+    assert isinstance(coordinator, FrigateDataUpdateCoordinator)
+
+    # Test detection FPS sensor
+    sensor = FrigateFpsSensor(coordinator, config_entry, "detection")
+    assert sensor.translation_placeholders == {"type": "Detection"}
+
+    # Test process FPS sensor
+    sensor = FrigateFpsSensor(coordinator, config_entry, "process")
+    assert sensor.translation_placeholders == {"type": "Process"}
+
+
+async def test_detector_speed_sensor_translation_placeholders(
+    hass: HomeAssistant,
+) -> None:
+    """Test DetectorSpeedSensor translation_placeholders property."""
+    from custom_components.frigate import FrigateDataUpdateCoordinator
+    from custom_components.frigate.sensor import DetectorSpeedSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Get coordinator from hass.data
+    frigate_data = hass.data.get(DOMAIN, {})
+    coordinator = frigate_data.get(config_entry.entry_id, {}).get("coordinator")
+    assert isinstance(coordinator, FrigateDataUpdateCoordinator)
+
+    sensor = DetectorSpeedSensor(coordinator, config_entry, "cpu1")
+    assert sensor.translation_placeholders == {"detector": "Cpu1"}
+
+
+async def test_gpu_load_sensor_translation_placeholders(hass: HomeAssistant) -> None:
+    """Test GpuLoadSensor translation_placeholders property."""
+    from custom_components.frigate import FrigateDataUpdateCoordinator
+    from custom_components.frigate.sensor import GpuLoadSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Get coordinator from hass.data
+    frigate_data = hass.data.get(DOMAIN, {})
+    coordinator = frigate_data.get(config_entry.entry_id, {}).get("coordinator")
+    assert isinstance(coordinator, FrigateDataUpdateCoordinator)
+
+    sensor = GpuLoadSensor(coordinator, config_entry, "coral")
+    assert sensor.translation_placeholders == {"gpu": "Coral"}
+
+
+async def test_camera_fps_sensor_translation_placeholders(hass: HomeAssistant) -> None:
+    """Test CameraFpsSensor translation_placeholders property."""
+    from custom_components.frigate import FrigateDataUpdateCoordinator
+    from custom_components.frigate.sensor import CameraFpsSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Get coordinator from hass.data
+    frigate_data = hass.data.get(DOMAIN, {})
+    coordinator = frigate_data.get(config_entry.entry_id, {}).get("coordinator")
+    assert isinstance(coordinator, FrigateDataUpdateCoordinator)
+
+    # Test camera FPS sensor
+    sensor = CameraFpsSensor(coordinator, config_entry, "front_door", "camera")
+    assert sensor.translation_placeholders == {"type": "Camera"}
+
+
+async def test_coral_temp_sensor_translation_placeholders(hass: HomeAssistant) -> None:
+    """Test DeviceTempSensor translation_placeholders property."""
+    from custom_components.frigate import FrigateDataUpdateCoordinator
+    from custom_components.frigate.sensor import DeviceTempSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Get coordinator from hass.data
+    frigate_data = hass.data.get(DOMAIN, {})
+    coordinator = frigate_data.get(config_entry.entry_id, {}).get("coordinator")
+    assert isinstance(coordinator, FrigateDataUpdateCoordinator)
+
+    sensor = DeviceTempSensor(coordinator, config_entry, "coral")
+    assert sensor.translation_placeholders == {"device": "Coral"}
+
+
+async def test_cpu_usage_sensor_translation_placeholders(hass: HomeAssistant) -> None:
+    """Test CameraProcessCpuSensor translation_placeholders property."""
+    from custom_components.frigate import FrigateDataUpdateCoordinator
+    from custom_components.frigate.sensor import CameraProcessCpuSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    # Get coordinator from hass.data
+    frigate_data = hass.data.get(DOMAIN, {})
+    coordinator = frigate_data.get(config_entry.entry_id, {}).get("coordinator")
+    assert isinstance(coordinator, FrigateDataUpdateCoordinator)
+
+    # Test detect CPU usage sensor
+    sensor = CameraProcessCpuSensor(coordinator, config_entry, "front_door", "detect")
+    assert sensor.translation_placeholders == {"process": "Detect"}
+
+
+async def test_classification_sensor_translation_placeholders(
+    hass: HomeAssistant,
+) -> None:
+    """Test FrigateClassificationSensor translation_placeholders property."""
+    from custom_components.frigate.sensor import FrigateClassificationSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    frigate_config = await client.async_get_config()
+
+    sensor = FrigateClassificationSensor(
+        config_entry, frigate_config, "front_door", "color_classifier"
+    )
+    assert sensor.translation_placeholders == {"model": "Color Classifier"}
+
+
+async def test_object_classification_sensor_translation_placeholders(
+    hass: HomeAssistant,
+) -> None:
+    """Test FrigateObjectClassificationSensor translation_placeholders property."""
+    from custom_components.frigate.sensor import FrigateObjectClassificationSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    frigate_config = await client.async_get_config()
+
+    sensor = FrigateObjectClassificationSensor(
+        config_entry, frigate_config, "front_door", "person_classifier"
+    )
+    assert sensor.translation_placeholders == {"model": "Person Classifier"}
+
+
+async def test_global_face_sensor_translation_placeholders(hass: HomeAssistant) -> None:
+    """Test FrigateGlobalFaceSensor translation_placeholders property."""
+    from custom_components.frigate.sensor import FrigateGlobalFaceSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    frigate_config = await client.async_get_config()
+
+    sensor = FrigateGlobalFaceSensor(config_entry, frigate_config, "bob")
+    assert sensor.translation_placeholders == {"face": "Bob"}
+
+
+async def test_global_plate_sensor_translation_placeholders(
+    hass: HomeAssistant,
+) -> None:
+    """Test FrigateGlobalPlateSensor translation_placeholders property."""
+    from custom_components.frigate.sensor import FrigateGlobalPlateSensor
+
+    client = create_mock_frigate_client()
+    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+    frigate_config = await client.async_get_config()
+
+    sensor = FrigateGlobalPlateSensor(config_entry, frigate_config, "abc123")
+    assert sensor.translation_placeholders == {"plate": "Abc123"}
