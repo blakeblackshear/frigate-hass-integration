@@ -42,7 +42,6 @@ from . import (
     get_frigate_friendly_name,
     get_known_plates,
     get_object_classification_models_and_cameras,
-    get_object_name_translation,
     get_object_translation_placeholders,
     get_zone_parent_camera,
     get_zones,
@@ -277,6 +276,7 @@ class FrigateFpsSensor(
         CoordinatorEntity.__init__(self, coordinator)
         self._fps_type = fps_type
         self._attr_entity_registry_enabled_default = False
+        self._translation_placeholders = {"type": get_friendly_name(self._fps_type)}
 
     @property
     def name(self) -> str:
@@ -287,10 +287,10 @@ class FrigateFpsSensor(
         """Return the translation key for the sensor."""
         return "frigate_fps"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"type": get_friendly_name(self._fps_type)}
+        return self._translation_placeholders
 
     @property
     def unique_id(self) -> str:
@@ -474,6 +474,9 @@ class DetectorSpeedSensor(
         CoordinatorEntity.__init__(self, coordinator)
         self._detector_name = detector_name
         self._attr_entity_registry_enabled_default = False
+        self._translation_placeholders = {
+            "detector": get_friendly_name(self._detector_name)
+        }
 
     @property
     def unique_id(self) -> str:
@@ -503,10 +506,10 @@ class DetectorSpeedSensor(
         """Return the translation key for the sensor."""
         return "frigate_detector_speed"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"detector": get_friendly_name(self._detector_name)}
+        return self._translation_placeholders
 
     @property
     def native_value(self) -> int | None:
@@ -554,6 +557,7 @@ class GpuLoadSensor(
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+        self._translation_placeholders = {"gpu": get_friendly_name(self._gpu_name)}
 
     @property
     def name(self) -> str:
@@ -565,10 +569,10 @@ class GpuLoadSensor(
         """Return the translation key for the sensor."""
         return "frigate_gpu_load"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"gpu": get_friendly_name(self._gpu_name)}
+        return self._translation_placeholders
 
     @property
     def unique_id(self) -> str:
@@ -640,6 +644,7 @@ class CameraFpsSensor(
         self._cam_name = cam_name
         self._fps_type = fps_type
         self._attr_entity_registry_enabled_default = False
+        self._translation_placeholders = {"type": get_friendly_name(self._fps_type)}
 
     @property
     def unique_id(self) -> str:
@@ -674,10 +679,10 @@ class CameraFpsSensor(
         """Return the translation key for the sensor."""
         return "frigate_camera_fps"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"type": get_friendly_name(self._fps_type)}
+        return self._translation_placeholders
 
     @property
     def native_unit_of_measurement(self) -> str:
@@ -877,7 +882,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation key for the sensor."""
         return "frigate_object_count"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
         # Use the common translation function to get the translated object name
@@ -1003,7 +1008,7 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation key for the sensor."""
         return "frigate_active_object_count"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
         # Use the common translation function to get the translated object name
@@ -1057,6 +1062,7 @@ class DeviceTempSensor(
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+        self._translation_placeholders = {"device": get_friendly_name(self._name)}
 
     @property
     def unique_id(self) -> str:
@@ -1086,10 +1092,10 @@ class DeviceTempSensor(
         """Return the translation key for the sensor."""
         return "frigate_temp"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"device": get_friendly_name(self._name)}
+        return self._translation_placeholders
 
     @property
     def native_value(self) -> float | None:
@@ -1138,6 +1144,9 @@ class CameraProcessCpuSensor(
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
+        self._translation_placeholders = {
+            "process": get_friendly_name(self._process_type)
+        }
 
     @property
     def name(self) -> str:
@@ -1149,10 +1158,10 @@ class CameraProcessCpuSensor(
         """Return the translation key for the sensor."""
         return "frigate_cpu_usage"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"process": get_friendly_name(self._process_type)}
+        return self._translation_placeholders
 
     @property
     def unique_id(self) -> str:
@@ -1448,6 +1457,8 @@ class FrigateClassificationSensor(FrigateMQTTEntity, RestoreSensor):
         self._model_key = model_key
         self._state = "Unknown"
         self._frigate_config = frigate_config
+        self._translation_placeholders = {"model": get_friendly_name(model_key)}
+        self._translation_placeholders = {"model": get_friendly_name(model_key)}
 
         super().__init__(
             config_entry,
@@ -1523,10 +1534,10 @@ class FrigateClassificationSensor(FrigateMQTTEntity, RestoreSensor):
         """Return the translation key for the sensor."""
         return "frigate_classification"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"model": get_friendly_name(self._model_key)}
+        return self._translation_placeholders
 
     @property
     def native_value(self) -> str:
@@ -1555,6 +1566,7 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
         self._state = "Unknown"
         self._frigate_config = frigate_config
         self._clear_state_callable: Callable | None = None
+        self._translation_placeholders = {"model": get_friendly_name(self._model_key)}
 
         super().__init__(
             config_entry,
@@ -1650,7 +1662,7 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation key for the sensor."""
         return "frigate_object_classification"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
         return {"model": get_friendly_name(self._model_key)}
@@ -1760,6 +1772,7 @@ class FrigateGlobalFaceSensor(FrigateMQTTEntity, SensorEntity):
         self._face_name = face_name
         self._state = "Unknown"
         self._frigate_config = frigate_config
+        self._translation_placeholders = {"face": get_friendly_name(self._face_name)}
 
         super().__init__(
             config_entry,
@@ -1827,10 +1840,10 @@ class FrigateGlobalFaceSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation key for the sensor."""
         return "frigate_global_face"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"face": get_friendly_name(self._face_name)}
+        return self._translation_placeholders
 
     @property
     def native_value(self) -> str:
@@ -1856,6 +1869,7 @@ class FrigateGlobalPlateSensor(FrigateMQTTEntity, SensorEntity):
         self._plate_name = plate_name
         self._state = "Unknown"
         self._frigate_config = frigate_config
+        self._translation_placeholders = {"plate": get_friendly_name(self._plate_name)}
 
         super().__init__(
             config_entry,
@@ -1925,10 +1939,10 @@ class FrigateGlobalPlateSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation key for the sensor."""
         return "frigate_global_plate"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
-        return {"plate": get_friendly_name(self._plate_name)}
+        return self._translation_placeholders
 
     @property
     def native_value(self) -> str:
@@ -2030,7 +2044,7 @@ class FrigateGlobalObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
         """Return the translation key for the sensor."""
         return "frigate_global_object_classification"
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the sensor."""
         # Use the translated class name if available, otherwise fall back to friendly name

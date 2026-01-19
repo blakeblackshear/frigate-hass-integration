@@ -17,7 +17,6 @@ from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
     decode_if_necessary,
-    get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
     get_frigate_friendly_name,
@@ -211,7 +210,7 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
             self._switch_name, f"frigate_switch_{self._switch_name}"
         )
 
-    @property
+    @property  # type: ignore[misc]
     def translation_placeholders(self) -> dict[str, str]:
         """Return the translation placeholders for the switch."""
         return {}

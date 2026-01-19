@@ -20,9 +20,6 @@ from awesomeversion import AwesomeVersion
 from titlecase import titlecase
 import voluptuous as vol
 
-# Simple cache for translation files to improve performance
-_TRANSLATION_CACHE: dict[str, dict] = {}
-
 from custom_components.frigate.config_flow import get_config_entry_title
 from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.subscription import (
@@ -82,6 +79,9 @@ from .views import async_setup as views_async_setup
 from .ws_api import async_setup as ws_api_async_setup
 from .ws_proxy import WSEventProxy, WSReviewProxy
 
+# Simple cache for translation files to improve performance
+_TRANSLATION_CACHE: dict[str, dict] = {}
+
 SCAN_INTERVAL = timedelta(seconds=5)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -116,7 +116,9 @@ def get_frigate_entity_unique_id(
     return f"{config_entry_id}:{type_name}:{name}"
 
 
-def get_zone_parent_camera(frigate_config: dict, zone_name: str) -> str | None:
+def get_zone_parent_camera(
+    frigate_config: dict[str, Any], zone_name: str
+) -> str | None:
     """Find the parent camera that contains the specified zone by iterating through all cameras in the Frigate config.
 
     Args:
@@ -126,10 +128,6 @@ def get_zone_parent_camera(frigate_config: dict, zone_name: str) -> str | None:
     Returns:
         Parent camera name (str) or None if not found
     """
-    # Validate config structure
-    if not isinstance(frigate_config, dict):
-        return None
-
     cameras = frigate_config.get("cameras")
     if not cameras:
         return None
@@ -139,14 +137,17 @@ def get_zone_parent_camera(frigate_config: dict, zone_name: str) -> str | None:
         # Check if the current camera has zones configured and if the target zone exists
         zones = camera_config.get("zones", {})
         if isinstance(zones, dict) and zone_name in zones:
-            return camera_name
+            return str(camera_name)
 
     # No matching zone found
     return None
 
 
 def get_frigate_friendly_name(
-    frigate_config: dict, entity_type: str, entity_name: str, parent_camera: str = None
+    frigate_config: dict[str, Any],
+    entity_type: str,
+    entity_name: str,
+    parent_camera: str | None = None,
 ) -> str:
     """Get a friendly version of a name, prefer frigate's friendly_name if exists.
 
@@ -170,7 +171,7 @@ def get_frigate_friendly_name(
         friendly_name = zones_config.get(entity_name, {}).get("friendly_name")
 
     if friendly_name and isinstance(friendly_name, str) and friendly_name.strip():
-        return friendly_name.strip()
+        return str(friendly_name.strip())
     return get_friendly_name(entity_name)
 
 
@@ -715,7 +716,9 @@ class FrigateMQTTEntity(FrigateEntity):
 
 
 def get_object_name_translation(
-    hass: HomeAssistant | None, obj_name: str, get_friendly_name_func
+    hass: HomeAssistant | None,
+    obj_name: str,
+    get_friendly_name_func: Callable[[str], str],
 ) -> str:
     """Get the translated name for an object, handling special cases like 'all'.
 
@@ -813,11 +816,11 @@ def _load_translation_from_file(
     if section:
         # Nested translation (e.g., "label" -> "all")
         if section in translations and key in translations[section]:
-            return translations[section][key]
+            return str(translations[section][key])
     else:
         # Top-level translation (e.g., "person" -> "Person")
         if key in translations:
-            return translations[key]
+            return str(translations[key])
 
     return default_value
 
@@ -839,7 +842,7 @@ def get_object_translation_placeholders(
 
 
 def set_object_name_translation(
-    entity,
+    entity: Entity,
     hass: HomeAssistant | None,
     obj_name: str,
     attr_name: str = "_translated_obj_name",

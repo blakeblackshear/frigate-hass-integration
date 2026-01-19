@@ -122,6 +122,7 @@ async def test_object_count_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "42"
+    assert entity_state.name == "Front Door Person Count"
 
 
 @pytest.mark.parametrize(
@@ -190,6 +191,7 @@ async def test_active_object_count_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_PERSON_ACTIVE_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "42"
+    assert entity_state.name == "Front Door Person Active Count"
 
 
 @pytest.mark.parametrize(
@@ -281,6 +283,7 @@ async def test_fps_sensor(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_SENSOR_DETECTION_FPS_ENTITY_ID)
     assert entity_state
+    assert entity_state.name == "Frigate detection fps"
     assert entity_state.state == "14"
     assert entity_state.attributes["icon"] == ICON_SPEEDOMETER
     assert entity_state.attributes["unit_of_measurement"] == FPS
@@ -352,6 +355,7 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Frigate Apex 0 temperature"
 
 
 async def test_status_sensor_success(hass: HomeAssistant) -> None:
@@ -365,6 +369,7 @@ async def test_status_sensor_success(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "running"
     assert entity_state.attributes["icon"] == ICON_SERVER
+    assert entity_state.name == "Frigate Status"
 
 
 async def test_status_sensor_error(hass: HomeAssistant) -> None:
@@ -387,6 +392,7 @@ async def test_status_sensor_error(hass: HomeAssistant) -> None:
     # The update coordinator will treat the error as unavailability.
     assert entity_state.state == "unavailable"
     assert entity_state.attributes["icon"] == ICON_SERVER
+    assert entity_state.name == "Frigate Status"
 
 
 async def test_uptime_sensor(hass: HomeAssistant) -> None:
@@ -419,6 +425,7 @@ async def test_uptime_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Frigate Uptime"
 
 
 async def test_per_entry_device_info(hass: HomeAssistant) -> None:
@@ -492,6 +499,7 @@ async def test_detector_speed_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Frigate Cpu1 inference speed"
 
 
 async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
@@ -535,6 +543,7 @@ async def test_camera_fps_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAMERA_FPS_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Front Door camera fps"
 
 
 async def test_camera_audio_sensor(hass: HomeAssistant) -> None:
@@ -576,6 +585,7 @@ async def test_camera_audio_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_SOUND_LEVEL_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Front Door sound level"
 
 
 async def test_camera_cpu_usage_sensor(hass: HomeAssistant) -> None:
@@ -617,14 +627,17 @@ async def test_camera_cpu_usage_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_CAPTURE_CPU_USAGE)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Front Door capture cpu usage"
 
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_DETECT_CPU_USAGE)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Front Door detect cpu usage"
 
     entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_FFMPEG_CPU_USAGE)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Front Door ffmpeg cpu usage"
 
 
 async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
@@ -661,6 +674,7 @@ async def test_gpu_usage_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_GPU_LOAD_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+    assert entity_state.name == "Frigate Nvidia GeForce RTX 3050 gpu load"
 
 
 @pytest.mark.parametrize(
@@ -842,6 +856,7 @@ async def test_recognized_face_sensor(hass: HomeAssistant) -> None:
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_FACE)
         assert entity_state
         assert entity_state.state == "None"
+        assert entity_state.name == "Front Door Last Recognized Face"
 
 
 async def test_recognized_plate_sensor(hass: HomeAssistant) -> None:
@@ -929,6 +944,7 @@ async def test_recognized_plate_sensor(hass: HomeAssistant) -> None:
         entity_state = hass.states.get(TEST_SENSOR_FRONT_DOOR_RECOGNIZED_PLATE)
         assert entity_state
         assert entity_state.state == "None"
+        assert entity_state.name == "Front Door Last Recognized Plate"
 
 
 async def test_classification_sensor(hass: HomeAssistant) -> None:
