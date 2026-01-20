@@ -133,7 +133,7 @@ class FrigateApiClient:
         after: float | None = None,
         before: float | None = None,
         limit: int | None = None,
-        reviewed: bool = False,
+        reviewed: bool | None = None,
         decode_json: bool = True,
     ) -> list[dict[str, Any]]:
         """Get review items from the API."""
@@ -145,7 +145,7 @@ class FrigateApiClient:
             "after": after,
             "before": before,
             "limit": limit,
-            "reviewed": int(reviewed),
+            "reviewed": int(reviewed) if reviewed is not None else None,
         }
 
         return cast(

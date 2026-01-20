@@ -928,10 +928,10 @@ async def test_async_get_classification_model_classes_api_error(
     assert result == []
 
 
-async def test_async_get_reviews(
+async def test_async_get_reviews_unreviewed(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
-    """Test async_get_reviews."""
+    """Test async_get_reviews with reviewed=False (unreviewed only)."""
     reviews_in = [
         {
             "id": "1735000000.123456-abc123",
@@ -975,6 +975,82 @@ async def test_async_get_reviews(
         before=1735100000.0,
         limit=10,
         reviewed=False,
+    )
+
+
+async def test_async_get_reviews_reviewed(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_reviews with reviewed=True (reviewed only)."""
+    reviews_in = [
+        {
+            "id": "1735000000.123456-abc123",
+            "camera": "front_door",
+            "start_time": 1735000000.0,
+            "end_time": 1735000060.0,
+            "severity": "alert",
+            "thumb_path": "/media/frigate/clips/review/thumb.webp",
+            "data": {"detections": ["person"], "objects": ["person"]},
+        }
+    ]
+
+    async def reviews_handler(request: web.Request) -> web.Response:
+        """Reviews handler."""
+        _assert_request_params(
+            request,
+            {
+                "cameras": "test_camera",
+                "reviewed": "1",
+            },
+        )
+        return web.json_response(reviews_in)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get("/api/review", reviews_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert reviews_in == await frigate_client.async_get_reviews(
+        cameras=["test_camera"],
+        reviewed=True,
+    )
+
+
+async def test_async_get_reviews_no_filter(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_reviews with reviewed=None (all reviews, no filter)."""
+    reviews_in = [
+        {
+            "id": "1735000000.123456-abc123",
+            "camera": "front_door",
+            "start_time": 1735000000.0,
+            "end_time": 1735000060.0,
+            "severity": "alert",
+            "thumb_path": "/media/frigate/clips/review/thumb.webp",
+            "data": {"detections": ["person"], "objects": ["person"]},
+        }
+    ]
+
+    async def reviews_handler(request: web.Request) -> web.Response:
+        """Reviews handler - should NOT have 'reviewed' param."""
+        # Verify 'reviewed' is NOT in the query params
+        assert "reviewed" not in request.query
+        _assert_request_params(
+            request,
+            {
+                "cameras": "test_camera",
+            },
+        )
+        return web.json_response(reviews_in)
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get("/api/review", reviews_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert reviews_in == await frigate_client.async_get_reviews(
+        cameras=["test_camera"],
     )
 
 
