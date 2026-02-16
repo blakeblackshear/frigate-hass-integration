@@ -81,7 +81,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
     def _state_message_received(self, msg: ReceiveMessage) -> None:
         """Handle a new received MQTT state message."""
         if isinstance(msg.payload, bytes):
-            self._last_image_timestamp = datetime.datetime.now()
+            self._last_image_timestamp = datetime.datetime.now(datetime.timezone.utc)
             self._last_image = msg.payload
             self.async_write_ha_state()
 
