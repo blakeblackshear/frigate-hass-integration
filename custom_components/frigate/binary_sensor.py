@@ -26,6 +26,9 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
+    get_object_translation_placeholders,
+    get_zone_parent_camera,
     get_zones,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
@@ -121,31 +124,51 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
+        if self._cam_name in get_zones(self._frigate_config):
+            entity_type = "zone"
+            # 2. Get the parent camera of the Zone (using get_zone_parent_camera utility function)
+            parent_camera = get_zone_parent_camera(self._frigate_config, self._cam_name)
+            # 3. Get the friendly_name of the Zone (passing the parent camera)
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config,
+                entity_type,
+                self._cam_name,  # Zone name
+                parent_camera,  # Parent camera name
+            )
+        else:
+            entity_type = "camera"
+            friendly_name = get_frigate_friendly_name(
+                self._frigate_config, entity_type, self._cam_name
+            )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
             "manufacturer": NAME,
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._obj_name)} occupancy"
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_binary_sensor_object_occupancy"
+
+    @property  # type: ignore[misc]
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the sensor."""
+        # Use the common translation function to get the translated object name
+        return get_object_translation_placeholders(
+            self.hass if hasattr(self, "hass") else None, self._obj_name
+        )
 
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
         return self._is_on
-
-    @property
-    def device_class(self) -> BinarySensorDeviceClass:
-        """Return the device class."""
-        return BinarySensorDeviceClass.OCCUPANCY
 
     @property
     def icon(self) -> str:
@@ -237,8 +260,6 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):
 class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
     """Frigate Motion Sensor class."""
 
-    _attr_name = "Motion"
-
     def __init__(
         self,
         config_entry: ConfigEntry,
@@ -281,16 +302,31 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
         )
 
     @property
+    def translation_key(self) -> str:
+        """Return the translation key for the sensor."""
+        return "frigate_binary_sensor_motion"
+
+    @property  # type: ignore[misc]
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the switch."""
+        return {}
+
+    @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
+        entity_type = "camera"
+        friendly_name = get_frigate_friendly_name(
+            self._frigate_config, entity_type, self._cam_name
+        )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,  # Replaced original get_friendly_name(self._cam_name)
             "model": self._get_model(),
-            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
+            "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
             "manufacturer": NAME,
         }
 

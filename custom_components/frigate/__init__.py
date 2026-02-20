@@ -10,7 +10,9 @@ from __future__ import annotations
 from collections.abc import Callable
 import datetime
 from datetime import timedelta
+import json
 import logging
+from pathlib import Path
 import re
 from typing import Any, Final
 
@@ -77,6 +79,9 @@ from .views import async_setup as views_async_setup
 from .ws_api import async_setup as ws_api_async_setup
 from .ws_proxy import WSEventProxy, WSReviewProxy
 
+# Simple cache for translation files to improve performance
+_TRANSLATION_CACHE: dict[str, dict] = {}
+
 SCAN_INTERVAL = timedelta(seconds=5)
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -109,6 +114,65 @@ def get_frigate_entity_unique_id(
 ) -> str:
     """Get the unique_id for a Frigate entity."""
     return f"{config_entry_id}:{type_name}:{name}"
+
+
+def get_zone_parent_camera(
+    frigate_config: dict[str, Any], zone_name: str
+) -> str | None:
+    """Find the parent camera that contains the specified zone by iterating through all cameras in the Frigate config.
+
+    Args:
+        frigate_config: Complete Frigate config dictionary (obtained from API)
+        zone_name: Name of the zone to find the parent for
+
+    Returns:
+        Parent camera name (str) or None if not found
+    """
+    cameras = frigate_config.get("cameras")
+    if not cameras:
+        return None
+
+    # Iterate through all camera zone configurations
+    for camera_name, camera_config in cameras.items():
+        # Check if the current camera has zones configured and if the target zone exists
+        zones = camera_config.get("zones", {})
+        if isinstance(zones, dict) and zone_name in zones:
+            return str(camera_name)
+
+    # No matching zone found
+    return None
+
+
+def get_frigate_friendly_name(
+    frigate_config: dict[str, Any],
+    entity_type: str,
+    entity_name: str,
+    parent_camera: str | None = None,
+) -> str:
+    """Get a friendly version of a name, prefer frigate's friendly_name if exists.
+
+    Get friendly name with priority:
+    1. frigate config's friendly_name (camera / camera->zone)
+    2. default get_friendly_name method
+    """
+    # Early return if cameras config is not present
+    if "cameras" not in frigate_config:
+        return get_friendly_name(entity_name)
+
+    friendly_name = None
+
+    if entity_type == "camera":
+        friendly_name = (
+            frigate_config["cameras"].get(entity_name, {}).get("friendly_name")
+        )
+    elif entity_type == "zone" and parent_camera:
+        camera_config = frigate_config["cameras"].get(parent_camera, {})
+        zones_config = camera_config.get("zones", {})
+        friendly_name = zones_config.get(entity_name, {}).get("friendly_name")
+
+    if friendly_name and isinstance(friendly_name, str) and friendly_name.strip():
+        return str(friendly_name.strip())
+    return get_friendly_name(entity_name)
 
 
 def get_friendly_name(name: str) -> str:
@@ -649,3 +713,159 @@ class FrigateMQTTEntity(FrigateEntity):
         """Handle a new received MQTT availability message."""
         self._available = decode_if_necessary(msg.payload) == "online"
         self.async_write_ha_state()
+
+
+def get_object_name_translation(
+    hass: HomeAssistant | None,
+    obj_name: str,
+    get_friendly_name_func: Callable[[str], str],
+) -> str:
+    """Get the translated name for an object, handling special cases like 'all'.
+
+    Args:
+        hass: HomeAssistant instance
+        obj_name: Original object name
+        get_friendly_name_func: Function to get friendly name
+
+    Returns:
+        Translated object name
+    """
+    # Default to friendly name
+    obj_name_result = get_friendly_name_func(obj_name)
+
+    if not hass:
+        return obj_name_result
+
+    # Determine translation file and key based on object type
+    if obj_name == "all":
+        # Special case: 'all' object uses main translation file under 'entity.label' section
+        translation_file_pattern = "translations/{language}.json"
+        translation_section = "entity.sensor.all_label"
+        translation_key = "name"
+    else:
+        # Regular objects use objects translation file
+        translation_file_pattern = "translations/objects/{language}.json"
+        translation_section = None  # Use the obj_name directly as the key
+        translation_key = obj_name
+
+    # Attempt to load translation
+    current_lang = hass.config.language
+    component_dir = Path(__file__).parent
+
+    # Try primary language
+    primary_path = component_dir / translation_file_pattern.format(
+        language=current_lang
+    )
+    obj_name_result = _load_translation_from_file(
+        primary_path, translation_section, translation_key, obj_name_result
+    )
+
+    # If not found and language has a region code (e.g., en-US), try base language (e.g., en)
+    if obj_name_result == get_friendly_name_func(obj_name) and "-" in current_lang:
+        base_lang = current_lang.split("-")[0]
+        fallback_path = component_dir / translation_file_pattern.format(
+            language=base_lang
+        )
+        obj_name_result = _load_translation_from_file(
+            fallback_path, translation_section, translation_key, obj_name_result
+        )
+
+    # If still not found, try English as ultimate fallback
+    if obj_name_result == get_friendly_name_func(obj_name) and current_lang != "en":
+        english_path = component_dir / translation_file_pattern.format(language="en")
+        obj_name_result = _load_translation_from_file(
+            english_path, translation_section, translation_key, obj_name_result
+        )
+
+    return obj_name_result
+
+
+def _load_translation_from_file(
+    file_path: Path, section: str | None, key: str, default_value: str
+) -> str:
+    """Helper function to load translation from a specific file.
+
+    Args:
+        file_path: Path to the translation file
+        section: Section in the translation file (None if key is top-level, dot notation for nested)
+        key: Translation key to look for
+        default_value: Value to return if translation is not found
+
+    Returns:
+        Translated value or default value
+    """
+    file_path_str = str(file_path)
+
+    # Check if we have cached translations for this file
+    if file_path_str in _TRANSLATION_CACHE:
+        translations = _TRANSLATION_CACHE[file_path_str]
+    else:
+        if not file_path.exists():
+            return default_value
+
+        try:
+            with open(file_path, encoding="utf-8") as f:
+                translations = json.load(f)
+
+            # Cache the translations for this file
+            _TRANSLATION_CACHE[file_path_str] = translations
+        except (json.JSONDecodeError, OSError):
+            # If there's an error reading the file, return the default value
+            return default_value
+
+    if section:
+        # Handle nested sections (e.g., "entity.label" -> "all")
+        section_parts = section.split(".")
+        current_dict = translations
+
+        # Navigate through the nested structure
+        for part in section_parts:
+            if isinstance(current_dict, dict) and part in current_dict:
+                current_dict = current_dict[part]
+            else:
+                # If any part of the path is missing, fall back to default
+                return default_value
+
+        # Now current_dict should be the final nested dictionary
+        if isinstance(current_dict, dict) and key in current_dict:
+            return str(current_dict[key])
+    else:
+        # Top-level translation (e.g., "person" -> "Person")
+        if key in translations:
+            return str(translations[key])
+
+    return default_value
+
+
+def get_object_translation_placeholders(
+    hass: HomeAssistant | None, obj_name: str
+) -> dict[str, str]:
+    """Generic helper function to get object translation placeholders
+
+    Args:
+        hass: HomeAssistant instance
+        obj_name: Object name
+
+    Returns:
+        Dictionary containing translation placeholders
+    """
+    translated_name = get_object_name_translation(hass, obj_name, get_friendly_name)
+    return {"object": translated_name}
+
+
+def set_object_name_translation(
+    entity: Entity,
+    hass: HomeAssistant | None,
+    obj_name: str,
+    attr_name: str = "_translated_obj_name",
+) -> None:
+    """Set the translated object name for an entity
+
+    Args:
+        entity: Entity object
+        hass: HomeAssistant instance
+        obj_name: Object name
+        attr_name: Attribute name, defaults to "_translated_obj_name"
+    """
+    translated_name = get_object_name_translation(hass, obj_name, get_friendly_name)
+    setattr(entity, attr_name, translated_name)
