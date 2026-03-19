@@ -123,6 +123,8 @@ async def test_frigate_query_tool_with_camera(hass: HomeAssistant) -> None:
 async def test_frigate_query_tool_no_client(hass: HomeAssistant) -> None:
     """Test FrigateQueryTool returns error when no client available."""
     hass.data.setdefault(DOMAIN, {})
+    # Add a non-dict entry to exercise the continue guard
+    hass.data[DOMAIN]["not_an_entry"] = lambda: None
 
     tool = FrigateQueryTool(camera_names=[])
     tool_input = llm.ToolInput(
