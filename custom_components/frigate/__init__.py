@@ -43,15 +43,13 @@ from homeassistant.core import (
     valid_entity_id,
 )
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er, llm
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
-
-from homeassistant.helpers import llm
 
 from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
