@@ -382,6 +382,30 @@ class FrigateApiClient:
         )
         return cast(dict[str, Any], result) if decode_json else result
 
+    async def async_chat_completion(
+        self,
+        query: str,
+        camera_name: str | None = None,
+    ) -> dict[str, Any]:
+        """Send a chat completion request to Frigate."""
+        data: dict[str, Any] = {
+            "messages": [{"role": "user", "content": query}],
+            "max_tool_iterations": 5,
+            "stream": False,
+        }
+        if camera_name:
+            data["include_live_image"] = camera_name
+
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "post",
+                str(URL(self._host) / "api/chat/completion"),
+                data=data,
+                timeout=REVIEW_SUMMARIZE_TIMEOUT,
+            ),
+        )
+
     async def _get_token(self) -> None:
         """
         Obtain a new JWT token using the provided username and password.
