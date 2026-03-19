@@ -43,7 +43,7 @@ from homeassistant.core import (
     valid_entity_id,
 )
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er, llm
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
@@ -57,6 +57,7 @@ from .const import (
     ATTR_CONFIG,
     ATTR_COORDINATOR,
     ATTR_END_TIME,
+    ATTR_LLM_UNREGISTER,
     ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
     ATTR_WS_REVIEW_PROXY,
@@ -73,6 +74,7 @@ from .const import (
     STATUS_RUNNING,
     STATUS_STARTING,
 )
+from .llm_functions import FrigateServiceAPI
 from .views import async_setup as views_async_setup
 from .ws_api import async_setup as ws_api_async_setup
 from .ws_proxy import WSEventProxy, WSReviewProxy
@@ -424,6 +426,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
 
+    # Register LLM API if Frigate 0.18+ and not already registered
+    if (
+        verify_frigate_version(config, "0.18")
+        and ATTR_LLM_UNREGISTER not in hass.data[DOMAIN]
+    ):
+        hass.data[DOMAIN][ATTR_LLM_UNREGISTER] = llm.async_register_api(
+            hass, FrigateServiceAPI(hass=hass)
+        )
+
     # Register review summarize service if Frigate version is 0.17+
     if verify_frigate_version(config, "0.17"):
         hass.services.async_register(
@@ -507,6 +518,15 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
             .async_shutdown()
         )
         hass.data[DOMAIN].pop(config_entry.entry_id)
+
+        # Unregister LLM API if no more Frigate entries remain
+        remaining = {
+            k
+            for k, v in hass.data[DOMAIN].items()
+            if isinstance(v, dict) and ATTR_CLIENT in v
+        }
+        if not remaining and ATTR_LLM_UNREGISTER in hass.data[DOMAIN]:
+            hass.data[DOMAIN].pop(ATTR_LLM_UNREGISTER)()
 
     return unload_ok
 
