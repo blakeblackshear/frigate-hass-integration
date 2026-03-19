@@ -4,19 +4,10 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any
-from unittest.mock import AsyncMock, patch
-
-import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from unittest.mock import AsyncMock
 
 from custom_components.frigate.api import FrigateApiClientError
-from custom_components.frigate.const import (
-    ATTR_CLIENT,
-    ATTR_CONFIG,
-    ATTR_LLM_UNREGISTER,
-    DOMAIN,
-)
+from custom_components.frigate.const import ATTR_LLM_UNREGISTER, DOMAIN
 from custom_components.frigate.llm_functions import (
     FRIGATE_SERVICES_API_ID,
     FrigateQueryTool,
@@ -25,12 +16,7 @@ from custom_components.frigate.llm_functions import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from . import (
-    TEST_CONFIG,
-    TEST_CONFIG_ENTRY_ID,
-    create_mock_frigate_client,
-    setup_mock_frigate_config_entry,
-)
+from . import TEST_CONFIG, create_mock_frigate_client, setup_mock_frigate_config_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -173,6 +159,44 @@ def _create_018_client() -> AsyncMock:
     config["version"] = "0.18.0"
     client.async_get_config = AsyncMock(return_value=config)
     return client
+
+
+async def test_frigate_query_tool_skips_non_entry_data(hass: HomeAssistant) -> None:
+    """Test FrigateQueryTool skips non-dict entries like llm_unregister callback."""
+    client = _create_018_client()
+    client.async_chat_completion = AsyncMock(
+        return_value={
+            "message": {"role": "assistant", "content": "All clear."},
+            "finish_reason": "stop",
+            "tool_iterations": 0,
+            "tool_calls": [],
+        }
+    )
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    # ATTR_LLM_UNREGISTER is now in hass.data[DOMAIN] as a callable (non-dict)
+    assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
+
+    tool = FrigateQueryTool(camera_names=["front_door"])
+    tool_input = llm.ToolInput(
+        tool_name="frigate_query",
+        tool_args={"query": "Anything happening?"},
+    )
+    result = await tool.async_call(hass, tool_input, _create_llm_context())
+    assert result["response"] == "All clear."
+
+
+async def test_frigate_service_api_skips_non_entry_data(hass: HomeAssistant) -> None:
+    """Test FrigateServiceAPI skips non-dict entries when collecting cameras."""
+    client = _create_018_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    # ATTR_LLM_UNREGISTER is now in hass.data[DOMAIN] as a callable (non-dict)
+    assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
+
+    api = FrigateServiceAPI(hass=hass)
+    instance = await api.async_get_api_instance(_create_llm_context())
+    assert "front_door" in instance.api_prompt
 
 
 async def test_llm_api_registration_with_version_018(hass: HomeAssistant) -> None:
