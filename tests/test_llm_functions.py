@@ -35,19 +35,24 @@ from . import (
 _LOGGER = logging.getLogger(__name__)
 
 
-async def test_frigate_service_api_instance(hass: HomeAssistant) -> None:
-    """Test FrigateServiceAPI returns correct API instance."""
-    config_entry = await setup_mock_frigate_config_entry(hass)
-
-    api = FrigateServiceAPI(hass=hass)
-    llm_context = llm.LLMContext(
+def _create_llm_context() -> llm.LLMContext:
+    """Create a test LLMContext with all required fields."""
+    return llm.LLMContext(
         platform="test",
         context=None,
         language="en",
         assistant=None,
         device_id=None,
+        user_prompt=None,
     )
-    instance = await api.async_get_api_instance(llm_context)
+
+
+async def test_frigate_service_api_instance(hass: HomeAssistant) -> None:
+    """Test FrigateServiceAPI returns correct API instance."""
+    await setup_mock_frigate_config_entry(hass)
+
+    api = FrigateServiceAPI(hass=hass)
+    instance = await api.async_get_api_instance(_create_llm_context())
 
     assert instance.api is api
     assert len(instance.tools) == 1
@@ -60,14 +65,7 @@ async def test_frigate_service_api_no_entries(hass: HomeAssistant) -> None:
     hass.data.setdefault(DOMAIN, {})
 
     api = FrigateServiceAPI(hass=hass)
-    llm_context = llm.LLMContext(
-        platform="test",
-        context=None,
-        language="en",
-        assistant=None,
-        device_id=None,
-    )
-    instance = await api.async_get_api_instance(llm_context)
+    instance = await api.async_get_api_instance(_create_llm_context())
 
     assert len(instance.tools) == 1
     assert "none detected" in instance.api_prompt
@@ -87,22 +85,15 @@ async def test_frigate_query_tool_call(hass: HomeAssistant) -> None:
             "tool_calls": [],
         }
     )
-    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     tool = FrigateQueryTool(camera_names=["front_door"])
     tool_input = llm.ToolInput(
         tool_name="frigate_query",
         tool_args={"query": "Is there anyone at the front door?"},
     )
-    llm_context = llm.LLMContext(
-        platform="test",
-        context=None,
-        language="en",
-        assistant=None,
-        device_id=None,
-    )
 
-    result = await tool.async_call(hass, tool_input, llm_context)
+    result = await tool.async_call(hass, tool_input, _create_llm_context())
 
     assert result["response"] == "There is a person at the front door."
     client.async_chat_completion.assert_called_once_with(
@@ -124,7 +115,7 @@ async def test_frigate_query_tool_with_camera(hass: HomeAssistant) -> None:
             "tool_calls": [],
         }
     )
-    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     tool = FrigateQueryTool(camera_names=["front_door"])
     tool_input = llm.ToolInput(
@@ -134,15 +125,8 @@ async def test_frigate_query_tool_with_camera(hass: HomeAssistant) -> None:
             "camera_name": "front_door",
         },
     )
-    llm_context = llm.LLMContext(
-        platform="test",
-        context=None,
-        language="en",
-        assistant=None,
-        device_id=None,
-    )
 
-    result = await tool.async_call(hass, tool_input, llm_context)
+    result = await tool.async_call(hass, tool_input, _create_llm_context())
 
     assert result["response"] == "I can see a car in the driveway."
     client.async_chat_completion.assert_called_once_with(
@@ -159,15 +143,8 @@ async def test_frigate_query_tool_no_client(hass: HomeAssistant) -> None:
         tool_name="frigate_query",
         tool_args={"query": "Is there anyone?"},
     )
-    llm_context = llm.LLMContext(
-        platform="test",
-        context=None,
-        language="en",
-        assistant=None,
-        device_id=None,
-    )
 
-    result = await tool.async_call(hass, tool_input, llm_context)
+    result = await tool.async_call(hass, tool_input, _create_llm_context())
     assert "error" in result
 
 
@@ -177,36 +154,33 @@ async def test_frigate_query_tool_api_error(hass: HomeAssistant) -> None:
     client.async_chat_completion = AsyncMock(
         side_effect=FrigateApiClientError("Connection failed")
     )
-    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     tool = FrigateQueryTool(camera_names=["front_door"])
     tool_input = llm.ToolInput(
         tool_name="frigate_query",
         tool_args={"query": "Is there anyone?"},
     )
-    llm_context = llm.LLMContext(
-        platform="test",
-        context=None,
-        language="en",
-        assistant=None,
-        device_id=None,
-    )
 
-    result = await tool.async_call(hass, tool_input, llm_context)
+    result = await tool.async_call(hass, tool_input, _create_llm_context())
     assert "error" in result
 
 
-async def test_llm_api_registration_with_version_018(hass: HomeAssistant) -> None:
-    """Test LLM API is registered when Frigate version is 0.18+."""
+def _create_018_client() -> AsyncMock:
+    """Create a mock client with Frigate 0.18 config."""
     client = create_mock_frigate_client()
     config = copy.deepcopy(TEST_CONFIG)
     config["version"] = "0.18.0"
     client.async_get_config = AsyncMock(return_value=config)
+    return client
 
-    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+
+async def test_llm_api_registration_with_version_018(hass: HomeAssistant) -> None:
+    """Test LLM API is registered when Frigate version is 0.18+."""
+    client = _create_018_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
 
     assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
-    # Verify the API is registered
     apis = llm.async_get_apis(hass)
     api_ids = [api.id for api in apis]
     assert FRIGATE_SERVICES_API_ID in api_ids
@@ -214,7 +188,7 @@ async def test_llm_api_registration_with_version_018(hass: HomeAssistant) -> Non
 
 async def test_llm_api_not_registered_with_version_017(hass: HomeAssistant) -> None:
     """Test LLM API is not registered when Frigate version is below 0.18."""
-    config_entry = await setup_mock_frigate_config_entry(hass)
+    await setup_mock_frigate_config_entry(hass)
 
     assert ATTR_LLM_UNREGISTER not in hass.data[DOMAIN]
 
@@ -223,11 +197,7 @@ async def test_llm_api_unregistered_on_last_entry_unload(
     hass: HomeAssistant,
 ) -> None:
     """Test LLM API is unregistered when last config entry is unloaded."""
-    client = create_mock_frigate_client()
-    config = copy.deepcopy(TEST_CONFIG)
-    config["version"] = "0.18.0"
-    client.async_get_config = AsyncMock(return_value=config)
-
+    client = _create_018_client()
     config_entry = await setup_mock_frigate_config_entry(hass, client=client)
     assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
 

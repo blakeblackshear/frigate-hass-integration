@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 from typing import Any
 
@@ -90,7 +89,6 @@ class FrigateQueryTool(llm.Tool):
             return {"error": f"Frigate query failed: {exc}"}
 
 
-@dataclass(slots=True, kw_only=True)
 class FrigateServiceAPI(llm.API):
     """LLM API exposing Frigate Services."""
 
