@@ -85,14 +85,16 @@ TEST_SENSOR_GLOBAL_CLASSIFICATION_DELIVERY_PERSON = (
 TEST_SENSOR_GLOBAL_CLASSIFICATION_RED_SHIRT = "sensor.frigate_red_shirt_last_camera"
 TEST_UPDATE_FRIGATE_CONTAINER_ENTITY_ID = "update.frigate_server"
 
-TEST_SERVER_VERSION = "0.17.0"
+TEST_SELECT_PROFILE_ENTITY_ID = "select.frigate_profile"
+
+TEST_SERVER_VERSION = "0.18.0"
 TEST_CONFIG_ENTRY_ID = "74565ad414754616000674c87bdc876c"
 TEST_URL = "http://example.com"
 TEST_USERNAME = "secret_username"
 TEST_PASSWORD = "secret_password"
 TEST_FRIGATE_INSTANCE_ID = "frigate_client_id"
 TEST_CONFIG = {
-    "version": "0.17-0",
+    "version": "0.18-0",
     "cameras": {
         "front_door": {
             "best_image_timeout": 60,
@@ -223,6 +225,14 @@ TEST_CONFIG = {
         "stats_interval": 60,
         "topic_prefix": "frigate",
         "user": None,
+    },
+    "profiles": {
+        "away": {
+            "friendly_name": "Away",
+        },
+        "home": {
+            "friendly_name": "Home",
+        },
     },
     "snapshots": {"retain": {"default": 10, "objects": {}}},
     "go2rtc": {"streams": {"front_door": "rtsp://rtsp:password@cam-front-door/live"}},

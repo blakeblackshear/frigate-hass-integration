@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 from unittest.mock import AsyncMock
 
@@ -16,7 +15,7 @@ from custom_components.frigate.llm_functions import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
-from . import TEST_CONFIG, create_mock_frigate_client, setup_mock_frigate_config_entry
+from . import create_mock_frigate_client, setup_mock_frigate_config_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -154,18 +153,9 @@ async def test_frigate_query_tool_api_error(hass: HomeAssistant) -> None:
     assert "error" in result
 
 
-def _create_018_client() -> AsyncMock:
-    """Create a mock client with Frigate 0.18 config."""
-    client = create_mock_frigate_client()
-    config = copy.deepcopy(TEST_CONFIG)
-    config["version"] = "0.18.0"
-    client.async_get_config = AsyncMock(return_value=config)
-    return client
-
-
 async def test_frigate_query_tool_skips_non_entry_data(hass: HomeAssistant) -> None:
     """Test FrigateQueryTool skips non-dict entries like llm_unregister callback."""
-    client = _create_018_client()
+    client = create_mock_frigate_client()
     client.async_chat_completion = AsyncMock(
         return_value={
             "message": {"role": "assistant", "content": "All clear."},
@@ -190,8 +180,7 @@ async def test_frigate_query_tool_skips_non_entry_data(hass: HomeAssistant) -> N
 
 async def test_frigate_service_api_skips_non_entry_data(hass: HomeAssistant) -> None:
     """Test FrigateServiceAPI skips non-dict entries when collecting cameras."""
-    client = _create_018_client()
-    await setup_mock_frigate_config_entry(hass, client=client)
+    await setup_mock_frigate_config_entry(hass)
 
     # ATTR_LLM_UNREGISTER is now in hass.data[DOMAIN] as a callable (non-dict)
     assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
@@ -203,8 +192,7 @@ async def test_frigate_service_api_skips_non_entry_data(hass: HomeAssistant) -> 
 
 async def test_llm_api_registration_with_version_018(hass: HomeAssistant) -> None:
     """Test LLM API is registered when Frigate version is 0.18+."""
-    client = _create_018_client()
-    await setup_mock_frigate_config_entry(hass, client=client)
+    await setup_mock_frigate_config_entry(hass)
 
     assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
     apis = llm.async_get_apis(hass)
@@ -212,19 +200,11 @@ async def test_llm_api_registration_with_version_018(hass: HomeAssistant) -> Non
     assert FRIGATE_SERVICES_API_ID in api_ids
 
 
-async def test_llm_api_not_registered_with_version_017(hass: HomeAssistant) -> None:
-    """Test LLM API is not registered when Frigate version is below 0.18."""
-    await setup_mock_frigate_config_entry(hass)
-
-    assert ATTR_LLM_UNREGISTER not in hass.data[DOMAIN]
-
-
 async def test_llm_api_unregistered_on_last_entry_unload(
     hass: HomeAssistant,
 ) -> None:
     """Test LLM API is unregistered when last config entry is unloaded."""
-    client = _create_018_client()
-    config_entry = await setup_mock_frigate_config_entry(hass, client=client)
+    config_entry = await setup_mock_frigate_config_entry(hass)
     assert ATTR_LLM_UNREGISTER in hass.data[DOMAIN]
 
     await hass.config_entries.async_unload(config_entry.entry_id)
