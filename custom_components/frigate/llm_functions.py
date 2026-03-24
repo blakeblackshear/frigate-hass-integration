@@ -24,12 +24,12 @@ class FrigateQueryTool(llm.Tool):
 
     name = "frigate_query"
     description = (
-        "Ask Frigate NVR a question about your security cameras, recent events, "
-        "detected objects, or what is currently visible on a camera. Use this tool "
-        "when the user asks about their security cameras, surveillance footage, "
-        "who or what was detected, or wants to know what a camera sees right now. "
-        "You can optionally specify a camera name to include a live image from "
-        "that camera for visual analysis."
+        "Query Frigate NVR. Use when the user asks about anything cameras could "
+        "answer — people, vehicles, packages, animals, "
+        "or what is happening in a physical area outside the home. "
+        "Also use when the user wants to be notified or alerted when something "
+        "visually observable occurs at a monitored location. "
+        "Forward the user's request as-is; Frigate handles tool selection internally."
     )
 
     def __init__(self, camera_names: list[str]) -> None:
@@ -37,18 +37,14 @@ class FrigateQueryTool(llm.Tool):
         schema: dict[vol.Marker, Any] = {
             vol.Required(
                 "query",
-                description="The user's question about their security cameras or surveillance system",
+                description="The user's question or request, forwarded as-is.",
             ): cv.string,
         }
         if camera_names:
             schema[
                 vol.Optional(
                     "camera_name",
-                    description=(
-                        "The name of a specific camera to include a live image "
-                        "from for visual context. Use when the user asks about "
-                        "what a specific camera sees right now."
-                    ),
+                    description="Camera name to include a live image for visual context.",
                 )
             ] = vol.In(camera_names)
         self.parameters = vol.Schema(schema)
@@ -116,10 +112,9 @@ class FrigateServiceAPI(llm.API):
 
         camera_list = ", ".join(camera_names) if camera_names else "none detected"
         api_prompt = (
-            "Use Frigate Services to ask questions about security cameras, "
-            "detected events, and live camera feeds. Frigate is an NVR "
-            "(Network Video Recorder) that monitors security cameras, detects "
-            "objects like people, cars, and animals, and records events. "
+            "Frigate is a local NVR that detects objects (people, cars, animals, packages), "
+            "records events, and monitors cameras. Use frigate_query for questions "
+            "about activity at monitored locations — pass the user's request as-is. "
             f"Available cameras: {camera_list}."
         )
 
