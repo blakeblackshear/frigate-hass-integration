@@ -310,6 +310,20 @@ async def test_notifications_proxy_view_hls_init_segment(
     assert resp.status == HTTPStatus.OK
 
 
+async def test_notifications_proxy_view_rejects_non_init_mp4(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test notification proxy rejects arbitrary mp4 files."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        "/api/frigate/notifications/event_id/camera/not-init.mp4"
+    )
+    assert resp.status == HTTPStatus.NOT_FOUND
+
+
 async def test_notifications_proxy_view_clip(
     local_frigate: Any,
     hass_client_no_auth: Any,
