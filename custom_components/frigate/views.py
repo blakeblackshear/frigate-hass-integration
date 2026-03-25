@@ -329,15 +329,20 @@ class NotificationsProxyView(FrigateProxyView):
             if len(path_parts) == 2 and path_parts[1] == "review_thumbnail.webp":
                 camera_name = path_parts[0]
                 url_path = f"clips/review/thumb-{camera_name}-{event_id}.webp"
-        elif (
-            path.endswith(".m3u8")
-            or path.endswith(".ts")
-            or path.endswith(".m4s")
-            or path.endswith("init-v1-a1.mp4")
-        ):
-            # Proxy event HLS requests to the vod module
+        else:
             file_name = os.path.basename(path)
-            url_path = f"vod/event/{event_id}/{file_name}"
+            is_hls_init_segment = file_name.startswith(
+                "init-v1"
+            ) and file_name.endswith(".mp4")
+
+            if (
+                path.endswith(".m3u8")
+                or path.endswith(".ts")
+                or path.endswith(".m4s")
+                or is_hls_init_segment
+            ):
+                # Proxy event HLS requests to the vod module
+                url_path = f"vod/event/{event_id}/{file_name}"
 
         if not url_path:
             raise HASSWebProxyLibNotFoundRequestError

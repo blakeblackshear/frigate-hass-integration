@@ -63,6 +63,8 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/api/events/event_id/snapshot.jpg", response_handler),
             web.get("/api/events/event_id/clip.mp4", response_handler),
             web.get("/vod/event/event_id/master.m3u8", response_handler),
+            web.get("/vod/event/event_id/init-v1.mp4", response_handler),
+            web.get("/vod/event/event_id/init-v1-a1.mp4", response_handler),
             web.get("/api/events/event_id/preview.gif", response_handler),
             web.get("/api/review/event_id/preview", response_handler),
             web.get("/clips/review/thumb-camera_name-event_id.webp", response_handler),
@@ -290,6 +292,36 @@ async def test_notifications_proxy_view_hls(
         "/api/frigate/notifications/event_id/camera/master.m3u8"
     )
     assert resp.status == HTTPStatus.OK
+
+
+@pytest.mark.parametrize("segment_name", ["init-v1.mp4", "init-v1-a1.mp4"])
+async def test_notifications_proxy_view_hls_init_segment(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+    segment_name: str,
+) -> None:
+    """Test notification HLS init segments."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        f"/api/frigate/notifications/event_id/camera/{segment_name}"
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_notifications_proxy_view_rejects_non_init_mp4(
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test notification proxy rejects arbitrary mp4 files."""
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+
+    resp = await unauthenticated_hass_client.get(
+        "/api/frigate/notifications/event_id/camera/not-init.mp4"
+    )
+    assert resp.status == HTTPStatus.NOT_FOUND
 
 
 async def test_notifications_proxy_view_clip(
