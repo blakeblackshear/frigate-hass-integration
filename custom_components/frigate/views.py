@@ -333,7 +333,7 @@ class NotificationsProxyView(FrigateProxyView):
             path.endswith(".m3u8")
             or path.endswith(".ts")
             or path.endswith(".m4s")
-            or path.endswith("init-v1-a1.mp4")
+            or path.endswith(".mp4")
         ):
             # Proxy event HLS requests to the vod module
             file_name = os.path.basename(path)
