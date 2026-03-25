@@ -335,7 +335,6 @@ class NotificationsProxyView(FrigateProxyView):
                 "init-v1"
             ) and file_name.endswith(".mp4")
 
-
             if (
                 path.endswith(".m3u8")
                 or path.endswith(".ts")
