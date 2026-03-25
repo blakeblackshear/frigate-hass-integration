@@ -331,9 +331,10 @@ class NotificationsProxyView(FrigateProxyView):
                 url_path = f"clips/review/thumb-{camera_name}-{event_id}.webp"
         else:
             file_name = os.path.basename(path)
-            is_hls_init_segment = (
-                file_name.startswith("init-v1") and file_name.endswith(".mp4")
-            )
+            is_hls_init_segment = file_name.startswith(
+                "init-v1"
+            ) and file_name.endswith(".mp4")
+
 
             if (
                 path.endswith(".m3u8")
@@ -341,7 +342,7 @@ class NotificationsProxyView(FrigateProxyView):
                 or path.endswith(".m4s")
                 or is_hls_init_segment
             ):
-            # Proxy event HLS requests to the vod module
+                # Proxy event HLS requests to the vod module
                 url_path = f"vod/event/{event_id}/{file_name}"
 
         if not url_path:
