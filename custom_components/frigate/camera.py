@@ -261,17 +261,22 @@ class FrigateCamera(
         Checks live.streams from camera config first (prefer matching name,
         fallback to first entry), then checks go2rtc.streams for camera name.
         """
-        go2rtc_streams = self._frigate_config.get("go2rtc", {}).get("streams", {})
-        live_streams = self._camera_config.get("live", {}).get("streams", [])
+        go2rtc_streams: dict[str, list[str]] = self._frigate_config.get(
+            "go2rtc", {}
+        ).get("streams", {})
+        live_streams: dict[str, str] = self._camera_config.get("live", {}).get(
+            "streams", {}
+        )
 
         if live_streams:
             # Prefer a stream matching the camera name
             for stream in live_streams:
                 if stream in go2rtc_streams and stream == self._cam_name:
                     return stream
-            # Otherwise use the first stream in the list
-            if live_streams[0] in go2rtc_streams:
-                return live_streams[0]
+            # Otherwise use the first stream in the dict
+            first_stream = next(iter(live_streams))
+            if first_stream in go2rtc_streams:
+                return first_stream
 
         # Fallback: check if camera name exists in go2rtc streams
         if self._cam_name in go2rtc_streams:

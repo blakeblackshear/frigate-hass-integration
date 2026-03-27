@@ -408,7 +408,7 @@ async def test_frigate_camera_live_streams_matching_name(hass: HomeAssistant) ->
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["go2rtc"]["streams"]["front_door_hd"] = "rtsp://rtsp:password@cam/hd"
     config["cameras"]["front_door"]["live"] = {
-        "streams": ["front_door_hd", "front_door"],
+        "streams": {"front_door_hd": "hd_stream", "front_door": "default_stream"},
     }
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -433,7 +433,7 @@ async def test_frigate_camera_live_streams_no_matching_name(
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["go2rtc"]["streams"]["front_door_hd"] = "rtsp://rtsp:password@cam/hd"
     config["cameras"]["front_door"]["live"] = {
-        "streams": ["front_door_hd"],
+        "streams": {"front_door_hd": "hd_stream"},
     }
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -457,7 +457,7 @@ async def test_frigate_camera_live_streams_first_not_in_go2rtc(
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["cameras"]["front_door"]["live"] = {
-        "streams": ["nonexistent_stream"],
+        "streams": {"nonexistent_stream": "some_value"},
     }
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
