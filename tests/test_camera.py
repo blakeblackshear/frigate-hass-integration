@@ -402,6 +402,78 @@ async def test_frigate_camera_setup_no_stream(hass: HomeAssistant) -> None:
     assert not await async_get_stream_source(hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
 
 
+async def test_frigate_camera_live_streams_matching_name(hass: HomeAssistant) -> None:
+    """Test that live.streams prefers a stream matching the camera name."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["go2rtc"]["streams"]["front_door_hd"] = "rtsp://rtsp:password@cam/hd"
+    config["cameras"]["front_door"]["live"] = {
+        "streams": ["front_door_hd", "front_door"],
+    }
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+
+    stream_source = await async_get_stream_source(
+        hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID
+    )
+    assert stream_source
+    assert stream_source.endswith("/front_door")
+
+
+async def test_frigate_camera_live_streams_no_matching_name(
+    hass: HomeAssistant,
+) -> None:
+    """Test that live.streams falls back to first stream when no name matches."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["go2rtc"]["streams"]["front_door_hd"] = "rtsp://rtsp:password@cam/hd"
+    config["cameras"]["front_door"]["live"] = {
+        "streams": ["front_door_hd"],
+    }
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+
+    stream_source = await async_get_stream_source(
+        hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID
+    )
+    assert stream_source
+    assert stream_source.endswith("/front_door_hd")
+
+
+async def test_frigate_camera_live_streams_first_not_in_go2rtc(
+    hass: HomeAssistant,
+) -> None:
+    """Test that live.streams falls back to cam name when first stream not in go2rtc."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["cameras"]["front_door"]["live"] = {
+        "streams": ["nonexistent_stream"],
+    }
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+
+    stream_source = await async_get_stream_source(
+        hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID
+    )
+    assert stream_source
+    assert stream_source.endswith("/front_door")
+
+
 async def test_frigate_camera_recording_camera_state(
     hass: HomeAssistant,
     aioclient_mock: Any,
