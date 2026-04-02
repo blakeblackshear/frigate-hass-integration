@@ -563,18 +563,6 @@ class Go2RTCAPIBaseProxyView(FrigateProxyViewMixin):
         config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
         return verify_frigate_version(config, "0.18") if config else False
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
-        """Create proxied URL."""
-        return ProxiedURL(
-            url=self._get_fqdn_path(
-                request,
-                f"api/go2rtc/{kwargs['path']}",
-                frigate_instance_id=kwargs.get("frigate_instance_id"),
-            ),
-            headers=kwargs["headers"],
-            query_params=self._get_query_params(request),
-        )
-
 
 class Go2RTCAPIWebsocketProxyView(Go2RTCAPIBaseProxyView, FrigateWebsocketProxyView):
     """A proxy for go2rtc API (websocket)."""
