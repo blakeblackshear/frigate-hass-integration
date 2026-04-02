@@ -547,17 +547,21 @@ class WebRTCProxyView(FrigateWebsocketProxyView):
 class Go2RTCAPIBaseProxyView(FrigateProxyViewMixin):
     """A base class for go2rtc proxy views."""
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
-        """Create proxied URL."""
-        return ProxiedURL(
-            url=self._get_fqdn_path(
-                request,
-                f"api/go2rtc/{kwargs['path']}",
-                frigate_instance_id=kwargs.get("frigate_instance_id"),
-            ),
-            headers=kwargs["headers"],
-            query_params=self._get_query_params(request),
+    def _is_frigate_018_or_later(
+        self, request: web.Request, frigate_instance_id: str | None = None
+    ) -> bool:
+        """Check if the Frigate instance is version 0.18+."""
+        # Import here to avoid circular import (views is imported by __init__)
+        from custom_components.frigate import verify_frigate_version
+
+        hass = request.app[KEY_HASS]
+        config_entry = self._get_config_entry_for_request(
+            request, frigate_instance_id=frigate_instance_id
         )
+        if not config_entry:
+            return False
+        config = hass.data[DOMAIN].get(config_entry.entry_id, {}).get(ATTR_CONFIG, {})
+        return verify_frigate_version(config, "0.18") if config else False
 
 
 class Go2RTCAPIWebsocketProxyView(Go2RTCAPIBaseProxyView, FrigateWebsocketProxyView):
@@ -568,6 +572,27 @@ class Go2RTCAPIWebsocketProxyView(Go2RTCAPIBaseProxyView, FrigateWebsocketProxyV
 
     name = "api:frigate:go2rtc:ws"
 
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        frigate_instance_id = kwargs.get("frigate_instance_id")
+
+        # Frigate 0.18+ removed the /api/go2rtc/api nginx block;
+        # route through the existing /live/mse nginx path instead.
+        if self._is_frigate_018_or_later(request, frigate_instance_id):
+            upstream_path = f"live/mse/{kwargs['path']}"
+        else:
+            upstream_path = f"api/go2rtc/{kwargs['path']}"
+
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                upstream_path,
+                frigate_instance_id=frigate_instance_id,
+            ),
+            headers=kwargs["headers"],
+            query_params=self._get_query_params(request),
+        )
+
 
 class Go2RTCAPIProxyView(Go2RTCAPIBaseProxyView, FrigateProxyView):
     """A proxy for go2rtc API (http)."""
@@ -576,3 +601,32 @@ class Go2RTCAPIProxyView(Go2RTCAPIBaseProxyView, FrigateProxyView):
     extra_urls = ["/api/frigate/go2rtc/{path:.*}"]
 
     name = "api:frigate:go2rtc"
+
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        path = kwargs["path"]
+        frigate_instance_id = kwargs.get("frigate_instance_id")
+
+        # Frigate 0.18+ removed the /api/go2rtc/api nginx block;
+        # route streams through Frigate's Python API which masks credentials.
+        if (
+            self._is_frigate_018_or_later(request, frigate_instance_id)
+            and path.rstrip("/") == "api/streams"
+        ):
+            src = request.query.get("src", "")
+            if src:
+                upstream_path = f"api/go2rtc/streams/{src}"
+            else:
+                upstream_path = "api/go2rtc/streams"
+        else:
+            upstream_path = f"api/go2rtc/{path}"
+
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                upstream_path,
+                frigate_instance_id=frigate_instance_id,
+            ),
+            headers=kwargs["headers"],
+            query_params=self._get_query_params(request),
+        )
