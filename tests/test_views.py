@@ -83,8 +83,9 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
             web.get("/live/mse/querystring", ws_response_handler),
             web.get("/live/webrtc/front_door", ws_response_handler),
             web.get("/live/webrtc/querystring", ws_response_handler),
-            web.get("/api/go2rtc/api/streams", response_handler),
-            web.get("/api/go2rtc/api/ws", ws_response_handler),
+            web.get("/api/go2rtc/streams", response_handler),
+            web.get("/api/go2rtc/streams/front_door", response_handler),
+            web.get("/live/mse/api/ws", ws_response_handler),
             web.get(
                 "/api/front_door/start/1664067600.02/end/1664068200.03/clip.mp4",
                 response_handler,
@@ -810,7 +811,7 @@ async def test_go2rtc_api_ws_proxy_view(
     ) as ws:
         # First message from the fixture will be the URL and headers.
         request = await ws.receive_json()
-        assert request["url"].endswith("/api/go2rtc/api/ws")
+        assert request["url"].endswith("/live/mse/api/ws")
 
         # Subsequent messages will echo back.
         await ws.send_str("Hello!")
@@ -825,8 +826,16 @@ async def test_go2rtc_api_proxy_view(
 
     authenticated_hass_client = await hass_client()
 
+    # Test streams endpoint routes to Frigate's safe API (credentials masked)
     resp = await authenticated_hass_client.get(
         f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/go2rtc/api/streams"
+    )
+    assert resp.status == HTTPStatus.OK
+
+    # Test streams endpoint with src query param routes to per-stream API
+    resp = await authenticated_hass_client.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/go2rtc/api/streams",
+        params={"src": "front_door"},
     )
     assert resp.status == HTTPStatus.OK
 
@@ -839,6 +848,67 @@ async def test_go2rtc_api_proxy_view(
         "/api/frigate/NOT_A_REAL_ID/go2rtc/api/streams"
     )
     assert resp.status == HTTPStatus.NOT_FOUND
+
+
+@pytest.fixture
+async def local_frigate_017(hass: HomeAssistant, aiohttp_server: Any) -> Any:
+    """Point the integration at a local fake Frigate server running pre-0.18."""
+
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.get("/api/go2rtc/api/streams", response_handler),
+            web.get("/api/go2rtc/api/ws", ws_response_handler),
+        ],
+    )
+
+    config_017 = copy.deepcopy(TEST_CONFIG)
+    config_017["version"] = "0.17-0"
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config_017)
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
+    config_entry = create_mock_frigate_config_entry(
+        hass, data={CONF_URL: str(server.make_url("/"))}
+    )
+    await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+    LocalFrigate = namedtuple("LocalFrigate", ["server", "client", "config_entry"])
+    return LocalFrigate(server, client, config_entry)
+
+
+async def test_go2rtc_api_ws_proxy_view_pre_018(
+    hass: Any,
+    local_frigate_017: Any,
+    hass_client: Any,
+) -> None:
+    """Test Go2RTC API websocket uses old path on pre-0.18 Frigate."""
+
+    authenticated_hass_client = await hass_client()
+
+    async with authenticated_hass_client.ws_connect(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/go2rtc/ws/api/ws"
+    ) as ws:
+        request = await ws.receive_json()
+        assert request["url"].endswith("/api/go2rtc/api/ws")
+
+        await ws.send_str("Hello!")
+        assert (await ws.receive_str()) == "Hello!"
+
+
+async def test_go2rtc_api_proxy_view_pre_018(
+    local_frigate_017: Any,
+    hass_client: Any,
+) -> None:
+    """Test Go2RTC API HTTP uses old path on pre-0.18 Frigate."""
+
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get(
+        f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/go2rtc/api/streams"
+    )
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_review_clips_proxy_view(
