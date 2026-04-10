@@ -2,7 +2,7 @@ aiohttp
 aiohttp_cors
 attr
 janus
-homeassistant==2025.4.1
+homeassistant==2025.10.2
 paho-mqtt
 python-dateutil
 titlecase
