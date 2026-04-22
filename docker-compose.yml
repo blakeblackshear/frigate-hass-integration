@@ -34,6 +34,8 @@ services:
       - .devcontainer/frigate_media:/media/frigate
       # Avoid mounting the entire config directory so that data is not persisted
       - .devcontainer/frigate_config/config.yml:/config/config.yml:ro
+    environment:
+      - GO2RTC_ALLOW_ARBITRARY_EXEC=true
   mqtt:
     image: eclipse-mosquitto:2
     restart: unless-stopped
