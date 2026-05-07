@@ -28,7 +28,6 @@ def _create_llm_context() -> llm.LLMContext:
         language="en",
         assistant=None,
         device_id=None,
-        user_prompt=None,
     )
 
 
