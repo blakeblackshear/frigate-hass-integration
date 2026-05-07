@@ -34,5 +34,112 @@
     "abort": {
       "only_advanced_options": "高级模式已禁用，且只有高级选项可用"
     }
+  },
+  "entity": {
+    "sensor": {
+      "all_label": {
+        "name": "全部"
+      },
+      "frigate_status": {
+        "name": "状态"
+      },
+      "frigate_uptime": {
+        "name": "运行时间"
+      },
+      "frigate_review_status": {
+        "name": "核查状态"
+      },
+      "frigate_object_count": {
+        "name": "{object} 的数量"
+      },
+      "frigate_active_object_count": {
+        "name": "活跃中的 {object} 数量"
+      },
+      "frigate_fps": {
+        "name": "{type} fps"
+      },
+      "frigate_detector_speed": {
+        "name": "{detector} 推理速度"
+      },
+      "frigate_gpu_load": {
+        "name": "{gpu} GPU 负载"
+      },
+      "frigate_camera_fps": {
+        "name": "{type} fps"
+      },
+      "frigate_sound_level": {
+        "name": "声音水平"
+      },
+      "frigate_temp": {
+        "name": "{device} 温度"
+      },
+      "frigate_cpu_usage": {
+        "name": "{process} CPU 使用率"
+      },
+      "frigate_recognized_face": {
+        "name": "最后识别的人脸"
+      },
+      "frigate_recognized_plate": {
+        "name": "最后识别的车牌"
+      },
+      "frigate_classification": {
+        "name": "{model} 分类"
+      },
+      "frigate_object_classification": {
+        "name": "{model} 对象分类"
+      },
+      "frigate_global_face": {
+        "name": "{face} 最后出现的摄像头"
+      },
+      "frigate_global_plate": {
+        "name": "{plate} 最后出现的摄像头"
+      },
+      "frigate_global_object_classification": {
+        "name": "{class} 最后出现的摄像头"
+      }
+    },
+    "binary_sensor": {
+      "frigate_binary_sensor_object_occupancy": {
+        "name": "{object} 占用情况"
+      },
+      "frigate_binary_sensor_motion": {
+        "name": "画面变动检测"
+      }
+    },
+    "switch": {
+      "frigate_switch_detect": {
+        "name": "目标检测"
+      },
+      "frigate_switch_motion": {
+        "name": "画面变动检测"
+      },
+      "frigate_switch_recordings": {
+        "name": "录制"
+      },
+      "frigate_switch_snapshots": {
+        "name": "快照"
+      },
+      "frigate_switch_improve_contrast": {
+        "name": "增强对比度"
+      },
+      "frigate_switch_review_alerts": {
+        "name": "核查警报"
+      },
+      "frigate_switch_review_detections": {
+        "name": "核查检测"
+      },
+      "frigate_switch_audio": {
+        "name": "音频检测"
+      },
+      "frigate_switch_ptz_autotracker": {
+        "name": "PTZ 自动跟踪"
+      },
+      "frigate_switch_object_descriptions": {
+        "name": "目标描述"
+      },
+      "frigate_switch_review_descriptions": {
+        "name": "核查描述"
+      }
+    }
   }
 }

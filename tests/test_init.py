@@ -3,16 +3,24 @@
 from __future__ import annotations
 
 import copy
+import json
 import logging
+from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate import (
+    _TRANSLATION_CACHE,
+    _load_translation_from_file,
+    get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
+    get_object_name_translation,
+    get_zone_parent_camera,
 )
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
@@ -582,3 +590,191 @@ async def test_older_frigate_no_logo_sensors(hass: HomeAssistant) -> None:
     assert not entity_registry.async_get_entity_id(
         DOMAIN, "sensor", "front_door_amazon_count"
     )
+
+
+def test_get_zone_parent_camera_found() -> None:
+    """Test get_zone_parent_camera when zone is found."""
+    frigate_config: dict[str, Any] = {
+        "cameras": {
+            "front_door": {
+                "zones": {
+                    "steps": {"objects": ["person"]},
+                    "porch": {"objects": ["car"]},
+                }
+            },
+            "backyard": {
+                "zones": {
+                    "garden": {"objects": ["dog"]},
+                }
+            },
+        }
+    }
+
+    assert get_zone_parent_camera(frigate_config, "steps") == "front_door"
+    assert get_zone_parent_camera(frigate_config, "porch") == "front_door"
+
+
+def test_load_translation_file_not_exists() -> None:
+    """Test _load_translation_from_file when file doesn't exist."""
+    file_path = Path("/nonexistent/path/to/file.json")
+    result = _load_translation_from_file(file_path, None, "key", "default")
+    assert result == "default"
+
+
+def test_load_translation_json_decode_error() -> None:
+    """Test _load_translation_from_file with invalid JSON."""
+    file_path = Path("/tmp/test_invalid.json")
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("{ invalid json }")
+
+    try:
+        result = _load_translation_from_file(file_path, None, "key", "default")
+        assert result == "default"
+    finally:
+        if file_path.exists():
+            file_path.unlink()
+
+
+def test_load_translation_missing_nested_section() -> None:
+    """Test _load_translation_from_file when nested section path is missing."""
+    file_path = Path("/tmp/test_nested.json")
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump({"entity": {"label": {}}}, f)
+
+    try:
+        # Section path exists but key is missing
+        result = _load_translation_from_file(
+            file_path, "entity.label", "name", "default"
+        )
+        assert result == "default"
+
+        # Section path is partially missing
+        result = _load_translation_from_file(
+            file_path, "entity.nonexistent", "name", "default"
+        )
+        assert result == "default"
+    finally:
+        if file_path.exists():
+            file_path.unlink()
+        # Clear cache
+        _TRANSLATION_CACHE.clear()
+
+
+def test_load_translation_cached() -> None:
+    """Test _load_translation_from_file uses cache."""
+    file_path = Path("/tmp/test_cache.json")
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump({"person": "Person"}, f)
+
+    try:
+        # First call loads and caches
+        result1 = _load_translation_from_file(file_path, None, "person", "default")
+        assert result1 == "Person"
+
+        # Modify file
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump({"person": "Modified"}, f)
+
+        # Second call uses cache, should still return original value
+        result2 = _load_translation_from_file(file_path, None, "person", "default")
+        assert result2 == "Person"
+    finally:
+        if file_path.exists():
+            file_path.unlink()
+        # Clear cache
+        _TRANSLATION_CACHE.clear()
+
+
+def test_get_object_name_translation_fallback() -> None:
+    """Test get_object_name_translation fallback logic with mock hass."""
+    from pathlib import Path
+
+    # Create a mock HomeAssistant with a specific language
+    hass = MagicMock()
+    hass.config.language = "en-US"
+
+    # Mock the component directory path
+    component_dir = Path("/workspace/custom_components/frigate")
+
+    with patch("custom_components.frigate.Path") as mock_path:
+        mock_path.return_value = component_dir
+
+        # Test with region-based language, should fallback to base language if needed
+        result = get_object_name_translation(hass, "person", get_friendly_name)
+        assert result == "Person"
+
+
+def test_get_frigate_friendly_name_no_cameras_key() -> None:
+    """Test get_frigate_friendly_name when cameras key is missing."""
+    frigate_config: dict[str, Any] = {}
+
+    result = get_frigate_friendly_name(frigate_config, "camera", "front_door")
+    assert result == "Front Door"
+
+
+def test_get_frigate_friendly_name_valid_friendly_name() -> None:
+    """Test get_frigate_friendly_name when friendly_name is valid."""
+    frigate_config: dict[str, Any] = {
+        "cameras": {"front_door": {"friendly_name": "Front Door Camera"}}
+    }
+
+    result = get_frigate_friendly_name(frigate_config, "camera", "front_door")
+    assert result == "Front Door Camera"
+
+
+def test_get_frigate_friendly_name_friendly_name_with_whitespace() -> None:
+    """Test get_frigate_friendly_name strips whitespace."""
+    frigate_config: dict[str, Any] = {
+        "cameras": {"front_door": {"friendly_name": "  Front Door Camera  "}}
+    }
+
+    result = get_frigate_friendly_name(frigate_config, "camera", "front_door")
+    assert result == "Front Door Camera"
+
+
+def test_get_frigate_friendly_name_zone_with_parent() -> None:
+    """Test get_frigate_friendly_name for zone with parent camera."""
+    frigate_config: dict[str, Any] = {
+        "cameras": {"front_door": {"zones": {"steps": {"friendly_name": "Steps Zone"}}}}
+    }
+
+    result = get_frigate_friendly_name(frigate_config, "zone", "steps", "front_door")
+    assert result == "Steps Zone"
+
+
+def test_get_object_name_translation_no_hass() -> None:
+    """Test get_object_name_translation when hass is None."""
+    result = get_object_name_translation(None, "person", get_friendly_name)
+    assert result == "Person"
+
+
+def test_get_zone_parent_camera_cameras_none() -> None:
+    """Test get_zone_parent_camera when cameras key is None."""
+    frigate_config: dict[str, Any] = {"cameras": None}
+
+    assert get_zone_parent_camera(frigate_config, "steps") is None
+
+
+def test_get_zone_parent_camera_cameras_empty_dict() -> None:
+    """Test get_zone_parent_camera when cameras is empty dict."""
+    frigate_config: dict[str, Any] = {"cameras": {}}
+
+    assert get_zone_parent_camera(frigate_config, "steps") is None
+
+
+def test_get_zone_parent_camera_zone_not_found() -> None:
+    """Test get_zone_parent_camera when zone doesn't exist in any camera."""
+    frigate_config: dict[str, Any] = {
+        "cameras": {
+            "front_door": {
+                "zones": {
+                    "steps": {"objects": ["person"]},
+                }
+            },
+        }
+    }
+
+    assert get_zone_parent_camera(frigate_config, "nonexistent") is None

@@ -17,9 +17,9 @@ from . import (
     FrigateMQTTEntity,
     ReceiveMessage,
     decode_if_necessary,
-    get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_friendly_name,
     verify_frigate_version,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
@@ -174,21 +174,46 @@ class FrigateSwitch(FrigateMQTTEntity, SwitchEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get device information."""
+        friendly_name = get_frigate_friendly_name(
+            self._frigate_config, "camera", self._cam_name
+        )
+
         return {
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
             "via_device": get_frigate_device_identifier(self._config_entry),
-            "name": get_friendly_name(self._cam_name),
+            "name": friendly_name,  # Replaced original get_friendly_name(self._cam_name)
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
             "manufacturer": NAME,
         }
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return f"{get_friendly_name(self._descriptive_name)}".title()
+    def translation_key(self) -> str:
+        """Return the translation key for the switch."""
+        # Map switch names to translation keys
+        switch_translation_keys = {
+            "detect": "frigate_switch_detect",
+            "motion": "frigate_switch_motion",
+            "recordings": "frigate_switch_recordings",
+            "snapshots": "frigate_switch_snapshots",
+            "improve_contrast": "frigate_switch_improve_contrast",
+            "review_alerts": "frigate_switch_review_alerts",
+            "review_detections": "frigate_switch_review_detections",
+            "audio": "frigate_switch_audio",
+            "ptz_autotracker": "frigate_switch_ptz_autotracker",
+            "object_descriptions": "frigate_switch_object_descriptions",
+            "review_descriptions": "frigate_switch_review_descriptions",
+        }
+        return switch_translation_keys.get(
+            self._switch_name, f"frigate_switch_{self._switch_name}"
+        )
+
+    @property  # type: ignore[misc]
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return the translation placeholders for the switch."""
+        return {}
 
     @property
     def is_on(self) -> bool:

@@ -20,6 +20,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_object_name_translation,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
 
@@ -111,7 +112,11 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return get_friendly_name(self._obj_name).title()
+        return get_object_name_translation(
+            self.hass if hasattr(self, "hass") else None,
+            self._obj_name,
+            get_friendly_name,
+        )
 
     @property
     def image_last_updated(self) -> datetime.datetime | None:
