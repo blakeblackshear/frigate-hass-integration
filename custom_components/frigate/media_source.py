@@ -9,6 +9,7 @@ from typing import Any, cast
 
 import attr
 from dateutil.relativedelta import relativedelta
+from titlecase import titlecase
 
 from homeassistant.components.media_player.const import MediaClass, MediaType
 from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
@@ -784,7 +785,7 @@ class FrigateMediaSource(MediaSource):
         if identifier.is_root():
             title = f"{identifier.frigate_media_type.value.capitalize()} ({count})"
         else:
-            title = f"{' > '.join([s for s in get_friendly_name(identifier.name).split('.') if s != '']).title()} ({count})"
+            title = f"{titlecase(' > '.join([s for s in get_friendly_name(identifier.name).split('.') if s != '']))} ({count})"
 
         base = BrowseMediaSource(
             domain=DOMAIN,
