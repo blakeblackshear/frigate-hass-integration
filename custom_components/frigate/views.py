@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import dataclasses
 import datetime
 import logging
 import os
+import ssl
 from typing import Any, Optional, cast
 
 from aiohttp import web
@@ -133,6 +135,33 @@ def async_setup(hass: HomeAssistant) -> None:
 
 class FrigateProxyViewMixin:
     """A mixin for proxying Frigate."""
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Wrap _get_proxied_url in subclasses to inject SSL context from config entry."""
+        super().__init_subclass__(**kwargs)
+        if "_get_proxied_url" not in cls.__dict__:
+            return
+
+        original = cls.__dict__["_get_proxied_url"]
+
+        def _make_wrapped(orig: Any) -> Any:
+            def _wrapped(self: Any, request: web.Request, **kw: Any) -> ProxiedURL:
+                result = orig(self, request, **kw)
+                if result.ssl_context is not None:
+                    return result
+                config_entry = self._get_config_entry_for_request(
+                    request, kw.get("frigate_instance_id")
+                )
+                if config_entry and not config_entry.data.get("validate_ssl", True):
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+                    return dataclasses.replace(result, ssl_context=ctx)
+                return result
+
+            return _wrapped
+
+        cls._get_proxied_url = _make_wrapped(original)
 
     def _get_query_params(self, request: web.Request) -> Mapping[str, str]:
         """Get the query params to send upstream."""
