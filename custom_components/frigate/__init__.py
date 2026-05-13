@@ -264,9 +264,9 @@ def get_zones(config: dict[str, Any]) -> set[str]:
     return cameras_zones
 
 
-def decode_if_necessary(data: str | bytes) -> str:
+def decode_if_necessary(data: str | bytes | bytearray) -> str:
     """Decode a string if necessary."""
-    return data.decode("utf-8") if isinstance(data, bytes) else data
+    return data.decode("utf-8") if isinstance(data, (bytes, bytearray)) else data
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
