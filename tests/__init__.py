@@ -425,12 +425,13 @@ def create_mock_frigate_config_entry(
     options: dict[str, Any] | None = None,
     entry_id: str | None = TEST_CONFIG_ENTRY_ID,
     title: str | None = TEST_URL,
+    validate_ssl: bool = True,
 ) -> MockConfigEntry:
     """Add a test config entry."""
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=entry_id,
         domain=DOMAIN,
-        data=data or {CONF_URL: TEST_URL},
+        data=data or {CONF_URL: TEST_URL, "validate_ssl": validate_ssl},
         title=title,
         options=options or {},
         version=2,
