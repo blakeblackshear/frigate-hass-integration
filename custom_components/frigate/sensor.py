@@ -8,6 +8,8 @@ import json
 import logging
 from typing import Any
 
+from titlecase import titlecase
+
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
@@ -873,7 +875,8 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity, SensorEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return f"{get_friendly_name(self._obj_name)} active count".title()
+        result: str = titlecase(f"{get_friendly_name(self._obj_name)} active count")
+        return result
 
     @property
     def native_value(self) -> int:
@@ -1139,7 +1142,8 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         """Return the value of the sensor."""
-        return str(self._state).title()
+        result: str = titlecase(str(self._state))
+        return result
 
     @property
     def icon(self) -> str:
@@ -1191,7 +1195,7 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity, SensorEntity):
                 return
 
             if data.get("name"):
-                self._state = str(data["name"]).title()
+                self._state = titlecase(str(data["name"]))
             else:
                 self._state = str(data["plate"])
 
@@ -1399,9 +1403,9 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
 
             # Extract sub_label or attribute from the payload
             if "sub_label" in data:
-                self._state = str(data["sub_label"]).replace("_", " ").title()
+                self._state = titlecase(str(data["sub_label"]).replace("_", " "))
             elif "attribute" in data:
-                self._state = str(data["attribute"]).replace("_", " ").title()
+                self._state = titlecase(str(data["attribute"]).replace("_", " "))
             else:
                 return
 

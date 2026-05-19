@@ -6,6 +6,8 @@ import datetime
 import logging
 from typing import Any
 
+from titlecase import titlecase
+
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
@@ -111,7 +113,8 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return get_friendly_name(self._obj_name).title()
+        result: str = titlecase(get_friendly_name(self._obj_name))
+        return result
 
     @property
     def image_last_updated(self) -> datetime.datetime | None:
