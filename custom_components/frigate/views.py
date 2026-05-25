@@ -156,7 +156,7 @@ class FrigateProxyViewMixin:
                     ctx = ssl.create_default_context()
                     ctx.check_hostname = False
                     ctx.verify_mode = ssl.CERT_NONE
-                    return cast(ProxiedURL, dataclasses.replace(result, ssl_context=ctx))
+                    return dataclasses.replace(result, ssl_context=ctx)
                 return result
 
             return _wrapped
