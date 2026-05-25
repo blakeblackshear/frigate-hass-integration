@@ -962,8 +962,6 @@ async def test_snapshot_proxy_with_ssl_validation_disabled(
     hass_client: Any,
 ) -> None:
     """Test proxy view creates SSL context when SSL validation is disabled."""
-    from hass_web_proxy_lib import ProxiedURL
-
     server = await start_frigate_server(
         aiohttp_server,
         [web.get("/api/events/event_id/snapshot.jpg", response_handler)],
@@ -981,25 +979,12 @@ async def test_snapshot_proxy_with_ssl_validation_disabled(
 
     authenticated_hass_client = await hass_client()
 
-    # Mock the original _get_proxied_url to return a ProxiedURL with no ssl_context.
-    # This allows us to verify the mixin adds one when validate_ssl=False.
-    from custom_components.frigate.views import FrigateProxyViewMixin
-
-    async def get_snapshot_view():
-        """Get the snapshot view to access _get_proxied_url."""
-        app = hass.data.get("http").app
-        for route in app.router.routes():
-            if hasattr(route.resource, "canonical"):
-                if "/api/frigate/snapshot/" in route.resource.canonical:
-                    return route._handler
-        return None
-
     # Patch ssl.create_default_context to verify it's called when SSL validation is disabled.
     original_ssl_context = ssl.create_default_context
 
     ssl_context_created = False
 
-    def mock_create_default_context():
+    def mock_create_default_context() -> ssl.SSLContext:
         nonlocal ssl_context_created
         ssl_context_created = True
         ctx = original_ssl_context()
@@ -1018,8 +1003,6 @@ async def test_snapshot_proxy_with_ssl_validation_enabled(
     hass_client: Any,
 ) -> None:
     """Test proxy view does not modify SSL context when SSL validation is enabled."""
-    from hass_web_proxy_lib import ProxiedURL
-
     server = await start_frigate_server(
         aiohttp_server,
         [web.get("/api/events/event_id/snapshot.jpg", response_handler)],
@@ -1041,7 +1024,7 @@ async def test_snapshot_proxy_with_ssl_validation_enabled(
     original_ssl_context = ssl.create_default_context
     ssl_context_created = False
 
-    def mock_create_default_context():
+    def mock_create_default_context() -> ssl.SSLContext:
         nonlocal ssl_context_created
         ssl_context_created = True
         return original_ssl_context()
@@ -1055,12 +1038,14 @@ async def test_snapshot_proxy_with_ssl_validation_enabled(
 
 async def test_snapshot_proxy_with_ssl_context_already_set() -> None:
     """Test proxy view returns early when ssl_context is already provided."""
-    from hass_web_proxy_lib import ProxiedURL, ProxyView
     from unittest.mock import Mock
+
+    from hass_web_proxy_lib import ProxiedURL, ProxyView
+
     from custom_components.frigate.views import FrigateProxyViewMixin
 
     class TestView(FrigateProxyViewMixin, ProxyView):
-        def _get_proxied_url(self, request, **kwargs: Any) -> ProxiedURL:
+        def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
             return ProxiedURL(
                 url="https://example.com",
                 headers={},
@@ -1075,7 +1060,7 @@ async def test_snapshot_proxy_with_ssl_context_already_set() -> None:
     original_ssl_context = ssl.create_default_context
     ssl_context_created = False
 
-    def mock_create_default_context():
+    def mock_create_default_context() -> ssl.SSLContext:
         nonlocal ssl_context_created
         ssl_context_created = True
         return original_ssl_context()

@@ -146,7 +146,7 @@ class FrigateProxyViewMixin:
 
         def _make_wrapped(orig: Any) -> Any:
             def _wrapped(self: Any, request: web.Request, **kw: Any) -> ProxiedURL:
-                result = orig(self, request, **kw)
+                result: ProxiedURL = orig(self, request, **kw)
                 if result.ssl_context is not None:
                     return result
                 config_entry = self._get_config_entry_for_request(
@@ -156,12 +156,12 @@ class FrigateProxyViewMixin:
                     ctx = ssl.create_default_context()
                     ctx.check_hostname = False
                     ctx.verify_mode = ssl.CERT_NONE
-                    return dataclasses.replace(result, ssl_context=ctx)
+                    return cast(ProxiedURL, dataclasses.replace(result, ssl_context=ctx))
                 return result
 
             return _wrapped
 
-        cls._get_proxied_url = _make_wrapped(original)
+        setattr(cls, "_get_proxied_url", _make_wrapped(original))
 
     def _get_query_params(self, request: web.Request) -> Mapping[str, str]:
         """Get the query params to send upstream."""
