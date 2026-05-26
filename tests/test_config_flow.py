@@ -14,6 +14,7 @@ from custom_components.frigate.const import (
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
     CONF_RTSP_URL_TEMPLATE,
+    CONF_VALIDATE_SSL,
     DOMAIN,
 )
 from homeassistant import config_entries
@@ -63,7 +64,7 @@ async def test_user_success(hass: HomeAssistant) -> None:
         CONF_URL: TEST_URL,
         CONF_PASSWORD: "",
         CONF_USERNAME: "",
-        "validate_ssl": True,
+        CONF_VALIDATE_SSL: True,
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called
@@ -92,7 +93,7 @@ async def test_user_success_with_auth(hass: HomeAssistant) -> None:
                 CONF_PASSWORD: TEST_PASSWORD,
                 CONF_URL: TEST_URL,
                 CONF_USERNAME: TEST_USERNAME,
-                "validate_ssl": True,
+                CONF_VALIDATE_SSL: True,
             },
         )
         await hass.async_block_till_done()
@@ -103,7 +104,7 @@ async def test_user_success_with_auth(hass: HomeAssistant) -> None:
         CONF_URL: TEST_URL,
         CONF_PASSWORD: TEST_PASSWORD,
         CONF_USERNAME: TEST_USERNAME,
-        "validate_ssl": True,
+        CONF_VALIDATE_SSL: True,
     }
     assert len(mock_setup_entry.mock_calls) == 1
     assert mock_client.async_get_stats.called

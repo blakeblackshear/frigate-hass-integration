@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import dataclasses
 import datetime
 import logging
 import os
+import ssl
 from typing import Any, Optional, cast
 
 from aiohttp import web
@@ -28,6 +30,7 @@ from custom_components.frigate.const import (
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
+    CONF_VALIDATE_SSL,
     DOMAIN,
 )
 from homeassistant.components.http import KEY_AUTHENTICATED
@@ -134,6 +137,26 @@ def async_setup(hass: HomeAssistant) -> None:
 class FrigateProxyViewMixin:
     """A mixin for proxying Frigate."""
 
+    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Get proxied URL with SSL context applied."""
+        result: ProxiedURL = self._get_proxied_url_impl(request, **kwargs)
+        if result.ssl_context is not None:
+            return result
+        config_entry = self._get_config_entry_for_request(
+            request, kwargs.get("frigate_instance_id")
+        )
+        if config_entry and not config_entry.data.get(CONF_VALIDATE_SSL, True):
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            return dataclasses.replace(result, ssl_context=ctx)
+        return result
+
+    def _get_proxied_url_impl(
+        self, request: web.Request, **kwargs: Any
+    ) -> ProxiedURL:  # pragma: no cover
+        raise NotImplementedError
+
     def _get_query_params(self, request: web.Request) -> Mapping[str, str]:
         """Get the query params to send upstream."""
         return {k: v for k, v in request.query.items() if k != "authSig"}
@@ -207,7 +230,7 @@ class SnapshotsProxyView(FrigateProxyView):
 
     name = "api:frigate:snapshots"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -230,7 +253,7 @@ class RecordingProxyView(FrigateProxyView):
 
     name = "api:frigate:recording"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -251,7 +274,7 @@ class ThumbnailsProxyView(FrigateProxyView):
 
     name = "api:frigate:thumbnails"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -275,7 +298,7 @@ class ReviewClipsProxyView(FrigateProxyView):
 
     name = "api:frigate:clips"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -296,7 +319,7 @@ class NotificationsProxyView(FrigateProxyView):
 
     name = "api:frigate:notification"
 
-    def _get_proxied_url(
+    def _get_proxied_url_impl(
         self,
         request: web.Request,
         **kwargs: Any,
@@ -413,7 +436,7 @@ class VodProxyView(FrigateProxyView):
         """Get the query params to send upstream."""
         return request.query
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -434,7 +457,7 @@ class VodSegmentProxyView(FrigateProxyView):
 
     name = "api:frigate:vod:segment"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         if not self._async_validate_signed_manifest(request):
             raise HASSWebProxyLibUnauthorizedRequestError()
@@ -485,7 +508,7 @@ class JSMPEGProxyView(FrigateWebsocketProxyView):
 
     name = "api:frigate:jsmpeg"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -510,7 +533,7 @@ class MSEProxyView(FrigateWebsocketProxyView):
 
     name = "api:frigate:mse"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -531,7 +554,7 @@ class WebRTCProxyView(FrigateWebsocketProxyView):
 
     name = "api:frigate:webrtc"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         return ProxiedURL(
             url=self._get_fqdn_path(
@@ -572,7 +595,7 @@ class Go2RTCAPIWebsocketProxyView(Go2RTCAPIBaseProxyView, FrigateWebsocketProxyV
 
     name = "api:frigate:go2rtc:ws"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         frigate_instance_id = kwargs.get("frigate_instance_id")
 
@@ -602,7 +625,7 @@ class Go2RTCAPIProxyView(Go2RTCAPIBaseProxyView, FrigateProxyView):
 
     name = "api:frigate:go2rtc"
 
-    def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
         path = kwargs["path"]
         frigate_instance_id = kwargs.get("frigate_instance_id")

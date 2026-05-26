@@ -7,6 +7,7 @@ import copy
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 import logging
+import ssl
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -19,6 +20,7 @@ from custom_components.frigate.const import (
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
+    CONF_VALIDATE_SSL,
     DOMAIN,
 )
 from homeassistant.components.http.auth import async_sign_path
@@ -953,3 +955,121 @@ async def test_review_clips_with_frigate_instance_id(
         "/api/frigate/NOT_A_REAL_ID/clips/review/thumb-abc123.webp"
     )
     assert resp.status == HTTPStatus.NOT_FOUND
+
+
+async def test_snapshot_proxy_with_ssl_validation_disabled(
+    hass: Any,
+    aiohttp_server: Any,
+    hass_client: Any,
+) -> None:
+    """Test proxy view creates SSL context when SSL validation is disabled."""
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get("/api/events/event_id/snapshot.jpg", response_handler)],
+    )
+
+    client = create_mock_frigate_client()
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
+    config_entry = create_mock_frigate_config_entry(
+        hass,
+        data={CONF_URL: str(server.make_url("/")), CONF_VALIDATE_SSL: False},
+    )
+    await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+
+    authenticated_hass_client = await hass_client()
+
+    # Patch ssl.create_default_context to verify it's called when SSL validation is disabled.
+    original_ssl_context = ssl.create_default_context
+
+    ssl_context_created = False
+
+    def mock_create_default_context() -> ssl.SSLContext:
+        nonlocal ssl_context_created
+        ssl_context_created = True
+        ctx = original_ssl_context()
+        return ctx
+
+    with patch("ssl.create_default_context", side_effect=mock_create_default_context):
+        resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
+        assert resp.status == HTTPStatus.OK
+        # Verify SSL context was created due to validate_ssl=False
+        assert ssl_context_created
+
+
+async def test_snapshot_proxy_with_ssl_validation_enabled(
+    hass: Any,
+    aiohttp_server: Any,
+    hass_client: Any,
+) -> None:
+    """Test proxy view does not modify SSL context when SSL validation is enabled."""
+    server = await start_frigate_server(
+        aiohttp_server,
+        [web.get("/api/events/event_id/snapshot.jpg", response_handler)],
+    )
+
+    client = create_mock_frigate_client()
+    client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
+    config_entry = create_mock_frigate_config_entry(
+        hass,
+        data={CONF_URL: str(server.make_url("/")), CONF_VALIDATE_SSL: True},
+    )
+    await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry, client=client
+    )
+
+    authenticated_hass_client = await hass_client()
+
+    # Patch ssl.create_default_context to verify it's NOT called when SSL validation is enabled.
+    original_ssl_context = ssl.create_default_context
+    ssl_context_created = False
+
+    def mock_create_default_context() -> ssl.SSLContext:
+        nonlocal ssl_context_created
+        ssl_context_created = True
+        return original_ssl_context()
+
+    with patch("ssl.create_default_context", side_effect=mock_create_default_context):
+        resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
+        assert resp.status == HTTPStatus.OK
+        # Verify SSL context was NOT created since validate_ssl=True (default behavior)
+        assert not ssl_context_created
+
+
+async def test_snapshot_proxy_with_ssl_context_already_set() -> None:
+    """Test proxy view returns early when ssl_context is already provided."""
+    from unittest.mock import Mock
+
+    from hass_web_proxy_lib import ProxiedURL, ProxyView
+
+    from custom_components.frigate.views import FrigateProxyViewMixin
+
+    class TestView(FrigateProxyViewMixin, ProxyView):
+        def _get_proxied_url_impl(
+            self, request: web.Request, **kwargs: Any
+        ) -> ProxiedURL:
+            return ProxiedURL(
+                url="https://example.com",
+                headers={},
+                query_params={},
+                ssl_context=ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT),
+            )
+
+    view = object.__new__(TestView)
+    request = Mock()
+    request.app = {}
+
+    original_ssl_context = ssl.create_default_context
+    ssl_context_created = False
+
+    def mock_create_default_context() -> ssl.SSLContext:
+        nonlocal ssl_context_created
+        ssl_context_created = True
+        return original_ssl_context()
+
+    with patch("ssl.create_default_context", side_effect=mock_create_default_context):
+        result = view._get_proxied_url(request)
+
+    assert result.ssl_context is not None
+    assert not ssl_context_created
