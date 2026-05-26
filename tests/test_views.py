@@ -1045,7 +1045,9 @@ async def test_snapshot_proxy_with_ssl_context_already_set() -> None:
     from custom_components.frigate.views import FrigateProxyViewMixin
 
     class TestView(FrigateProxyViewMixin, ProxyView):
-        def _get_proxied_url(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        def _get_proxied_url_impl(
+            self, request: web.Request, **kwargs: Any
+        ) -> ProxiedURL:
             return ProxiedURL(
                 url="https://example.com",
                 headers={},
