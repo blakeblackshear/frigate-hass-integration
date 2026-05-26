@@ -12,7 +12,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.frigate.const import DOMAIN
+from custom_components.frigate.const import CONF_VALIDATE_SSL, DOMAIN
 from homeassistant.config_entries import RELOAD_AFTER_UPDATE_DELAY, ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
@@ -431,7 +431,7 @@ def create_mock_frigate_config_entry(
     config_entry: MockConfigEntry = MockConfigEntry(
         entry_id=entry_id,
         domain=DOMAIN,
-        data=data or {CONF_URL: TEST_URL, "validate_ssl": validate_ssl},
+        data=data or {CONF_URL: TEST_URL, CONF_VALIDATE_SSL: validate_ssl},
         title=title,
         options=options or {},
         version=2,

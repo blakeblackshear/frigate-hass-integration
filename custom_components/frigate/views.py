@@ -30,6 +30,7 @@ from custom_components.frigate.const import (
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
+    CONF_VALIDATE_SSL,
     DOMAIN,
 )
 from homeassistant.components.http import KEY_AUTHENTICATED
@@ -144,7 +145,7 @@ class FrigateProxyViewMixin:
         config_entry = self._get_config_entry_for_request(
             request, kwargs.get("frigate_instance_id")
         )
-        if config_entry and not config_entry.data.get("validate_ssl", True):
+        if config_entry and not config_entry.data.get(CONF_VALIDATE_SSL, True):
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE

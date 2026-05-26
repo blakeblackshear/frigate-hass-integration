@@ -20,6 +20,7 @@ from custom_components.frigate.const import (
     ATTR_MQTT,
     CONF_NOTIFICATION_PROXY_ENABLE,
     CONF_NOTIFICATION_PROXY_EXPIRE_AFTER_SECONDS,
+    CONF_VALIDATE_SSL,
     DOMAIN,
 )
 from homeassistant.components.http.auth import async_sign_path
@@ -971,7 +972,7 @@ async def test_snapshot_proxy_with_ssl_validation_disabled(
     client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
     config_entry = create_mock_frigate_config_entry(
         hass,
-        data={CONF_URL: str(server.make_url("/")), "validate_ssl": False},
+        data={CONF_URL: str(server.make_url("/")), CONF_VALIDATE_SSL: False},
     )
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client
@@ -1012,7 +1013,7 @@ async def test_snapshot_proxy_with_ssl_validation_enabled(
     client.get_auth_headers = AsyncMock(return_value={"Authorization": "Bearer token"})
     config_entry = create_mock_frigate_config_entry(
         hass,
-        data={CONF_URL: str(server.make_url("/")), "validate_ssl": True},
+        data={CONF_URL: str(server.make_url("/")), CONF_VALIDATE_SSL: True},
     )
     await setup_mock_frigate_config_entry(
         hass, config_entry=config_entry, client=client
