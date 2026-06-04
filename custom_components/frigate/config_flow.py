@@ -161,9 +161,6 @@ class FrigateOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        if not self.show_advanced_options:
-            return self.async_abort(reason="only_advanced_options")
-
         schema: dict[Any, Any] = {
             # Whether to enable Frigate-native WebRTC for camera streaming
             vol.Optional(
