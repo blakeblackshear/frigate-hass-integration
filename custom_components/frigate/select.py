@@ -121,4 +121,5 @@ class FrigateProfileSelect(FrigateMQTTEntity, SelectEntity):
             option,
             0,
             False,
+            message_expiry_interval=None,
         )

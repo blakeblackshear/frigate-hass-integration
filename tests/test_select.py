@@ -89,7 +89,7 @@ async def test_profile_select_option(hass: HomeAssistant, mqtt_mock: Any) -> Non
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/profile/set", "away", 0, False
+        "frigate/profile/set", "away", 0, False, message_expiry_interval=None
     )
 
 

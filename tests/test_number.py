@@ -117,7 +117,11 @@ async def test_contour_area_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
     )
 
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/motion_contour_area/set", "35", 0, False
+        "frigate/front_door/motion_contour_area/set",
+        "35",
+        0,
+        False,
+        message_expiry_interval=None,
     )
 
 
@@ -140,7 +144,11 @@ async def test_threshold_set(hass: HomeAssistant, mqtt_mock: Any) -> None:
     )
 
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/motion_threshold/set", "35", 0, False
+        "frigate/front_door/motion_threshold/set",
+        "35",
+        0,
+        False,
+        message_expiry_interval=None,
     )
 
 

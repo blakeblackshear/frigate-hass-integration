@@ -143,6 +143,7 @@ class FrigateMotionContourArea(FrigateMQTTEntity, NumberEntity):
             int(value),
             0,
             False,
+            message_expiry_interval=None,
         )
 
     @property
@@ -236,6 +237,7 @@ class FrigateMotionThreshold(FrigateMQTTEntity, NumberEntity):
             int(value),
             0,
             False,
+            message_expiry_interval=None,
         )
 
     @property

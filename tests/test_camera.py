@@ -544,7 +544,7 @@ async def test_camera_enable_camera(hass: HomeAssistant, mqtt_mock: Any) -> None
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/enabled/set", "ON", 0, False
+        "frigate/front_door/enabled/set", "ON", 0, False, message_expiry_interval=None
     )
 
 
@@ -571,7 +571,7 @@ async def test_camera_disable_camera(hass: HomeAssistant, mqtt_mock: Any) -> Non
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/enabled/set", "OFF", 0, False
+        "frigate/front_door/enabled/set", "OFF", 0, False, message_expiry_interval=None
     )
 
 
@@ -600,7 +600,7 @@ async def test_camera_enable_motion_detection(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/motion/set", "ON", 0, False
+        "frigate/front_door/motion/set", "ON", 0, False, message_expiry_interval=None
     )
 
 
@@ -629,7 +629,7 @@ async def test_camera_disable_motion_detection(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/motion/set", "OFF", 0, False
+        "frigate/front_door/motion/set", "OFF", 0, False, message_expiry_interval=None
     )
 
 
@@ -872,7 +872,7 @@ async def test_ptz_move_service_call(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/ptz", "move_up", 0, False
+        "frigate/front_door/ptz", "move_up", 0, False, message_expiry_interval=None
     )
 
 
@@ -895,7 +895,7 @@ async def test_ptz_preset_service_call(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/ptz", "preset_main", 0, False
+        "frigate/front_door/ptz", "preset_main", 0, False, message_expiry_interval=None
     )
 
 
@@ -917,7 +917,7 @@ async def test_ptz_stop_service_call(
         blocking=True,
     )
     mqtt_mock.async_publish.assert_called_once_with(
-        "frigate/front_door/ptz", "stop", 0, False
+        "frigate/front_door/ptz", "stop", 0, False, message_expiry_interval=None
     )
 
 

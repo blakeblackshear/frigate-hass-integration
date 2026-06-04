@@ -401,6 +401,7 @@ class FrigateCamera(
                 "ON",
                 0,
                 False,
+                message_expiry_interval=None,
             )
 
     async def async_turn_off(self) -> None:
@@ -412,6 +413,7 @@ class FrigateCamera(
                 "OFF",
                 0,
                 False,
+                message_expiry_interval=None,
             )
 
     async def async_enable_motion_detection(self) -> None:
@@ -422,6 +424,7 @@ class FrigateCamera(
             "ON",
             0,
             False,
+            message_expiry_interval=None,
         )
 
     async def async_disable_motion_detection(self) -> None:
@@ -432,6 +435,7 @@ class FrigateCamera(
             "OFF",
             0,
             False,
+            message_expiry_interval=None,
         )
 
     async def export_recording(
@@ -468,6 +472,7 @@ class FrigateCamera(
             f"{action}{f'_{argument}' if argument else ''}",
             0,
             False,
+            message_expiry_interval=None,
         )
 
     async def create_event(
