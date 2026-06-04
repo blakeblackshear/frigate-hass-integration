@@ -408,7 +408,7 @@ async def test_frigate_camera_live_streams_matching_name(hass: HomeAssistant) ->
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["go2rtc"]["streams"]["front_door_hd"] = "rtsp://rtsp:password@cam/hd"
     config["cameras"]["front_door"]["live"] = {
-        "streams": {"front_door_hd": "hd_stream", "front_door": "default_stream"},
+        "streams": {"HD": "front_door_hd", "Default": "front_door"},
     }
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -433,7 +433,7 @@ async def test_frigate_camera_live_streams_no_matching_name(
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["go2rtc"]["streams"]["front_door_hd"] = "rtsp://rtsp:password@cam/hd"
     config["cameras"]["front_door"]["live"] = {
-        "streams": {"front_door_hd": "hd_stream"},
+        "streams": {"HD": "front_door_hd"},
     }
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -457,7 +457,7 @@ async def test_frigate_camera_live_streams_first_not_in_go2rtc(
 
     config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
     config["cameras"]["front_door"]["live"] = {
-        "streams": {"nonexistent_stream": "some_value"},
+        "streams": {"Some Label": "nonexistent_stream"},
     }
     client = create_mock_frigate_client()
     client.async_get_config = AsyncMock(return_value=config)
@@ -472,6 +472,39 @@ async def test_frigate_camera_live_streams_first_not_in_go2rtc(
     )
     assert stream_source
     assert stream_source.endswith("/front_door")
+
+
+async def test_frigate_camera_live_streams_named_streams(hass: HomeAssistant) -> None:
+    """Test live.streams shaped per Frigate's schema: {friendly_name: stream_name}.
+
+    The camera name itself is not a go2rtc stream; only named variants are. The
+    go2rtc stream name is the dict value, not the key.
+    """
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["go2rtc"]["streams"] = {
+        "front_door_main": "rtsp://rtsp:password@cam/main",
+        "front_door_sub": "rtsp://rtsp:password@cam/sub",
+    }
+    config["cameras"]["front_door"]["live"] = {
+        "streams": {
+            "Main Stream": "front_door_main",
+            "Sub Stream": "front_door_sub",
+        },
+    }
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    entity_state = hass.states.get(TEST_CAMERA_FRONT_DOOR_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "streaming"
+
+    stream_source = await async_get_stream_source(
+        hass, TEST_CAMERA_FRONT_DOOR_ENTITY_ID
+    )
+    assert stream_source
+    assert stream_source.endswith("/front_door_main")
 
 
 async def test_frigate_camera_recording_camera_state(
