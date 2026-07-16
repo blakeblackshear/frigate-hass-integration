@@ -220,7 +220,7 @@ class FrigateCamera(
         # The device_class is used to filter out regular camera entities
         # from motion camera entities on selectors
         self._attr_device_class = DEVICE_CLASS_CAMERA
-        self._stream_source = None
+        self._stream_source: str | None = None
         self._stream_name = self._get_stream_name()
         self._attr_is_streaming = self._stream_name is not None
         self._attr_is_recording = self._camera_config.get("record", {}).get("enabled")
@@ -524,6 +524,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
             CONF_RTSP_URL_TEMPLATE, ""
         ).strip()
 
+        self._stream_source: str | None = None
         if streaming_template:
             # Can't use homeassistant.helpers.template as it requires hass which
             # is not available in the constructor, so use direct jinja2
