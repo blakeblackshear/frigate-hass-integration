@@ -392,6 +392,7 @@ class FrigateApiClient:
             "messages": [{"role": "user", "content": query}],
             "max_tool_iterations": 5,
             "stream": False,
+            "enable_thinking": False,
         }
         if camera_name:
             data["include_live_image"] = camera_name
