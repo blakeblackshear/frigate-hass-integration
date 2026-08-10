@@ -980,22 +980,14 @@ async def test_snapshot_proxy_with_ssl_validation_disabled(
 
     authenticated_hass_client = await hass_client()
 
-    # Patch ssl.create_default_context to verify it's called when SSL validation is disabled.
-    original_ssl_context = ssl.create_default_context
-
-    ssl_context_created = False
-
-    def mock_create_default_context() -> ssl.SSLContext:
-        nonlocal ssl_context_created
-        ssl_context_created = True
-        ctx = original_ssl_context()
-        return ctx
-
-    with patch("ssl.create_default_context", side_effect=mock_create_default_context):
+    mock_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    with patch(
+        "custom_components.frigate.views.get_default_no_verify_context",
+        return_value=mock_ctx,
+    ) as mock_get_ctx:
         resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
         assert resp.status == HTTPStatus.OK
-        # Verify SSL context was created due to validate_ssl=False
-        assert ssl_context_created
+        mock_get_ctx.assert_called_once()
 
 
 async def test_snapshot_proxy_with_ssl_validation_enabled(
@@ -1021,20 +1013,12 @@ async def test_snapshot_proxy_with_ssl_validation_enabled(
 
     authenticated_hass_client = await hass_client()
 
-    # Patch ssl.create_default_context to verify it's NOT called when SSL validation is enabled.
-    original_ssl_context = ssl.create_default_context
-    ssl_context_created = False
-
-    def mock_create_default_context() -> ssl.SSLContext:
-        nonlocal ssl_context_created
-        ssl_context_created = True
-        return original_ssl_context()
-
-    with patch("ssl.create_default_context", side_effect=mock_create_default_context):
+    with patch(
+        "custom_components.frigate.views.get_default_no_verify_context",
+    ) as mock_get_ctx:
         resp = await authenticated_hass_client.get("/api/frigate/snapshot/event_id")
         assert resp.status == HTTPStatus.OK
-        # Verify SSL context was NOT created since validate_ssl=True (default behavior)
-        assert not ssl_context_created
+        mock_get_ctx.assert_not_called()
 
 
 async def test_snapshot_proxy_with_ssl_context_already_set() -> None:
@@ -1060,16 +1044,10 @@ async def test_snapshot_proxy_with_ssl_context_already_set() -> None:
     request = Mock()
     request.app = {}
 
-    original_ssl_context = ssl.create_default_context
-    ssl_context_created = False
-
-    def mock_create_default_context() -> ssl.SSLContext:
-        nonlocal ssl_context_created
-        ssl_context_created = True
-        return original_ssl_context()
-
-    with patch("ssl.create_default_context", side_effect=mock_create_default_context):
+    with patch(
+        "custom_components.frigate.views.get_default_no_verify_context",
+    ) as mock_get_ctx:
         result = view._get_proxied_url(request)
 
     assert result.ssl_context is not None
-    assert not ssl_context_created
+    mock_get_ctx.assert_not_called()
