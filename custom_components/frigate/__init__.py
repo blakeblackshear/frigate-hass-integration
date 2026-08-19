@@ -51,7 +51,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
-from .api import FrigateApiClient, FrigateApiClientError
+from .api import AUTH_MODE_LOGIN, FrigateApiClient, FrigateApiClientError
 from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
@@ -62,6 +62,7 @@ from .const import (
     ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
     ATTR_WS_REVIEW_PROXY,
+    CONF_AUTH_MODE,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
     CONF_VALIDATE_SSL,
@@ -344,6 +345,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
         entry.data.get(CONF_VALIDATE_SSL, True),
+        entry.data.get(CONF_AUTH_MODE, AUTH_MODE_LOGIN),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()
