@@ -111,7 +111,13 @@ def get_frigate_via_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInf
     """Get the parent Frigate device link for this Home Assistant version."""
     identifier = get_frigate_device_identifier(entry)
     if "via_device_id" in DeviceInfo.__annotations__:
-        device = dr.async_get(hass).async_get_device({identifier})
+        device_registry = dr.async_get(hass)
+        if hasattr(device_registry, "async_get_device_by_identifier"):
+            device = device_registry.async_get_device_by_identifier(
+                identifier, entry.entry_id
+            )
+        else:
+            device = device_registry.async_get_device({identifier})
         if not device:
             return {}
         device_info: DeviceInfo = {}

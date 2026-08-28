@@ -52,15 +52,42 @@ async def test_get_frigate_via_device_id(hass: HomeAssistant) -> None:
     """Test getting the Frigate via_device_id link when Home Assistant supports it."""
     config_entry = create_mock_frigate_config_entry(hass)
     device_registry = dr.async_get(hass)
+    identifier = get_frigate_device_identifier(config_entry)
     device = device_registry.async_get_or_create(
         config_entry_id=config_entry.entry_id,
-        identifiers={get_frigate_device_identifier(config_entry)},
+        identifiers={identifier},
     )
 
     with patch.dict(DeviceInfo.__annotations__, {"via_device_id": str}):
         assert get_frigate_via_device(hass, config_entry) == {
             "via_device_id": device.id
         }
+
+
+async def test_get_frigate_via_device_id_uses_identifier_lookup(
+    hass: HomeAssistant,
+) -> None:
+    """Test getting the Frigate via_device_id link with the new registry lookup."""
+    config_entry = create_mock_frigate_config_entry(hass)
+    device_registry = dr.async_get(hass)
+    identifier = get_frigate_device_identifier(config_entry)
+    device = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={identifier},
+    )
+
+    with patch.object(
+        device_registry,
+        "async_get_device_by_identifier",
+        return_value=device,
+        create=True,
+    ) as get_device:
+        with patch.dict(DeviceInfo.__annotations__, {"via_device_id": str}):
+            assert get_frigate_via_device(hass, config_entry) == {
+                "via_device_id": device.id
+            }
+
+    get_device.assert_called_once_with(identifier, config_entry.entry_id)
 
 
 async def test_get_frigate_via_device_id_missing_parent(
