@@ -62,7 +62,6 @@ class FrigateContainerUpdate(
         """Get device information."""
         return {
             "identifiers": {get_frigate_device_identifier(self._config_entry)},
-            "via_device": get_frigate_device_identifier(self._config_entry),
             "name": NAME,
             "model": self._get_model(),
             "configuration_url": self._config_entry.data.get(CONF_URL),
