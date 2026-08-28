@@ -45,7 +45,7 @@ from homeassistant.core import (
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er, llm
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.loader import async_get_integration
@@ -105,6 +105,19 @@ def get_frigate_device_identifier(
     if camera_name:
         return (DOMAIN, f"{entry.entry_id}:{slugify(camera_name)}")
     return (DOMAIN, entry.entry_id)
+
+
+def get_frigate_via_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
+    """Get the parent Frigate device link for this Home Assistant version."""
+    identifier = get_frigate_device_identifier(entry)
+    if "via_device_id" in DeviceInfo.__annotations__:
+        device = dr.async_get(hass).async_get_device({identifier})
+        if not device:
+            return {}
+        device_info: DeviceInfo = {}
+        device_info["via_device_id"] = device.id  # type: ignore[typeddict-unknown-key]
+        return device_info
+    return {"via_device": identifier}
 
 
 def get_frigate_entity_unique_id(

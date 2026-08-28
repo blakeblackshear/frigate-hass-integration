@@ -38,6 +38,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_via_device,
     verify_frigate_version,
 )
 from .const import (
@@ -350,7 +351,7 @@ class FrigateCamera(
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._url}/#{self._cam_name}",
@@ -552,7 +553,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, "birdseye")
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": "Birdseye",
             "model": self._get_model(),
             "configuration_url": f"{self._url}/cameras/birdseye",

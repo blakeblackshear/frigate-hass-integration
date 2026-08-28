@@ -26,6 +26,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_via_device,
     get_zones,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
@@ -125,7 +126,7 @@ class FrigateObjectOccupancySensor(FrigateMQTTEntity, BinarySensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
@@ -206,7 +207,7 @@ class FrigateAudioSensor(FrigateMQTTEntity, BinarySensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
@@ -287,7 +288,7 @@ class FrigateMotionSensor(FrigateMQTTEntity, BinarySensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",

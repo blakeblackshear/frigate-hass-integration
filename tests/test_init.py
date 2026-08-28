@@ -13,6 +13,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.frigate import (
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_via_device,
 )
 from custom_components.frigate.api import FrigateApiClientError
 from custom_components.frigate.const import (
@@ -24,6 +25,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.loader import async_get_integration
 
 from . import (
@@ -35,6 +37,40 @@ from . import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def test_get_frigate_via_device_legacy(hass: HomeAssistant) -> None:
+    """Test getting the Frigate via_device link on older Home Assistant versions."""
+    config_entry = create_mock_frigate_config_entry(hass)
+
+    assert get_frigate_via_device(hass, config_entry) == {
+        "via_device": get_frigate_device_identifier(config_entry)
+    }
+
+
+async def test_get_frigate_via_device_id(hass: HomeAssistant) -> None:
+    """Test getting the Frigate via_device_id link when Home Assistant supports it."""
+    config_entry = create_mock_frigate_config_entry(hass)
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={get_frigate_device_identifier(config_entry)},
+    )
+
+    with patch.dict(DeviceInfo.__annotations__, {"via_device_id": str}):
+        assert get_frigate_via_device(hass, config_entry) == {
+            "via_device_id": device.id
+        }
+
+
+async def test_get_frigate_via_device_id_missing_parent(
+    hass: HomeAssistant,
+) -> None:
+    """Test no Frigate via_device_id link before the parent device exists."""
+    config_entry = create_mock_frigate_config_entry(hass)
+
+    with patch.dict(DeviceInfo.__annotations__, {"via_device_id": str}):
+        assert get_frigate_via_device(hass, config_entry) == {}
 
 
 async def test_entry_unload(hass: HomeAssistant) -> None:
