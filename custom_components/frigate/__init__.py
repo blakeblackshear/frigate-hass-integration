@@ -512,9 +512,7 @@ def get_loaded_client_for_service_call(
     return cast(FrigateApiClient, hass.data[DOMAIN][config_entry_id][ATTR_CLIENT])
 
 
-def get_frigate_instances_description(
-    hass: HomeAssistant, entry_ids: list[str]
-) -> str:
+def get_frigate_instances_description(hass: HomeAssistant, entry_ids: list[str]) -> str:
     """Describe the loaded Frigate instances for use in an error message."""
     entries = hass.config_entries.async_entries(DOMAIN)
     instances = ", ".join(

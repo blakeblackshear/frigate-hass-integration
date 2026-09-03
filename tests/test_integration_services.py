@@ -232,9 +232,7 @@ async def test_review_summarize_service_ambiguous_instance(
         client=client_2,
     )
 
-    with pytest.raises(
-        ServiceValidationError, match="more than one Frigate instance"
-    ):
+    with pytest.raises(ServiceValidationError, match="more than one Frigate instance"):
         await hass.services.async_call(
             "frigate",
             SERVICE_REVIEW_SUMMARIZE,
