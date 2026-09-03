@@ -12,7 +12,7 @@ import datetime
 from datetime import timedelta
 import logging
 import re
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from awesomeversion import AwesomeVersion
 from titlecase import titlecase
@@ -55,6 +55,7 @@ from .api import FrigateApiClient, FrigateApiClientError
 from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
+    ATTR_CONFIG_ENTRY_ID,
     ATTR_COORDINATOR,
     ATTR_END_TIME,
     ATTR_LLM_UNREGISTER,
@@ -465,6 +466,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 {
                     vol.Required(ATTR_START_TIME): str,
                     vol.Required(ATTR_END_TIME): str,
+                    vol.Optional(ATTR_CONFIG_ENTRY_ID): str,
                 }
             ),
             supports_response=SupportsResponse.OPTIONAL,
@@ -473,13 +475,61 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+def get_loaded_client_for_service_call(
+    hass: HomeAssistant, call: ServiceCall
+) -> FrigateApiClient:
+    """Get the client for the Frigate instance a service call is targeting.
+
+    The instance may be specified explicitly with a config entry id. If it is
+    not, and there's only a single Frigate instance loaded, that instance is
+    used, otherwise the caller must say which instance they mean.
+    """
+    entry_ids = [
+        entry.entry_id
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if ATTR_CLIENT in hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    ]
+
+    config_entry_id: str | None = call.data.get(ATTR_CONFIG_ENTRY_ID)
+
+    if config_entry_id is not None:
+        if config_entry_id not in entry_ids:
+            raise ServiceValidationError(
+                f"Frigate instance '{config_entry_id}' is not loaded. "
+                f"{get_frigate_instances_description(hass, entry_ids)}"
+            )
+    elif len(entry_ids) == 1:
+        config_entry_id = entry_ids[0]
+    elif not entry_ids:
+        raise ServiceValidationError("No Frigate instance is loaded.")
+    else:
+        raise ServiceValidationError(
+            f"There is more than one Frigate instance loaded, so "
+            f"'{ATTR_CONFIG_ENTRY_ID}' must be specified. "
+            f"{get_frigate_instances_description(hass, entry_ids)}"
+        )
+
+    return cast(FrigateApiClient, hass.data[DOMAIN][config_entry_id][ATTR_CLIENT])
+
+
+def get_frigate_instances_description(
+    hass: HomeAssistant, entry_ids: list[str]
+) -> str:
+    """Describe the loaded Frigate instances for use in an error message."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    instances = ", ".join(
+        f"{entry.title} ({entry.entry_id})"
+        for entry in entries
+        if entry.entry_id in entry_ids
+    )
+    return f"Loaded instances: {instances}" if instances else "No instances are loaded."
+
+
 async def async_review_summarize_service(call: ServiceCall) -> Any:
     """Handle review summarize service call."""
     hass = call.hass
 
-    # Use the first available config entry
-    config_entry_id = next(iter(hass.data[DOMAIN].keys()))
-    client = hass.data[DOMAIN][config_entry_id][ATTR_CLIENT]
+    client = get_loaded_client_for_service_call(hass, call)
 
     # Get the service data from the call
     start_time = call.data[ATTR_START_TIME]

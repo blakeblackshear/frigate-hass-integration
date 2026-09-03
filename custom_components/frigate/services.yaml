@@ -190,6 +190,16 @@ review_summarize:
     Get a summary of review items for a specified time period.
     Only available in Frigate 0.17+.
   fields:
+    config_entry_id:
+      name: Frigate Instance
+      description: >
+        The Frigate instance to summarize review items from. Required if more
+        than one Frigate instance is configured.
+      required: false
+      advanced: false
+      selector:
+        config_entry:
+          integration: frigate
     start_time:
       name: Start Time
       description: Start time for the review period
