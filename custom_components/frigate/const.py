@@ -93,6 +93,9 @@ MIN_THRESHOLD = 5
 STATE_DETECTED = "active"
 STATE_IDLE = "idle"
 
+# Profiles
+PROFILE_NONE = "none"
+
 # Statuses
 STATUS_ERROR = "error"
 STATUS_RUNNING = "running"
