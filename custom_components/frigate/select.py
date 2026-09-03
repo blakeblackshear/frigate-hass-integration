@@ -21,7 +21,7 @@ from . import (
     get_frigate_entity_unique_id,
     verify_frigate_version,
 )
-from .const import ATTR_CONFIG, DOMAIN, NAME
+from .const import ATTR_CONFIG, DOMAIN, NAME, PROFILE_NONE
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class FrigateProfileSelect(FrigateMQTTEntity, SelectEntity):
         """Construct a FrigateProfileSelect."""
         self._frigate_config = frigate_config
         self._profiles = profiles
-        self._attr_options = list(profiles.keys())
+        self._attr_options = [PROFILE_NONE] + list(profiles.keys())
         self._attr_current_option = None
         self._command_topic = f"{frigate_config['mqtt']['topic_prefix']}/profile/set"
 

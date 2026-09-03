@@ -61,6 +61,13 @@ async def test_profile_select_state(hass: HomeAssistant) -> None:
     assert entity_state
     assert entity_state.state == "away"
 
+    # Test setting profile back to base with "none"
+    async_fire_mqtt_message(hass, "frigate/profile/state", "none")
+    await hass.async_block_till_done()
+    entity_state = hass.states.get(TEST_SELECT_PROFILE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "none"
+
     # Test bytes payload
     async_fire_mqtt_message(hass, "frigate/profile/state", b"home")
     await hass.async_block_till_done()
@@ -92,6 +99,19 @@ async def test_profile_select_option(hass: HomeAssistant, mqtt_mock: Any) -> Non
         "frigate/profile/set", "away", 0, False
     )
 
+    mqtt_mock.async_publish.reset_mock()
+
+    # Selecting "none" reverts Frigate to the base config.
+    await hass.services.async_call(
+        SELECT_DOMAIN,
+        SERVICE_SELECT_OPTION,
+        {ATTR_ENTITY_ID: TEST_SELECT_PROFILE_ENTITY_ID, "option": "none"},
+        blocking=True,
+    )
+    mqtt_mock.async_publish.assert_called_once_with(
+        "frigate/profile/set", "none", 0, False
+    )
+
 
 async def test_profile_select_options(hass: HomeAssistant) -> None:
     """Verify the select entity has correct options."""
@@ -99,7 +119,7 @@ async def test_profile_select_options(hass: HomeAssistant) -> None:
 
     entity_state = hass.states.get(TEST_SELECT_PROFILE_ENTITY_ID)
     assert entity_state
-    assert entity_state.attributes["options"] == ["away", "home"]
+    assert entity_state.attributes["options"] == ["none", "away", "home"]
 
 
 async def test_profile_select_device_info(hass: HomeAssistant) -> None:
