@@ -150,22 +150,52 @@ def get_cameras(config: dict[str, Any]) -> set[str]:
     return cameras
 
 
+def get_camera_model_config(
+    config: dict[str, Any], cam_config: dict[str, Any]
+) -> dict[str, Any]:
+    """Get the detector model config that applies to a camera.
+
+    Frigate 0.19+ supports multiple models, each identified by a scene, with the
+    camera selecting one via `detect.scene`. Earlier versions have a single
+    global `model` config.
+    """
+    models = config.get("models")
+
+    if isinstance(models, list) and models:
+        scene = (cam_config.get("detect") or {}).get("scene") or "all"
+
+        for model in models:
+            if model.get("scene") == scene:
+                return cast(dict[str, Any], model)
+
+        # fall back to the default scene, else the first configured model
+        for model in models:
+            if model.get("scene") == "all":
+                return cast(dict[str, Any], model)
+
+        return cast(dict[str, Any], models[0])
+
+    return cast(dict[str, Any], config.get("model") or {})
+
+
 def get_cameras_and_objects(
     config: dict[str, Any], include_all: bool = True
 ) -> set[tuple[str, str]]:
     """Get cameras and tracking object tuples."""
     camera_objects = set()
     for cam_name, cam_config in config["cameras"].items():
+        model_config = get_camera_model_config(config, cam_config)
+
         for obj in cam_config["objects"]["track"]:
-            if obj in config["model"].get(
+            if obj in model_config.get(
                 "non_logo_attributes", ["face", "license_plate"]
             ):
                 # don't create sensors for attributes that are not logos
                 continue
 
-            if not verify_frigate_version(config, "0.16") and obj in config[
-                "model"
-            ].get("all_attributes", ["amazon", "fedex", "ups"]):
+            if not verify_frigate_version(config, "0.16") and obj in model_config.get(
+                "all_attributes", ["amazon", "fedex", "ups"]
+            ):
                 # Logo attributes are only supported in Frigate 0.16+
                 continue
 

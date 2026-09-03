@@ -11,6 +11,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.frigate import (
+    get_camera_model_config,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
     get_frigate_via_device,
@@ -645,3 +646,83 @@ async def test_older_frigate_no_logo_sensors(hass: HomeAssistant) -> None:
     assert not entity_registry.async_get_entity_id(
         DOMAIN, "sensor", "front_door_amazon_count"
     )
+
+
+def test_get_camera_model_config_legacy() -> None:
+    """Test the global model config is used when there is no models list."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+
+    assert (
+        get_camera_model_config(config, config["cameras"]["front_door"])
+        == config["model"]
+    )
+
+
+def test_get_camera_model_config_no_model() -> None:
+    """Test an empty model config is returned when there is no model at all."""
+    assert get_camera_model_config({}, {}) == {}
+
+
+def test_get_camera_model_config_multiple_models() -> None:
+    """Test the per-camera model is selected in Frigate 0.19+."""
+    default_model = {"scene": "all", "non_logo_attributes": ["face"]}
+    indoor_model = {"scene": "indoor", "non_logo_attributes": ["license_plate"]}
+    config: dict[str, Any] = {"models": [default_model, indoor_model]}
+
+    # The camera's scene selects the model.
+    assert (
+        get_camera_model_config(config, {"detect": {"scene": "indoor"}}) == indoor_model
+    )
+
+    # No scene, or an unknown scene, falls back to the default "all" scene.
+    assert get_camera_model_config(config, {}) == default_model
+    assert get_camera_model_config(config, {"detect": {"scene": None}}) == default_model
+    assert (
+        get_camera_model_config(config, {"detect": {"scene": "nonexistent"}})
+        == default_model
+    )
+
+    # Without an "all" scene, the first model is used.
+    assert (
+        get_camera_model_config(
+            {"models": [indoor_model]}, {"detect": {"scene": "nonexistent"}}
+        )
+        == indoor_model
+    )
+
+
+async def test_multiple_models_object_sensors(hass: HomeAssistant) -> None:
+    """Test object sensors use the camera's own model in Frigate 0.19+."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["version"] = "0.19-0"
+
+    # Frigate 0.19 replaces the global model with a per-scene list of models.
+    all_attributes = config["model"]["all_attributes"]
+    del config["model"]
+    config["models"] = [
+        {
+            "scene": "all",
+            "all_attributes": all_attributes,
+            # "amazon" is not a logo in the default scene ...
+            "non_logo_attributes": ["face", "license_plate", "amazon"],
+        },
+        {
+            "scene": "indoor",
+            "all_attributes": all_attributes,
+            # ... but it is in the scene this camera uses.
+            "non_logo_attributes": ["face", "license_plate"],
+        },
+    ]
+    config["cameras"]["front_door"]["detect"]["scene"] = "indoor"
+
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await hass.async_block_till_done()
+
+    # The camera's model treats "amazon" as a logo, so the sensor is created.
+    assert hass.states.get("sensor.front_door_amazon_count")
+
+    # "face" is a non-logo attribute in both models, so it gets no sensor.
+    assert not hass.states.get("sensor.front_door_face_count")
