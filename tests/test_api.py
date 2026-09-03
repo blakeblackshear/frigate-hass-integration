@@ -14,7 +14,12 @@ from aiohttp import web
 import jwt
 import pytest
 
-from custom_components.frigate.api import FrigateApiClient, FrigateApiClientError
+from custom_components.frigate.api import (
+    AUTH_MODE_BASIC,
+    AUTH_MODE_BEARER,
+    FrigateApiClient,
+    FrigateApiClientError,
+)
 
 from . import TEST_SERVER_VERSION, start_frigate_server
 
@@ -1147,3 +1152,80 @@ async def test_async_set_reviews_viewed(
         )
         == post_success
     )
+
+
+async def test_get_auth_headers_basic_mode(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test get_auth_headers sends Basic auth and never calls /api/login."""
+    login_handler = AsyncMock(return_value=web.Response(status=200))
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")),
+        aiohttp_session,
+        username="user",
+        password="pass",
+        auth_mode=AUTH_MODE_BASIC,
+    )
+
+    headers = await frigate_client.get_auth_headers()
+
+    assert headers == {"Authorization": "Basic dXNlcjpwYXNz"}
+    assert not login_handler.called
+
+
+async def test_get_auth_headers_basic_mode_missing_credentials(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test get_auth_headers omits Basic auth when credentials are missing."""
+    server = await start_frigate_server(aiohttp_server, [])
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")),
+        aiohttp_session,
+        auth_mode=AUTH_MODE_BASIC,
+    )
+
+    headers = await frigate_client.get_auth_headers()
+
+    assert headers == {}
+
+
+async def test_get_auth_headers_bearer_mode(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test get_auth_headers sends a static token and never calls /api/login."""
+    login_handler = AsyncMock(return_value=web.Response(status=200))
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.post("/api/login", login_handler)]
+    )
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")),
+        aiohttp_session,
+        password="static-token",
+        auth_mode=AUTH_MODE_BEARER,
+    )
+
+    headers = await frigate_client.get_auth_headers()
+
+    assert headers == {"Authorization": "Bearer static-token"}
+    assert not login_handler.called
+
+
+async def test_get_auth_headers_bearer_mode_missing_password(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test get_auth_headers omits Bearer auth when no password is set."""
+    server = await start_frigate_server(aiohttp_server, [])
+    frigate_client = FrigateApiClient(
+        str(server.make_url("/")),
+        aiohttp_session,
+        auth_mode=AUTH_MODE_BEARER,
+    )
+
+    headers = await frigate_client.get_auth_headers()
+
+    assert headers == {}
