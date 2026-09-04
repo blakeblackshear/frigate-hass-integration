@@ -143,18 +143,36 @@ async def test_vod_segment_proxy(
     assert resp.status == HTTPStatus.OK
 
 
+async def test_vod_segment_proxy_authenticated_without_signature(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test that a normally-authenticated request needs no signed authSig.
+
+    A client that authenticates the same way as every other Frigate proxy view
+    here (e.g. a Bearer token as a header) shouldn't also need a signed URL —
+    that mechanism exists for Home Assistant's own frontend media browser,
+    which plays this through a plain <video> tag that can't attach an
+    Authorization header at all.
+    """
+
+    authenticated_hass_client = await hass_client()
+    resp = await authenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
+    assert resp.status == HTTPStatus.OK
+
+
 async def test_vod_segment_proxy_unauthorized(
     hass: HomeAssistant,
     hass_access_token: Any,
     local_frigate: Any,
-    hass_client: Any,
+    hass_client_no_auth: Any,
 ) -> None:
     """Test vod segment."""
 
-    authenticated_hass_client = await hass_client()
+    unauthenticated_hass_client = await hass_client_no_auth()
 
     # No secret set
-    resp = await authenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
+    resp = await unauthenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
     refresh_token = hass.auth.async_validate_access_token(hass_access_token)
@@ -168,17 +186,17 @@ async def test_vod_segment_proxy_unauthorized(
     )
 
     # No signature
-    resp = await authenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
+    resp = await unauthenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
     # Wrong signature
-    resp = await authenticated_hass_client.get(
+    resp = await unauthenticated_hass_client.get(
         "/api/frigate/vod/present/segment.ts?authSig=invalid"
     )
     assert resp.status == HTTPStatus.UNAUTHORIZED
 
     # Modified path
-    resp = await authenticated_hass_client.get(
+    resp = await unauthenticated_hass_client.get(
         signed_path.replace("/api/frigate/", "/api/frigate/mod/")
     )
     assert resp.status == HTTPStatus.UNAUTHORIZED
