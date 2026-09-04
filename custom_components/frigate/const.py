@@ -32,6 +32,7 @@ S = "s"
 ATTR_CLIENT = "client"
 ATTR_CLIENT_ID = "client_id"
 ATTR_CONFIG = "config"
+ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_COORDINATOR = "coordinator"
 ATTR_END_TIME = "end_time"
 ATTR_EVENT_ID = "event_id"
@@ -92,6 +93,9 @@ MIN_THRESHOLD = 5
 # States
 STATE_DETECTED = "active"
 STATE_IDLE = "idle"
+
+# Profiles
+PROFILE_NONE = "none"
 
 # Statuses
 STATUS_ERROR = "error"

@@ -41,6 +41,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_via_device,
     get_known_plates,
     get_object_classification_models_and_cameras,
     get_zones,
@@ -602,7 +603,7 @@ class CameraFpsSensor(
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
@@ -677,7 +678,7 @@ class CameraSoundSensor(
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
@@ -776,7 +777,7 @@ class FrigateObjectCountSensor(FrigateMQTTEntity, SensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
@@ -865,7 +866,7 @@ class FrigateActiveObjectCountSensor(FrigateMQTTEntity, SensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
@@ -1003,7 +1004,7 @@ class CameraProcessCpuSensor(
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
@@ -1127,7 +1128,7 @@ class FrigateRecognizedFaceSensor(FrigateMQTTEntity, SensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
@@ -1234,7 +1235,7 @@ class FrigateRecognizedPlateSensor(FrigateMQTTEntity, SensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name if self._cam_name not in get_zones(self._frigate_config) else ''}",
@@ -1330,7 +1331,7 @@ class FrigateClassificationSensor(FrigateMQTTEntity, RestoreSensor):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
@@ -1447,7 +1448,7 @@ class FrigateObjectClassificationSensor(FrigateMQTTEntity, SensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",
@@ -1528,7 +1529,7 @@ class FrigateReviewStatusSensor(FrigateMQTTEntity, SensorEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",

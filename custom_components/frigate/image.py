@@ -22,6 +22,7 @@ from . import (
     get_friendly_name,
     get_frigate_device_identifier,
     get_frigate_entity_unique_id,
+    get_frigate_via_device,
 )
 from .const import ATTR_CONFIG, DOMAIN, NAME
 
@@ -103,7 +104,7 @@ class FrigateMqttSnapshots(FrigateMQTTEntity, ImageEntity):
             "identifiers": {
                 get_frigate_device_identifier(self._config_entry, self._cam_name)
             },
-            "via_device": get_frigate_device_identifier(self._config_entry),
+            **get_frigate_via_device(self.hass, self._config_entry),
             "name": get_friendly_name(self._cam_name),
             "model": self._get_model(),
             "configuration_url": f"{self._config_entry.data.get(CONF_URL)}/cameras/{self._cam_name}",

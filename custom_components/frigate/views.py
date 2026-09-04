@@ -7,7 +7,6 @@ import dataclasses
 import datetime
 import logging
 import os
-import ssl
 from typing import Any, Optional, cast
 
 from aiohttp import web
@@ -40,6 +39,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util.ssl import get_default_no_verify_context
 
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -146,10 +146,9 @@ class FrigateProxyViewMixin:
             request, kwargs.get("frigate_instance_id")
         )
         if config_entry and not config_entry.data.get(CONF_VALIDATE_SSL, True):
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            return dataclasses.replace(result, ssl_context=ctx)
+            return dataclasses.replace(
+                result, ssl_context=get_default_no_verify_context()
+            )
         return result
 
     def _get_proxied_url_impl(
