@@ -45,7 +45,9 @@ async def test_frigate_mqtt_snapshots_image_setup(
 
     entity_state = hass.states.get(TEST_IMAGE_FRONT_DOOR_PERSON_ENTITY_ID)
     assert entity_state
-    assert datetime.datetime.strptime(entity_state.state, "%Y-%m-%dT%H:%M:%S.%f")
+    image_last_updated = datetime.datetime.fromisoformat(entity_state.state)
+    assert image_last_updated.tzinfo is not None
+    assert image_last_updated.utcoffset() == datetime.timedelta(0)
 
 
 @pytest.mark.parametrize(
