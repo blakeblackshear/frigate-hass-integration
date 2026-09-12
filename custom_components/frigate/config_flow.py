@@ -12,11 +12,19 @@ from yarl import URL
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from .api import FrigateApiClient, FrigateApiClientError
+from .api import (
+    AUTH_MODE_BASIC,
+    AUTH_MODE_BEARER,
+    AUTH_MODE_LOGIN,
+    AUTH_MODES,
+    FrigateApiClient,
+    FrigateApiClientError,
+)
 from .const import (
+    CONF_AUTH_MODE,
     CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
@@ -77,6 +85,21 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         except vol.Invalid:
             return self._show_config_form(user_input, errors={"base": "invalid_url"})
 
+        # The proxy auth modes send static credentials, so require them upfront
+        # instead of failing with a generic connection error (or silently
+        # storing an entry that sends no credentials at all).
+        auth_mode = user_input.get(CONF_AUTH_MODE, AUTH_MODE_LOGIN)
+        if auth_mode == AUTH_MODE_BASIC and not (
+            user_input.get(CONF_USERNAME) and user_input.get(CONF_PASSWORD)
+        ):
+            return self._show_config_form(
+                user_input, errors={"base": "basic_auth_missing_credentials"}
+            )
+        if auth_mode == AUTH_MODE_BEARER and not user_input.get(CONF_PASSWORD):
+            return self._show_config_form(
+                user_input, errors={"base": "bearer_auth_missing_token"}
+            )
+
         try:
             session = async_create_clientsession(self.hass)
             client = FrigateApiClient(
@@ -85,6 +108,7 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
                 user_input.get(CONF_VALIDATE_SSL, True),
+                user_input.get(CONF_AUTH_MODE, AUTH_MODE_LOGIN),
             )
             await client.async_get_stats()
         except FrigateApiClientError:
@@ -133,6 +157,16 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Optional(
                         CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
                     ): str,
+                    vol.Optional(
+                        CONF_AUTH_MODE,
+                        default=user_input.get(CONF_AUTH_MODE, AUTH_MODE_LOGIN),
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=list(AUTH_MODES),
+                            mode=selector.SelectSelectorMode.DROPDOWN,
+                            translation_key=CONF_AUTH_MODE,
+                        )
+                    ),
                 }
             ),
             errors=errors,

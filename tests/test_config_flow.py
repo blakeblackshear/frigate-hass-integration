@@ -7,8 +7,14 @@ from unittest.mock import AsyncMock, patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.frigate.api import FrigateApiClientError
+from custom_components.frigate.api import (
+    AUTH_MODE_BASIC,
+    AUTH_MODE_BEARER,
+    AUTH_MODE_LOGIN,
+    FrigateApiClientError,
+)
 from custom_components.frigate.const import (
+    CONF_AUTH_MODE,
     CONF_ENABLE_WEBRTC,
     CONF_MEDIA_BROWSER_ENABLE,
     CONF_NOTIFICATION_PROXY_ENABLE,
@@ -64,6 +70,7 @@ async def test_user_success(hass: HomeAssistant) -> None:
         CONF_URL: TEST_URL,
         CONF_PASSWORD: "",
         CONF_USERNAME: "",
+        CONF_AUTH_MODE: AUTH_MODE_LOGIN,
         CONF_VALIDATE_SSL: True,
     }
     assert len(mock_setup_entry.mock_calls) == 1
@@ -104,6 +111,49 @@ async def test_user_success_with_auth(hass: HomeAssistant) -> None:
         CONF_URL: TEST_URL,
         CONF_PASSWORD: TEST_PASSWORD,
         CONF_USERNAME: TEST_USERNAME,
+        CONF_AUTH_MODE: AUTH_MODE_LOGIN,
+        CONF_VALIDATE_SSL: True,
+    }
+    assert len(mock_setup_entry.mock_calls) == 1
+    assert mock_client.async_get_stats.called
+
+
+async def test_user_success_with_basic_auth_mode(hass: HomeAssistant) -> None:
+    """Test successful user flow with HTTP Basic Auth mode selected."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_PASSWORD: TEST_PASSWORD,
+                CONF_URL: TEST_URL,
+                CONF_USERNAME: TEST_USERNAME,
+                CONF_AUTH_MODE: AUTH_MODE_BASIC,
+                CONF_VALIDATE_SSL: True,
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == "create_entry"
+    assert result["title"] == "example.com"
+    assert result["data"] == {
+        CONF_URL: TEST_URL,
+        CONF_PASSWORD: TEST_PASSWORD,
+        CONF_USERNAME: TEST_USERNAME,
+        CONF_AUTH_MODE: AUTH_MODE_BASIC,
         CONF_VALIDATE_SSL: True,
     }
     assert len(mock_setup_entry.mock_calls) == 1
@@ -206,6 +256,51 @@ async def test_user_invalid_url(hass: HomeAssistant) -> None:
     assert result["type"] == "form"
     assert result["errors"]
     assert result["errors"]["base"] == "invalid_url"
+
+
+async def test_user_basic_auth_mode_missing_credentials(hass: HomeAssistant) -> None:
+    """Test Basic Auth mode requires both username and password."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_URL: TEST_URL,
+            CONF_USERNAME: TEST_USERNAME,
+            CONF_AUTH_MODE: AUTH_MODE_BASIC,
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "form"
+    assert result["errors"]
+    assert result["errors"]["base"] == "basic_auth_missing_credentials"
+
+
+async def test_user_bearer_auth_mode_missing_token(hass: HomeAssistant) -> None:
+    """Test Bearer token mode requires a password (the token)."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_URL: TEST_URL,
+            CONF_AUTH_MODE: AUTH_MODE_BEARER,
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == "form"
+    assert result["errors"]
+    assert result["errors"]["base"] == "bearer_auth_missing_token"
 
 
 async def test_duplicate(hass: HomeAssistant) -> None:
