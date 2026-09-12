@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from aiohttp import web
 from hass_web_proxy_lib.tests.utils import response_handler, ws_response_handler
 import pytest
+from yarl import URL
 
 from custom_components.frigate.const import (
     ATTR_CLIENT_ID,
@@ -200,6 +201,73 @@ async def test_vod_segment_proxy_unauthorized(
         signed_path.replace("/api/frigate/", "/api/frigate/mod/")
     )
     assert resp.status == HTTPStatus.UNAUTHORIZED
+
+
+async def test_vod_segment_proxy_unauthenticated_with_valid_signature(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test that an unauthenticated request with a valid signature succeeds.
+
+    This particular signature happens to be signed for the exact segment
+    path being requested, which Home Assistant's own generic signed-request
+    middleware (async_validate_signed_request) already authenticates via an
+    exact path match, ahead of this view ever running — see the dedicated
+    test below for the case that actually depends on
+    VodSegmentProxyView's own looser, prefix-based signature check.
+    """
+
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
+    signed_path = async_sign_path(
+        hass,
+        "/api/frigate/vod/present/segment.ts",
+        timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
+    )
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+    resp = await unauthenticated_hass_client.get(signed_path)
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_vod_segment_proxy_unauthenticated_with_valid_manifest_signature(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test a segment authorized by a signature scoped to its manifest.
+
+    Only the VOD manifest URL is ever actually signed and handed to a
+    client — each segment it references is then fetched from a sibling
+    path using that same signature. Home Assistant's own generic signed-
+    request validation requires an exact path match, so it can't
+    authenticate this (the signed path is the manifest's, not the
+    segment's): this is exactly why VodSegmentProxyView keeps its own
+    prefix-based _async_validate_signed_manifest() check rather than
+    relying solely on core auth.
+    """
+
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
+    signed_manifest_path = async_sign_path(
+        hass,
+        "/api/frigate/vod/present/manifest.m3u8",
+        timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
+    )
+    signature = URL(signed_manifest_path).query["authSig"]
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+    resp = await unauthenticated_hass_client.get(
+        f"/api/frigate/vod/present/segment.ts?authSig={signature}"
+    )
+    assert resp.status == HTTPStatus.OK
 
 
 async def test_snapshot_proxy_view(
