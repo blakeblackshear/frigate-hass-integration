@@ -458,7 +458,20 @@ class VodSegmentProxyView(FrigateProxyView):
 
     def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
-        if not self._async_validate_signed_manifest(request):
+        # A normally-authenticated request (e.g. a Bearer token sent as a header, the
+        # same way every other Frigate proxy view here already accepts it) is allowed
+        # through without also needing a signed authSig. The signature exists for a
+        # different problem: Home Assistant's own frontend media browser plays this
+        # through a plain <video> tag, which can't attach an Authorization header, so
+        # it embeds a scoped, time-limited signature in the URL instead (see
+        # async_sign_path). That's not a reason to *require* a signature from a client
+        # that's already authenticated the normal way — every other proxy view here
+        # (RecordingProxyView included, which also serves a full clip) accepts plain
+        # authentication with no extra signature step; VOD segments were the one
+        # exception, with no fallback for a client that can't/doesn't sign its URLs.
+        if not request[KEY_AUTHENTICATED] and not self._async_validate_signed_manifest(
+            request
+        ):
             raise HASSWebProxyLibUnauthorizedRequestError()
 
         return ProxiedURL(
