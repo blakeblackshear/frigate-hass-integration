@@ -423,6 +423,20 @@ class NotificationsProxyView(FrigateProxyView):
             return False
 
 
+def _vod_path_prefix(path: str) -> str:
+    """Pick which top-level Frigate-server prefix a vod path should forward to.
+
+    Fregata (a community fork adding adaptive/multi-bitrate playback) serves its
+    adaptive master playlist, and that master's own per-variant child playlists and
+    segments, under "api/" rather than the "vod/" prefix stock Frigate always uses
+    for a camera/time-range request - confirmed live against a real Fregata server.
+    "adaptive" appearing as any path component (not just the last one, so a variant
+    child one level deeper - e.g. ".../adaptive/variant_0/segment_001.ts" - still
+    matches) is what Fregata's own URL scheme uses to signal this.
+    """
+    return "api" if "adaptive" in path.split("/") else "vod"
+
+
 class VodProxyView(FrigateProxyView):
     """A proxy for vod playlists."""
 
@@ -437,10 +451,11 @@ class VodProxyView(FrigateProxyView):
 
     def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
         """Create proxied URL."""
+        path: str = kwargs["path"]
         return ProxiedURL(
             url=self._get_fqdn_path(
                 request,
-                f"vod/{kwargs['path']}/{kwargs['manifest']}.m3u8",
+                f"{_vod_path_prefix(path)}/{path}/{kwargs['manifest']}.m3u8",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
@@ -474,10 +489,11 @@ class VodSegmentProxyView(FrigateProxyView):
         ):
             raise HASSWebProxyLibUnauthorizedRequestError()
 
+        path = kwargs["path"]
         return ProxiedURL(
             url=self._get_fqdn_path(
                 request,
-                f"vod/{kwargs['path']}/{kwargs['segment']}.{kwargs['extension']}",
+                f"{_vod_path_prefix(path)}/{path}/{kwargs['segment']}.{kwargs['extension']}",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             allow_unauthenticated=True,

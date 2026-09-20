@@ -62,6 +62,9 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
         [
             web.get("/vod/present/manifest.m3u8", response_handler),
             web.get("/vod/present/segment.ts", response_handler),
+            web.get("/api/present/adaptive/master.m3u8", response_handler),
+            web.get("/api/present/adaptive/segment.ts", response_handler),
+            web.get("/api/present/adaptive/variant_0/index.m3u8", response_handler),
             web.get("/api/events/event_id/thumbnail.jpg", response_handler),
             web.get("/api/events/event_id/snapshot.jpg", response_handler),
             web.get("/api/events/event_id/clip.mp4", response_handler),
@@ -159,6 +162,52 @@ async def test_vod_segment_proxy_authenticated_without_signature(
 
     authenticated_hass_client = await hass_client()
     resp = await authenticated_hass_client.get("/api/frigate/vod/present/segment.ts")
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_vod_manifest_proxy_adaptive(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test that an adaptive master playlist is forwarded to Frigate's "api/"
+    prefix rather than "vod/" - Fregata (the community fork adding adaptive/
+    multi-bitrate playback) serves it there instead, unlike every other manifest
+    this view proxies."""
+
+    authenticated_hass_client = await hass_client()
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/vod/present/adaptive/master.m3u8",
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_vod_manifest_proxy_adaptive_variant(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test that an adaptive master's own per-variant child playlist - one path
+    component deeper than the master itself - still resolves to the "api/"
+    prefix, not just a manifest directly under "adaptive/"."""
+
+    authenticated_hass_client = await hass_client()
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/vod/present/adaptive/variant_0/index.m3u8",
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_vod_segment_proxy_adaptive(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test that an adaptive playlist's own segment is forwarded to Frigate's
+    "api/" prefix rather than "vod/", same reasoning as
+    test_vod_manifest_proxy_adaptive above."""
+
+    authenticated_hass_client = await hass_client()
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/vod/present/adaptive/segment.ts",
+    )
     assert resp.status == HTTPStatus.OK
 
 
