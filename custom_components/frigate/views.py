@@ -128,6 +128,7 @@ def async_setup(hass: HomeAssistant) -> None:
     hass.http.register_view(NotificationsProxyView(session))
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(RecordingProxyView(session))
+    hass.http.register_view(PreviewProxyView(session))
     hass.http.register_view(ThumbnailsProxyView(session))
     hass.http.register_view(ReviewClipsProxyView(session))
     hass.http.register_view(VodProxyView(session))
@@ -259,6 +260,35 @@ class RecordingProxyView(FrigateProxyView):
                 request,
                 f"api/{kwargs['camera']}/start/{kwargs['start']}"
                 + f"/end/{kwargs['end']}/clip.mp4",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            headers=kwargs["headers"],
+            query_params=self._get_query_params(request),
+        )
+
+
+class PreviewProxyView(FrigateProxyView):
+    """A proxy for recordings-based time-range previews.
+
+    Distinct from RecordingProxyView's own clip.mp4: preview.mp4 is Frigate's lighter,
+    faster-to-generate scrub preview for a camera/time-range window (the same one
+    Frigate's own web UI timeline uses), not a full-quality clip export.
+    """
+
+    url = "/api/frigate/{frigate_instance_id:.+}/preview/{camera:.+}/start/{start:[.0-9]+}/end/{end:[.0-9]*}"
+    extra_urls = [
+        "/api/frigate/preview/{camera:.+}/start/{start:[.0-9]+}/end/{end:[.0-9]*}"
+    ]
+
+    name = "api:frigate:preview"
+
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"api/{kwargs['camera']}/start/{kwargs['start']}"
+                + f"/end/{kwargs['end']}/preview.mp4",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
