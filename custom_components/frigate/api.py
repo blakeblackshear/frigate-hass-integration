@@ -161,6 +161,21 @@ class FrigateApiClient:
             ),
         )
 
+    async def async_get_review(
+        self,
+        review_id: str,
+        decode_json: bool = True,
+    ) -> dict[str, Any]:
+        """Get a single review item by ID from the API."""
+        return cast(
+            dict[str, Any],
+            await self.api_wrapper(
+                "get",
+                str(URL(self._host) / f"api/review/{review_id}"),
+                decode_json=decode_json,
+            ),
+        )
+
     async def async_set_reviews_viewed(
         self,
         ids: list[str],

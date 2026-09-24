@@ -59,6 +59,7 @@ from .const import (
     ATTR_COORDINATOR,
     ATTR_END_TIME,
     ATTR_LLM_UNREGISTER,
+    ATTR_REVIEW_ID,
     ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
     ATTR_WS_REVIEW_PROXY,
@@ -70,6 +71,7 @@ from .const import (
     FRIGATE_VERSION_ERROR_CUTOFF,
     NAME,
     PLATFORMS,
+    SERVICE_REVIEW_GET,
     SERVICE_REVIEW_SUMMARIZE,
     STARTUP_MESSAGE,
     STATUS_ERROR,
@@ -486,8 +488,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass, FrigateServiceAPI(hass=hass)
         )
 
-    # Register review summarize service if Frigate version is 0.17+
+    # Register review services if Frigate version is 0.17+
     if verify_frigate_version(config, "0.17"):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_REVIEW_GET,
+            async_review_get_service,
+            vol.Schema(
+                {
+                    vol.Required(ATTR_REVIEW_ID): str,
+                    vol.Optional(ATTR_CONFIG_ENTRY_ID): str,
+                }
+            ),
+            supports_response=SupportsResponse.OPTIONAL,
+        )
         hass.services.async_register(
             DOMAIN,
             SERVICE_REVIEW_SUMMARIZE,
@@ -551,6 +565,18 @@ def get_frigate_instances_description(hass: HomeAssistant, entry_ids: list[str])
         if entry.entry_id in entry_ids
     )
     return f"Loaded instances: {instances}" if instances else "No instances are loaded."
+
+
+async def async_review_get_service(call: ServiceCall) -> Any:
+    """Handle review get service call."""
+    client = get_loaded_client_for_service_call(call.hass, call)
+    review_id = call.data[ATTR_REVIEW_ID]
+
+    try:
+        return await client.async_get_review(review_id)
+    except Exception as exc:
+        _LOGGER.error("Review get failed for %s: %s", review_id, exc)
+        raise ServiceValidationError(f"Review get failed: {exc}") from exc
 
 
 async def async_review_summarize_service(call: ServiceCall) -> Any:

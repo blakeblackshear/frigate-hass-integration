@@ -184,6 +184,31 @@ end_event:
       selector:
         text:
 
+review_get:
+  name: Review Get
+  description: >
+    Get one review item by its Frigate review ID. This is useful for enriching
+    an automation that Frigate has already triggered through MQTT.
+    Only available in Frigate 0.17+.
+  fields:
+    config_entry_id:
+      name: Frigate Instance
+      description: >
+        The Frigate instance to get the review item from. Required if more
+        than one Frigate instance is configured.
+      required: false
+      advanced: false
+      selector:
+        config_entry:
+          integration: frigate
+    review_id:
+      name: Review ID
+      description: The Frigate review ID to retrieve.
+      required: true
+      advanced: false
+      selector:
+        text:
+
 review_summarize:
   name: Review Summarize
   description: >

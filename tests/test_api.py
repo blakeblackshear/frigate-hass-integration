@@ -86,6 +86,29 @@ async def test_async_get_event(
     assert event_handler.called
 
 
+async def test_async_get_review(
+    aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
+) -> None:
+    """Test async_get_review."""
+    review_id = "1623643750.569992-64ji22"
+    review_in = {
+        "camera": "front_door",
+        "data": {"detections": ["event_id"], "objects": ["person"]},
+        "id": review_id,
+        "severity": "alert",
+        "start_time": 1623643750.569992,
+    }
+    review_handler = AsyncMock(return_value=web.json_response(review_in))
+
+    server = await start_frigate_server(
+        aiohttp_server, [web.get(f"/api/review/{review_id}", review_handler)]
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert review_in == await frigate_client.async_get_review(review_id)
+    assert review_handler.called
+
+
 async def test_async_get_events(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:

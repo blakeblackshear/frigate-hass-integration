@@ -10,7 +10,9 @@ import pytest
 from custom_components.frigate.const import (
     ATTR_CONFIG_ENTRY_ID,
     ATTR_END_TIME,
+    ATTR_REVIEW_ID,
     ATTR_START_TIME,
+    SERVICE_REVIEW_GET,
     SERVICE_REVIEW_SUMMARIZE,
 )
 from homeassistant.core import HomeAssistant
@@ -21,6 +23,57 @@ from tests import (
     create_mock_frigate_config_entry,
     setup_mock_frigate_config_entry,
 )
+
+
+async def test_review_get_service_call(hass: HomeAssistant) -> None:
+    """Test review get service call."""
+    review_id = "1623643750.569992-64ji22"
+    review = {"id": review_id, "severity": "alert"}
+
+    client = create_mock_frigate_client()
+    client.async_get_review = AsyncMock(return_value=review)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    result = await hass.services.async_call(
+        "frigate",
+        SERVICE_REVIEW_GET,
+        {ATTR_REVIEW_ID: review_id},
+        blocking=True,
+        return_response=True,
+    )
+
+    client.async_get_review.assert_called_once_with(review_id)
+    assert result == review
+
+
+async def test_review_get_service_validation(hass: HomeAssistant) -> None:
+    """Test review get service validation."""
+    client = create_mock_frigate_client()
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    with pytest.raises(Exception, match="required"):
+        await hass.services.async_call(
+            "frigate",
+            SERVICE_REVIEW_GET,
+            {},
+            blocking=True,
+        )
+
+
+async def test_review_get_service_error_handling(hass: HomeAssistant) -> None:
+    """Test review get service error handling."""
+    client = create_mock_frigate_client()
+    client.async_get_review = AsyncMock(side_effect=Exception("API Error"))
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    with pytest.raises(ServiceValidationError, match="Review get failed: API Error"):
+        await hass.services.async_call(
+            "frigate",
+            SERVICE_REVIEW_GET,
+            {ATTR_REVIEW_ID: "1623643750.569992-64ji22"},
+            blocking=True,
+            return_response=True,
+        )
 
 
 async def test_review_summarize_service_call(
