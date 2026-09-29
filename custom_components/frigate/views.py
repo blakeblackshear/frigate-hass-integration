@@ -129,6 +129,7 @@ def async_setup(hass: HomeAssistant) -> None:
     hass.http.register_view(SnapshotsProxyView(session))
     hass.http.register_view(RecordingProxyView(session))
     hass.http.register_view(PreviewProxyView(session))
+    hass.http.register_view(RecordingSnapshotProxyView(session))
     hass.http.register_view(ThumbnailsProxyView(session))
     hass.http.register_view(ReviewClipsProxyView(session))
     hass.http.register_view(VodProxyView(session))
@@ -289,6 +290,40 @@ class PreviewProxyView(FrigateProxyView):
                 request,
                 f"api/{kwargs['camera']}/start/{kwargs['start']}"
                 + f"/end/{kwargs['end']}/preview.mp4",
+                frigate_instance_id=kwargs.get("frigate_instance_id"),
+            ),
+            headers=kwargs["headers"],
+            query_params=self._get_query_params(request),
+        )
+
+
+class RecordingSnapshotProxyView(FrigateProxyView):
+    """A proxy for a single snapshot extracted from a camera's recording at a given time.
+
+    Distinct from SnapshotsProxyView's own event-keyed snapshot: this is keyed by camera +
+    a raw timestamp against Frigate's continuous recordings, independent of whether any
+    event/detection ever existed at that time — needed for a review with no tracked-object
+    detections at all (e.g. one triggered purely by an audio event), which otherwise has no
+    event ID for any of the other proxied endpoints to key off of.
+    """
+
+    url = (
+        "/api/frigate/{frigate_instance_id:.+}/recording_snapshot/{camera:.+}"
+        "/{frame_time:[.0-9]+}.{format:(png|jpg)}"
+    )
+    extra_urls = [
+        "/api/frigate/recording_snapshot/{camera:.+}/{frame_time:[.0-9]+}.{format:(png|jpg)}"
+    ]
+
+    name = "api:frigate:recording_snapshot"
+
+    def _get_proxied_url_impl(self, request: web.Request, **kwargs: Any) -> ProxiedURL:
+        """Create proxied URL."""
+        return ProxiedURL(
+            url=self._get_fqdn_path(
+                request,
+                f"api/{kwargs['camera']}/recordings/{kwargs['frame_time']}"
+                + f"/snapshot.{kwargs['format']}",
                 frigate_instance_id=kwargs.get("frigate_instance_id"),
             ),
             headers=kwargs["headers"],
