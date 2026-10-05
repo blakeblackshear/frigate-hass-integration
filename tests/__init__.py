@@ -48,6 +48,7 @@ TEST_SWITCH_FRONT_DOOR_IMPROVE_CONTRAST_ENTITY_ID = "switch.front_door_improve_c
 TEST_SWITCH_FRONT_DOOR_PTZ_AUTOTRACKER_ENTITY_ID = "switch.front_door_ptz_autotracker"
 
 TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID = "sensor.frigate_apex_0_temperature"
+TEST_SENSOR_DETECTOR_TEMPERATURE_ENTITY_ID = "sensor.frigate_cpu1_temperature"
 TEST_SENSOR_GPU_LOAD_ENTITY_ID = "sensor.frigate_nvidia_geforce_rtx_3050_gpu_load"
 TEST_SENSOR_STEPS_ALL_ENTITY_ID = "sensor.steps_all_count"
 TEST_SENSOR_STEPS_ALL_ACTIVE_ENTITY_ID = "sensor.steps_all_active_count"
