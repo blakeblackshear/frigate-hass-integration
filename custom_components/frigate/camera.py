@@ -447,12 +447,20 @@ class FrigateCamera(
     ) -> None:
         """Export recording."""
         try:
+            export_args = (
+                {
+                    "frigate_018": True,
+                }
+                if verify_frigate_version(self._frigate_config, "0.18")
+                else {}
+            )
             await self._client.async_export_recording(
                 self._cam_name,
                 playback_factor,
                 datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
                 datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
                 name=name,
+                **export_args,
             )
         except FrigateApiClientError as err:
             raise ServiceValidationError(

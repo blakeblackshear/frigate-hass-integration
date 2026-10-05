@@ -278,15 +278,23 @@ class FrigateApiClient:
         end_time: float,
         name: str | None = None,
         decode_json: bool = True,
+        frigate_018: bool = False,
     ) -> dict[str, Any] | str:
         """Export recording."""
+        endpoint = "api/export"
+        data = {"playback": playback_factor, "name": name}
+        if frigate_018:
+            if playback_factor == "timelapse_25x":
+                endpoint = "api/export/custom"
+            data = {"name": name} if name is not None else {}
+
         result = await self.api_wrapper(
             "post",
             str(
                 URL(self._host)
-                / f"api/export/{camera}/start/{start_time}/end/{end_time}"
+                / f"{endpoint}/{camera}/start/{start_time}/end/{end_time}"
             ),
-            data={"playback": playback_factor, "name": name},
+            data=data,
             decode_json=decode_json,
         )
         return cast(dict[str, Any], result) if decode_json else result
