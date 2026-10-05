@@ -47,6 +47,7 @@ from . import (
     TEST_SENSOR_CPU1_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_CPU2_INTFERENCE_SPEED_ENTITY_ID,
     TEST_SENSOR_DETECTION_FPS_ENTITY_ID,
+    TEST_SENSOR_DETECTOR_TEMPERATURE_ENTITY_ID,
     TEST_SENSOR_FRIGATE_STATUS_ENTITY_ID,
     TEST_SENSOR_FRIGATE_UPTIME_ENTITY_ID,
     TEST_SENSOR_FRONT_DOOR_ALL_ACTIVE_ENTITY_ID,
@@ -352,6 +353,25 @@ async def test_coral_temp_sensor(hass: HomeAssistant) -> None:
     entity_state = hass.states.get(TEST_SENSOR_CORAL_TEMPERATURE_ENTITY_ID)
     assert entity_state
     assert entity_state.state == "unknown"
+
+
+async def test_detector_temp_sensor(hass: HomeAssistant) -> None:
+    """Test detector temperature sensor state when service temperatures are absent."""
+    stats: dict[str, Any] = copy.deepcopy(TEST_STATS)
+    stats["detectors"]["cpu1"]["temperature"] = 41.9
+    stats["service"]["temperatures"] = {}
+
+    client = create_mock_frigate_client()
+    client.async_get_stats = AsyncMock(return_value=stats)
+    await setup_mock_frigate_config_entry(hass, client=client)
+    await enable_and_load_entity(
+        hass, client, TEST_SENSOR_DETECTOR_TEMPERATURE_ENTITY_ID
+    )
+
+    entity_state = hass.states.get(TEST_SENSOR_DETECTOR_TEMPERATURE_ENTITY_ID)
+    assert entity_state
+    assert entity_state.state == "41.9"
+    assert entity_state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
 
 
 async def test_status_sensor_success(hass: HomeAssistant) -> None:
