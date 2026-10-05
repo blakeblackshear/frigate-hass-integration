@@ -22,6 +22,7 @@ FRIGATE_SERVICES_API_ID = "frigate_services"
 class FrigateQueryTool(llm.Tool):
     """Tool that queries the Frigate NVR chat API."""
 
+    integration = DOMAIN
     name = "frigate_query"
     description = (
         "Query Frigate NVR. Use when the user asks about anything cameras could "
