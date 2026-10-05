@@ -156,10 +156,9 @@ async def async_setup_entry(
             for name in value.keys():
                 entities.append(DetectorSpeedSensor(coordinator, entry, name))
                 detector = value[name]
-                if (
-                    detector.get("temperature") is not None
-                    and not coordinator.data.get("service", {}).get("temperatures")
-                ):
+                if detector.get("temperature") is not None and not coordinator.data.get(
+                    "service", {}
+                ).get("temperatures"):
                     entities.append(
                         DeviceTempSensor(coordinator, entry, name, source="detectors")
                     )
