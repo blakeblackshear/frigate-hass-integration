@@ -364,6 +364,55 @@ async def test_async_export_recording(
     assert post_handler.called
 
 
+@pytest.mark.parametrize(
+    ("playback_factor", "endpoint"),
+    [
+        ("Realtime", "api/export"),
+        ("timelapse_25x", "api/export/custom"),
+    ],
+)
+async def test_async_export_recording_frigate_018(
+    aiohttp_session: aiohttp.ClientSession,
+    aiohttp_server: Any,
+    playback_factor: str,
+    endpoint: str,
+) -> None:
+    """Test the Frigate 0.18 recording export endpoints and payload."""
+    post_success = {"success": True, "message": "Post success"}
+    post_handler = AsyncMock(return_value=web.json_response(post_success))
+
+    start_time = datetime.datetime.strptime(
+        "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    end_time = datetime.datetime.strptime(
+        "2023-09-23 18:11:22", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.post(
+                f"/{endpoint}/front_door/start/{start_time}/end/{end_time}",
+                post_handler,
+            ),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_export_recording(
+            "front_door",
+            playback_factor,
+            start_time,
+            end_time,
+            frigate_018=True,
+        )
+        == post_success
+    )
+    request = post_handler.call_args.args[0]
+    assert request.path == f"/{endpoint}/front_door/start/{start_time}/end/{end_time}"
+    assert dict(await request.post()) == {}
+
+
 async def test_async_review_summarize(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
