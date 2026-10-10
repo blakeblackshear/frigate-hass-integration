@@ -1,10 +1,12 @@
 """Handles icons for different entity types."""
 
+ICON_CAMERA = "mdi:video"
 ICON_AUDIO = "mdi:ear-hearing"
 ICON_AUDIO_OFF = "mdi:ear-hearing-off"
 ICON_PTZ_AUTOTRACKER = "mdi:cctv"
 ICON_DESCRIPTIONS = "mdi:text-box-check"
 ICON_BICYCLE = "mdi:bicycle"
+ICON_BIRD = "mdi:bird"
 ICON_CAR = "mdi:car"
 ICON_CAT = "mdi:cat"
 ICON_CONTRAST = "mdi:contrast-circle"
@@ -29,6 +31,7 @@ ICON_DEFAULT_ON = "mdi:home"
 ICON_REVIEW_ALERTS = "mdi:bell-alert"
 ICON_REVIEW_DETECTIONS = "mdi:eye-check"
 
+ICON_CAMERA_OFF = "mdi:video-off"
 ICON_CAR_OFF = "mdi:car-off"
 ICON_DEFAULT_OFF = "mdi:home-outline"
 ICON_DOG_OFF = "mdi:dog-side-off"
@@ -47,8 +50,10 @@ def get_dynamic_icon_from_type(obj_type: str, is_on: bool) -> str:
     return ICON_DEFAULT_ON if is_on else ICON_DEFAULT_OFF
 
 
-def get_icon_from_switch(switch_type: str) -> str:
+def get_icon_from_switch(switch_type: str, is_on: bool = True) -> str:
     """Get icon for a specific switch type."""
+    if switch_type == "enabled":
+        return ICON_CAMERA if is_on else ICON_CAMERA_OFF
     if switch_type == "snapshots":
         return ICON_IMAGE_MULTIPLE
     if switch_type == "recordings":
@@ -88,5 +93,7 @@ def get_icon_from_type(obj_type: str) -> str:
         return ICON_COW
     if obj_type == "horse":
         return ICON_HORSE
+    if obj_type == "bird":
+        return ICON_BIRD
 
     return ICON_OTHER
