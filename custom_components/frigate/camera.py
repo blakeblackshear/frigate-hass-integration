@@ -6,8 +6,10 @@ import datetime
 import logging
 from typing import Any
 
+import aiohttp
 import async_timeout
 from jinja2 import Template
+import json
 import voluptuous as vol
 from yarl import URL
 
@@ -22,7 +24,7 @@ from homeassistant.components.mqtt import async_publish
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant, SupportsResponse, callback
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
@@ -589,6 +591,74 @@ class BirdseyeCamera(FrigateEntity, Camera):
         return self._stream_source
 
 
+async def _async_handle_webrtc_offer(
+    hass: HomeAssistant,
+    client: FrigateApiClient,
+    cam_name: str,
+    base_url: str,
+    offer_sdp: str,
+    send_message: WebRTCSendMessage,
+) -> None:
+    """Handle WebRTC offer negotiation with go2rtc."""
+    websession = async_get_clientsession(hass, verify_ssl=client.validate_ssl)
+    url = f"{base_url}/api/go2rtc/webrtc?src={cam_name}"
+    payload = {"type": "offer", "sdp": offer_sdp}
+    headers = await client.get_auth_headers()
+    try:
+        async with websession.post(url, json=payload, headers=headers) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                _LOGGER.error(
+                    "Failed to negotiate WebRTC stream for %s (HTTP %s): %s",
+                    cam_name,
+                    resp.status,
+                    error_text.strip(),
+                )
+                raise HomeAssistantError(
+                    f"Failed to negotiate WebRTC stream for {cam_name} (HTTP {resp.status}): {error_text.strip()}"
+                )
+            try:
+                answer = await resp.json()
+            except (aiohttp.ContentTypeError, json.JSONDecodeError) as err:
+                raw_text = await resp.text()
+                _LOGGER.error(
+                    "Unexpected response from go2rtc for %s: %s",
+                    cam_name,
+                    raw_text.strip(),
+                )
+                raise HomeAssistantError(
+                    f"Unexpected response from go2rtc for {cam_name}: {raw_text.strip()}"
+                ) from err
+
+            if not isinstance(answer, dict) or "sdp" not in answer:
+                _LOGGER.error(
+                    "Invalid WebRTC answer format received from go2rtc for %s: %s",
+                    cam_name,
+                    answer,
+                )
+                raise HomeAssistantError(
+                    f"Invalid WebRTC answer format received from go2rtc for {cam_name}"
+                )
+            send_message(WebRTCAnswer(answer["sdp"]))
+    except aiohttp.ClientError as err:
+        _LOGGER.error(
+            "Connection error communicating with go2rtc for %s: %s",
+            cam_name,
+            err,
+        )
+        raise HomeAssistantError(
+            f"Connection error communicating with go2rtc for {cam_name}: {err}"
+        ) from err
+    except TimeoutError as err:
+        _LOGGER.error(
+            "Timeout negotiating WebRTC stream for %s",
+            cam_name,
+        )
+        raise HomeAssistantError(
+            f"Timeout negotiating WebRTC stream for {cam_name}"
+        ) from err
+
+
 class FrigateCameraWebRTC(FrigateCamera):
     """A Frigate camera with WebRTC support."""
 
@@ -596,15 +666,14 @@ class FrigateCameraWebRTC(FrigateCamera):
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
         """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(
-            self.hass, verify_ssl=self._client.validate_ssl
+        await _async_handle_webrtc_offer(
+            self.hass,
+            self._client,
+            self._cam_name,
+            self._url,
+            offer_sdp,
+            send_message,
         )
-        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
-        payload = {"type": "offer", "sdp": offer_sdp}
-        headers = await self._client.get_auth_headers()
-        async with websession.post(url, json=payload, headers=headers) as resp:
-            answer = await resp.json()
-            send_message(WebRTCAnswer(answer["sdp"]))
 
     async def async_on_webrtc_candidate(self, session_id: str, candidate: Any) -> None:
         """Ignore WebRTC candidates for Frigate cameras."""
@@ -618,15 +687,14 @@ class BirdseyeCameraWebRTC(BirdseyeCamera):
         self, offer_sdp: str, session_id: str, send_message: WebRTCSendMessage
     ) -> None:
         """Handle the WebRTC offer and return an answer."""
-        websession = async_get_clientsession(
-            self.hass, verify_ssl=self._client.validate_ssl
+        await _async_handle_webrtc_offer(
+            self.hass,
+            self._client,
+            self._cam_name,
+            self._url,
+            offer_sdp,
+            send_message,
         )
-        url = f"{self._url}/api/go2rtc/webrtc?src={self._cam_name}"
-        payload = {"type": "offer", "sdp": offer_sdp}
-        headers = await self._client.get_auth_headers()
-        async with websession.post(url, json=payload, headers=headers) as resp:
-            answer = await resp.json()
-            send_message(WebRTCAnswer(answer["sdp"]))
 
     async def async_on_webrtc_candidate(self, session_id: str, candidate: Any) -> None:
         """Ignore WebRTC candidates for Frigate cameras."""
