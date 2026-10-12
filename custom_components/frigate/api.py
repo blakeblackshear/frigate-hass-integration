@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import datetime
 import logging
 import socket
@@ -20,6 +21,23 @@ REVIEW_SUMMARIZE_TIMEOUT = 60
 _LOGGER: logging.Logger = logging.getLogger(__name__)
 
 HEADERS = {"Content-type": "application/json; charset=UTF-8"}
+
+# Authentication modes for reaching Frigate:
+# - AUTH_MODE_LOGIN (default): Frigate's native JWT login via POST /api/login
+#   using the username/password.
+# - AUTH_MODE_BASIC: send a Basic Authorization header built from the
+#   username/password on every request, for reverse proxies that perform HTTP
+#   Basic Auth in front of Frigate (Frigate's own login is never called).
+# - AUTH_MODE_BEARER: send a Bearer Authorization header with the password as
+#   a static token on every request, for reverse proxies that expect a static
+#   bearer token (the username is ignored in this mode).
+AUTH_MODE_LOGIN = "login"
+AUTH_MODE_BASIC = "basic"
+AUTH_MODE_BEARER = "bearer"
+AUTH_MODES = (AUTH_MODE_LOGIN, AUTH_MODE_BASIC, AUTH_MODE_BEARER)
+
+# The auth modes intended for a reverse proxy in front of Frigate.
+PROXY_AUTH_MODES = (AUTH_MODE_BASIC, AUTH_MODE_BEARER)
 
 # ==============================================================================
 # Please do not add HomeAssistant specific imports/functionality to this module,
@@ -42,6 +60,7 @@ class FrigateApiClient:
         username: str | None = None,
         password: str | None = None,
         validate_ssl: bool = True,
+        auth_mode: str = AUTH_MODE_LOGIN,
     ) -> None:
         """Construct API Client."""
         self._host = host
@@ -50,6 +69,17 @@ class FrigateApiClient:
         self._password = password
         self._token_data: dict[str, Any] = {}
         self.validate_ssl = validate_ssl
+        # See the AUTH_MODE_* constants for the semantics of each mode.
+        self._auth_mode = auth_mode
+        # Precomputed Authorization header value for the proxy auth modes,
+        # or None if the required credentials are not configured (in which
+        # case no Authorization header is sent).
+        self._proxy_auth_header: str | None = None
+        if auth_mode == AUTH_MODE_BASIC and username and password:
+            credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
+            self._proxy_auth_header = f"Basic {credentials}"
+        elif auth_mode == AUTH_MODE_BEARER and password:
+            self._proxy_auth_header = f"Bearer {password}"
 
     async def async_get_version(self) -> str:
         """Get data from the API."""
@@ -458,9 +488,18 @@ class FrigateApiClient:
 
     async def get_auth_headers(self) -> dict[str, str]:
         """
-        Get headers for API requests, including the JWT token if available.
-        Ensures that the token is refreshed if needed.
+        Get headers for API requests, based on the configured auth mode.
+
+        In the proxy auth modes (AUTH_MODE_BASIC/AUTH_MODE_BEARER) a static
+        Authorization header is returned and Frigate's native login is never
+        called. In AUTH_MODE_LOGIN (default) the JWT token obtained via
+        Frigate's native login is included, refreshing it if needed.
         """
+        if self._auth_mode in PROXY_AUTH_MODES:
+            if self._proxy_auth_header:
+                return {"Authorization": self._proxy_auth_header}
+            return {}
+
         headers = {}
 
         if self._username and self._password:

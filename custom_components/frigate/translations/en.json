@@ -7,16 +7,31 @@
           "url": "URL",
           "validate_ssl": "Validate SSL",
           "username": "Username (optional)",
-          "password": "Password (optional)"
+          "password": "Password (optional)",
+          "auth_mode": "Authentication mode"
+        },
+        "data_description": {
+          "auth_mode": "'Frigate login' uses Frigate's native username/password login. 'HTTP Basic Auth' sends the username/password as a Basic Authorization header on every request (for reverse proxies enforcing Basic Auth in front of Frigate). 'Bearer token' sends the password as a static Bearer Authorization header on every request (username is ignored); use this for reverse proxies that expect a static token."
         }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect",
-      "invalid_url": "Invalid URL"
+      "invalid_url": "Invalid URL",
+      "basic_auth_missing_credentials": "HTTP Basic Auth requires both a username and a password",
+      "bearer_auth_missing_token": "Bearer token authentication requires the token to be entered in the password field"
     },
     "abort": {
       "already_configured": "Device is already configured"
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "login": "Frigate login",
+        "basic": "HTTP Basic Auth",
+        "bearer": "Bearer token"
+      }
     }
   },
   "options": {
