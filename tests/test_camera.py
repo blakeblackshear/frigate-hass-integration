@@ -223,6 +223,129 @@ async def test_frigate_camera_setup_webrtc(
     assert response["success"]
 
 
+async def test_frigate_camera_webrtc_error_handling(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+    hass_ws_client: Any,
+) -> None:
+    """Test handling of go2rtc errors during WebRTC offer negotiation."""
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    config_entry = create_mock_frigate_config_entry(
+        hass, options={CONF_ENABLE_WEBRTC: True}
+    )
+
+    await setup_mock_frigate_config_entry(
+        hass, client=client, config_entry=config_entry
+    )
+
+    ws_client = await hass_ws_client(hass)
+
+    # 1. Non-200 with plain-text body (e.g. HTTP 500 error from go2rtc)
+    aioclient_mock.post(
+        "http://example.com/api/go2rtc/webrtc?src=front_door",
+        status=500,
+        text="SetRemoteDescription called with no ice-ufrag",
+    )
+
+    await ws_client.send_json(
+        {
+            "id": 10,
+            "type": "camera/webrtc/offer",
+            "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            "offer": "send_sdp",
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 10
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
+
+    # Session id event
+    response = await ws_client.receive_json()
+    assert response["id"] == 10
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "session"
+
+    # WebRTC error event instead of crashing with unhandled ContentTypeError
+    response = await ws_client.receive_json()
+    assert response["id"] == 10
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "error"
+    assert response["event"]["code"] == "webrtc_offer_failed"
+    assert (
+        "SetRemoteDescription called with no ice-ufrag" in response["event"]["message"]
+    )
+
+    # 2. HTTP 200 with invalid JSON response
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        "http://example.com/api/go2rtc/webrtc?src=front_door",
+        status=200,
+        text="<html>bad response</html>",
+        headers={"Content-Type": "text/html"},
+    )
+
+    await ws_client.send_json(
+        {
+            "id": 11,
+            "type": "camera/webrtc/offer",
+            "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            "offer": "send_sdp",
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 11
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 11
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "session"
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 11
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "error"
+    assert response["event"]["code"] == "webrtc_offer_failed"
+
+    # 3. HTTP 200 with JSON missing "sdp" key
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        "http://example.com/api/go2rtc/webrtc?src=front_door",
+        json={"error": "no stream"},
+    )
+
+    await ws_client.send_json(
+        {
+            "id": 12,
+            "type": "camera/webrtc/offer",
+            "entity_id": TEST_CAMERA_FRONT_DOOR_ENTITY_ID,
+            "offer": "send_sdp",
+        }
+    )
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 12
+    assert response["type"] == TYPE_RESULT
+    assert response["success"]
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 12
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "session"
+
+    response = await ws_client.receive_json()
+    assert response["id"] == 12
+    assert response["type"] == "event"
+    assert response["event"]["type"] == "error"
+    assert response["event"]["code"] == "webrtc_offer_failed"
+
+
 async def test_frigate_camera_setup_birdseye_webrtc(
     hass: HomeAssistant,
     aioclient_mock: Any,
