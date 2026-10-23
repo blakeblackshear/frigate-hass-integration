@@ -49,5 +49,14 @@
     "abort": {
       "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
     }
+  },
+  "entity": {
+    "select": {
+      "profile": {
+        "state": {
+          "none": "Base Config"
+        }
+      }
+    }
   }
 }
