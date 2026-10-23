@@ -198,6 +198,52 @@ async def test_reconfigure_success(hass: HomeAssistant) -> None:
     assert mock_client.async_get_stats.called
 
 
+async def test_reconfigure_clears_credentials(hass: HomeAssistant) -> None:
+    """Test reconfigure with cleared credentials removes the stored ones."""
+    config_entry = create_mock_frigate_config_entry(
+        hass,
+        data={
+            CONF_URL: TEST_URL,
+            CONF_USERNAME: TEST_USERNAME,
+            CONF_PASSWORD: TEST_PASSWORD,
+            CONF_VALIDATE_SSL: True,
+        },
+    )
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": config_entry.entry_id,
+        },
+    )
+
+    assert result["type"] == "form"
+    assert not result["errors"]
+
+    mock_client = create_mock_frigate_client()
+
+    with patch(
+        "custom_components.frigate.config_flow.FrigateApiClient",
+        return_value=mock_client,
+    ), patch(
+        "custom_components.frigate.async_setup_entry",
+        return_value=True,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_URL: TEST_URL,
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == "abort"
+    assert result["reason"] == "reconfigure_successful"
+    assert config_entry.data[CONF_USERNAME] == ""
+    assert config_entry.data[CONF_PASSWORD] == ""
+
+
 async def test_user_multiple_instances(hass: HomeAssistant) -> None:
     """Test multiple instances will be allowed."""
     # Create another config for this domain.

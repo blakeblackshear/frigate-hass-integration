@@ -152,10 +152,18 @@ class FrigateFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         default=user_input.get(CONF_VALIDATE_SSL, True),
                     ): bool,
                     vol.Optional(
-                        CONF_USERNAME, default=user_input.get(CONF_USERNAME, "")
+                        CONF_USERNAME,
+                        default="",
+                        description={
+                            "suggested_value": user_input.get(CONF_USERNAME, "")
+                        },
                     ): str,
                     vol.Optional(
-                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
+                        CONF_PASSWORD,
+                        default="",
+                        description={
+                            "suggested_value": user_input.get(CONF_PASSWORD, "")
+                        },
                     ): str,
                     vol.Optional(
                         CONF_AUTH_MODE,
