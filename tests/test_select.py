@@ -168,7 +168,7 @@ async def test_profile_select_translation_key(hass: HomeAssistant) -> None:
     )
     assert (
         translations[f"component.{DOMAIN}.entity.select.profile.state.none"]
-        == "Base config"
+        == "Base Config"
     )
 
 
