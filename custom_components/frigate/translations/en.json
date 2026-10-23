@@ -54,7 +54,7 @@
     "select": {
       "profile": {
         "state": {
-          "none": "Base config"
+          "none": "Base Config"
         }
       }
     }
