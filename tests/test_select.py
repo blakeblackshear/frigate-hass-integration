@@ -11,7 +11,11 @@ from custom_components.frigate.const import DOMAIN, NAME
 from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_SELECT_OPTION
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_registry as er,
+    translation,
+)
 
 from . import (
     TEST_CONFIG,
@@ -150,6 +154,22 @@ async def test_profile_select_unique_id(hass: HomeAssistant) -> None:
     registry_entry = er.async_get(hass).async_get(TEST_SELECT_PROFILE_ENTITY_ID)
     assert registry_entry
     assert registry_entry.unique_id == f"{TEST_CONFIG_ENTRY_ID}:select:profile"
+
+
+async def test_profile_select_translation_key(hass: HomeAssistant) -> None:
+    """Verify the select has a translation key, so the none option can be shown as the base config."""
+    await setup_mock_frigate_config_entry(hass)
+    registry_entry = er.async_get(hass).async_get(TEST_SELECT_PROFILE_ENTITY_ID)
+    assert registry_entry
+    assert registry_entry.translation_key == "profile"
+
+    translations = await translation.async_get_translations(
+        hass, "en", "entity", {DOMAIN}
+    )
+    assert (
+        translations[f"component.{DOMAIN}.entity.select.profile.state.none"]
+        == "Base config"
+    )
 
 
 async def test_profile_select_icon(hass: HomeAssistant) -> None:
