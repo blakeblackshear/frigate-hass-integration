@@ -794,6 +794,7 @@ async def test_export_recording_service_call(
         datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         name=None,
+        frigate_018=True,
     )
 
 
@@ -836,6 +837,7 @@ async def test_export_recording_service_call_error_handling(
         datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S").timestamp(),
         name=None,
+        frigate_018=True,
     )
 
 
