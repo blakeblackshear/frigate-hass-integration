@@ -11,6 +11,7 @@ from typing import Any, cast
 
 import aiohttp
 import async_timeout
+from awesomeversion import AwesomeVersion
 from yarl import URL
 
 from homeassistant.auth import jwt_wrapper
@@ -68,6 +69,7 @@ class FrigateApiClient:
         self._username = username
         self._password = password
         self._token_data: dict[str, Any] = {}
+        self._frigate_version: str | None = None
         self.validate_ssl = validate_ssl
         # See the AUTH_MODE_* constants for the semantics of each mode.
         self._auth_mode = auth_mode
@@ -82,13 +84,15 @@ class FrigateApiClient:
             self._proxy_auth_header = f"Bearer {password}"
 
     async def async_get_version(self) -> str:
-        """Get data from the API."""
-        return cast(
-            str,
-            await self.api_wrapper(
-                "get", str(URL(self._host) / "api/version"), decode_json=False
-            ),
-        )
+        """Get the version from the API, caching it for this client."""
+        if self._frigate_version is None:
+            self._frigate_version = cast(
+                str,
+                await self.api_wrapper(
+                    "get", str(URL(self._host) / "api/version"), decode_json=False
+                ),
+            )
+        return self._frigate_version
 
     async def async_get_stats(self) -> dict[str, Any]:
         """Get data from the API."""
@@ -310,13 +314,22 @@ class FrigateApiClient:
         decode_json: bool = True,
     ) -> dict[str, Any] | str:
         """Export recording."""
+        version = await self.async_get_version()
+        frigate_version = AwesomeVersion(version.split("-")[0])
+        endpoint = "api/export"
+        data = {"playback": playback_factor, "name": name}
+        if frigate_version >= AwesomeVersion("0.18"):
+            if playback_factor == "timelapse_25x":
+                endpoint = "api/export/custom"
+            data = {"name": name} if name is not None else {}
+
         result = await self.api_wrapper(
             "post",
             str(
                 URL(self._host)
-                / f"api/export/{camera}/start/{start_time}/end/{end_time}"
+                / f"{endpoint}/{camera}/start/{start_time}/end/{end_time}"
             ),
-            data={"playback": playback_factor, "name": name},
+            data=data,
             decode_json=decode_json,
         )
         return cast(dict[str, Any], result) if decode_json else result
