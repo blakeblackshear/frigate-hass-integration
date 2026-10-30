@@ -97,6 +97,10 @@ async def local_frigate(hass: HomeAssistant, aiohttp_server: Any) -> Any:
                 "/api/front_door/start/1664067600.02/end/1664068200.03/preview.mp4",
                 response_handler,
             ),
+            web.get(
+                "/api/front_door/recordings/1664067600.02/snapshot.jpg",
+                response_handler,
+            ),
             web.get("/clips/review/thumb-abc123.webp", response_handler),
         ],
     )
@@ -313,6 +317,20 @@ async def test_preview_proxy_view(
 
     resp = await authenticated_hass_client.get(
         "/api/frigate/preview/front_door/start/1664067600.02/end/1664068200.03"
+    )
+    assert resp.status == HTTPStatus.OK
+
+
+async def test_recording_snapshot_proxy_view(
+    local_frigate: Any,
+    hass_client: Any,
+) -> None:
+    """Test recording snapshot proxy."""
+
+    authenticated_hass_client = await hass_client()
+
+    resp = await authenticated_hass_client.get(
+        "/api/frigate/recording_snapshot/front_door/1664067600.02.jpg"
     )
     assert resp.status == HTTPStatus.OK
 
