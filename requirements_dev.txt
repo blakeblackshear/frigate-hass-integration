@@ -3,7 +3,7 @@ black
 flake8
 mypy
 pre-commit
-pycares==4.8.0
+pycares==4.9.0
 pytest
 pytest-homeassistant-custom-component==0.13.233
 pylint-pytest
