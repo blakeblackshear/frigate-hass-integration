@@ -516,9 +516,20 @@ class VodSegmentProxyView(FrigateProxyView):
         )
 
     def _async_validate_signed_manifest(self, request: web.Request) -> bool:
-        """Validate the signature for the manifest of this segment."""
+        """Validate the signature for the manifest of this segment.
+
+        Mirrors Home Assistant's own async_validate_signed_request, except that
+        the signed path may be any file in the same directory as the segment
+        (i.e. its manifest) rather than the segment itself.
+        """
         hass = request.app[KEY_HASS]
-        secret = str(hass.data.get(DATA_SIGN_SECRET))
+
+        # Home Assistant only creates the signing secret the first time it signs
+        # a path, so until then no genuine signature can exist.
+        if (secret := hass.data.get(DATA_SIGN_SECRET)) is None:
+            _LOGGER.warning("No signing secret exists to validate VOD segment request.")
+            return False
+
         signature = request.query.get(SIGN_QUERY_PARAM)
 
         if signature is None:
@@ -527,16 +538,35 @@ class VodSegmentProxyView(FrigateProxyView):
 
         try:
             claims = jwt.decode(
-                signature, secret, algorithms=["HS256"], options={"verify_iss": False}
+                signature,
+                secret,
+                algorithms=["HS256"],
+                options={
+                    "verify_iss": False,
+                    "require": ["exp", "iat", "iss", "path"],
+                },
             )
         except jwt.InvalidTokenError:
             _LOGGER.warning("Invalid JWT token for VOD segment request.")
             return False
 
-        # Check that the base path is the same as what was signed
-        check_path = request.path.rsplit("/", maxsplit=1)[0]
-        if not claims["path"].startswith(check_path):
-            _LOGGER.warning("%s does not start with %s", claims["path"], check_path)
+        # Segments are served from the same directory as the signed manifest.
+        # Compare whole directories: a string prefix check would let a signature
+        # for /vod/cam10/... authorize /vod/cam1/..., or authorize any directory
+        # above the manifest's.
+        signed_dir = claims["path"].rpartition("/")[0]
+        request_dir = request.path.rpartition("/")[0]
+        if signed_dir != request_dir:
+            _LOGGER.warning(
+                "Signed path %s is not in segment directory %s",
+                claims["path"],
+                request_dir,
+            )
+            return False
+
+        # Stop honoring the signature once its issuing session is revoked.
+        if hass.auth.async_get_refresh_token(claims["iss"]) is None:
+            _LOGGER.warning("Signature for VOD segment request has an unknown issuer.")
             return False
 
         return True

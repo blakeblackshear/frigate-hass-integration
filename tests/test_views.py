@@ -8,11 +8,13 @@ from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 import logging
 import ssl
+import time
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 from aiohttp import web
 from hass_web_proxy_lib.tests.utils import response_handler, ws_response_handler
+import jwt
 import pytest
 from yarl import URL
 
@@ -24,7 +26,9 @@ from custom_components.frigate.const import (
     CONF_VALIDATE_SSL,
     DOMAIN,
 )
-from homeassistant.components.http.auth import async_sign_path
+from custom_components.frigate.views import VodSegmentProxyView
+from homeassistant.components.http.auth import DATA_SIGN_SECRET, async_sign_path
+from homeassistant.components.http.const import KEY_HASS
 from homeassistant.const import CONF_URL
 from homeassistant.core import HomeAssistant
 
@@ -220,7 +224,7 @@ async def test_vod_segment_proxy_unauthenticated_with_valid_signature(
     middleware (async_validate_signed_request) already authenticates via an
     exact path match, ahead of this view ever running — see the dedicated
     test below for the case that actually depends on
-    VodSegmentProxyView's own looser, prefix-based signature check.
+    VodSegmentProxyView's own same-directory signature check.
     """
 
     refresh_token = hass.auth.async_validate_access_token(hass_access_token)
@@ -252,7 +256,7 @@ async def test_vod_segment_proxy_unauthenticated_with_valid_manifest_signature(
     request validation requires an exact path match, so it can't
     authenticate this (the signed path is the manifest's, not the
     segment's): this is exactly why VodSegmentProxyView keeps its own
-    prefix-based _async_validate_signed_manifest() check rather than
+    same-directory _async_validate_signed_manifest() check rather than
     relying solely on core auth.
     """
 
@@ -272,6 +276,142 @@ async def test_vod_segment_proxy_unauthenticated_with_valid_manifest_signature(
         f"/api/frigate/vod/present/segment.ts?authSig={signature}"
     )
     assert resp.status == HTTPStatus.OK
+
+
+async def test_vod_segment_proxy_rejects_signature_before_secret_exists(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test a segment signature is rejected while no signing secret exists.
+
+    Home Assistant only creates its signing secret the first time it signs a
+    path, so until then no genuine signature can exist. A token signed with a
+    placeholder key (here the string "None") must not be accepted.
+    """
+
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+    hass.data.pop(DATA_SIGN_SECRET, None)
+
+    now = int(time.time())
+    signature = jwt.encode(
+        {
+            "iss": refresh_token.id,
+            "path": "/api/frigate/vod/present/manifest.m3u8",
+            "params": [],
+            "iat": now,
+            "exp": now + 60,
+        },
+        "None",
+        algorithm="HS256",
+    )
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+    resp = await unauthenticated_hass_client.get(
+        f"/api/frigate/vod/present/segment.ts?authSig={signature}"
+    )
+    assert resp.status == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.parametrize(
+    "signed_manifest",
+    [
+        # A sibling directory whose name shares a prefix with the segment's.
+        "/api/frigate/vod/present10/manifest.m3u8",
+        # A subdirectory of the segment's directory.
+        "/api/frigate/vod/present/nested/manifest.m3u8",
+    ],
+)
+async def test_vod_segment_proxy_rejects_manifest_signature_for_other_directory(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+    signed_manifest: str,
+) -> None:
+    """Test a manifest signature only authorizes segments in its own directory."""
+
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
+    signed_manifest_path = async_sign_path(
+        hass,
+        signed_manifest,
+        timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
+    )
+    signature = URL(signed_manifest_path).query["authSig"]
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+    resp = await unauthenticated_hass_client.get(
+        f"/api/frigate/vod/present/segment.ts?authSig={signature}"
+    )
+    assert resp.status == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.parametrize("missing_claim", [None, "exp", "iat", "iss", "path"])
+async def test_vod_segment_signature_requires_claims(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+    missing_claim: str | None,
+) -> None:
+    """Test a segment signature must carry every claim Home Assistant signs.
+
+    Home Assistant's own signed-request middleware fails such a token before
+    this view runs, so the validator is called directly here.
+    """
+
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
+    now = int(time.time())
+    claims = {
+        "iss": refresh_token.id,
+        "path": "/api/frigate/vod/present/manifest.m3u8",
+        "params": [],
+        "iat": now,
+        "exp": now + 60,
+    }
+    if missing_claim:
+        del claims[missing_claim]
+    hass.data[DATA_SIGN_SECRET] = "secret"
+
+    request = Mock()
+    request.app = {KEY_HASS: hass}
+    request.path = "/api/frigate/vod/present/segment.ts"
+    request.query = {"authSig": jwt.encode(claims, "secret", algorithm="HS256")}
+
+    view = object.__new__(VodSegmentProxyView)
+    assert view._async_validate_signed_manifest(request) is (missing_claim is None)
+
+
+async def test_vod_segment_proxy_rejects_signature_for_revoked_refresh_token(
+    hass: HomeAssistant,
+    hass_access_token: Any,
+    local_frigate: Any,
+    hass_client_no_auth: Any,
+) -> None:
+    """Test a manifest signature stops working once its issuer is revoked."""
+
+    refresh_token = hass.auth.async_validate_access_token(hass_access_token)
+    assert refresh_token
+
+    signed_manifest_path = async_sign_path(
+        hass,
+        "/api/frigate/vod/present/manifest.m3u8",
+        timedelta(seconds=5),
+        refresh_token_id=refresh_token.id,
+    )
+    signature = URL(signed_manifest_path).query["authSig"]
+    hass.auth.async_remove_refresh_token(refresh_token)
+
+    unauthenticated_hass_client = await hass_client_no_auth()
+    resp = await unauthenticated_hass_client.get(
+        f"/api/frigate/vod/present/segment.ts?authSig={signature}"
+    )
+    assert resp.status == HTTPStatus.UNAUTHORIZED
 
 
 async def test_snapshot_proxy_view(
