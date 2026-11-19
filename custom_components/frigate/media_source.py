@@ -453,23 +453,27 @@ class RecordingIdentifier(Identifier):
             and self.hour is not None
         ):
             year, month, day = self.year_month_day.split("-")
-            # Take the selected time in users local time and find the offset to
-            # UTC, convert to UTC then request the vod for that time.
+            # The selected hour is in the user's local time. Request it by
+            # timestamp: Frigate's vod/YYYY-MM/DD/HH/<camera>/utc path only
+            # serves whole UTC hours, which are offset by 30/45 minutes from
+            # local hours in timezones such as Asia/Kolkata. Using the offset of
+            # that date (not of today) also keeps hours across a DST change right.
             start_date: dt.datetime = dt.datetime(
                 int(year),
                 int(month),
                 int(day),
                 int(self.hour),
-                tzinfo=dt.UTC,
-            ) - (dt.datetime.now(tz_info).utcoffset() or dt.timedelta())
+                tzinfo=tz_info,
+            )
+            start_ts = int(start_date.timestamp())
 
             parts = [
                 "vod",
-                f"{start_date.year}-{start_date.month:02}",
-                f"{start_date.day:02}",
-                f"{start_date.hour:02}",
                 self.camera,
-                "utc",
+                "start",
+                str(start_ts),
+                "end",
+                str(start_ts + 3600),
                 "index.m3u8",
             ]
 
