@@ -291,18 +291,17 @@ async def test_api_wrapper_exceptions(
 async def test_async_get_version(
     aiohttp_session: aiohttp.ClientSession, aiohttp_server: Any
 ) -> None:
-    """Test async_get_version."""
-
-    async def version_handler(request: web.Request) -> web.Response:
-        """Events summary handler."""
-        return web.Response(text=TEST_SERVER_VERSION)
-
+    """Test async_get_version and its client-local cache."""
+    version_response = web.Response(text=TEST_SERVER_VERSION)
+    version_handler = AsyncMock(return_value=version_response)
     server = await start_frigate_server(
         aiohttp_server, [web.get("/api/version", version_handler)]
     )
 
     frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
     assert await frigate_client.async_get_version() == TEST_SERVER_VERSION
+    assert await frigate_client.async_get_version() == TEST_SERVER_VERSION
+    assert version_handler.await_count == 1
 
 
 async def test_async_retain(
@@ -341,6 +340,7 @@ async def test_async_export_recording(
 
     post_success = {"success": True, "message": "Post success"}
     post_handler = AsyncMock(return_value=web.json_response(post_success))
+    version_handler = AsyncMock(return_value=web.Response(text="0.17.0"))
 
     playback_factor = "Realtime"
     start_time = datetime.datetime.strptime(
@@ -352,6 +352,7 @@ async def test_async_export_recording(
     server = await start_frigate_server(
         aiohttp_server,
         [
+            web.get("/api/version", version_handler),
             web.post(
                 f"/api/export/front_door/start/{start_time}/end/{end_time}",
                 post_handler,
@@ -367,6 +368,58 @@ async def test_async_export_recording(
         == post_success
     )
     assert post_handler.called
+    assert version_handler.await_count == 1
+
+
+@pytest.mark.parametrize(
+    ("playback_factor", "endpoint"),
+    [
+        ("Realtime", "api/export"),
+        ("timelapse_25x", "api/export/custom"),
+    ],
+)
+async def test_async_export_recording_frigate_018(
+    aiohttp_session: aiohttp.ClientSession,
+    aiohttp_server: Any,
+    playback_factor: str,
+    endpoint: str,
+) -> None:
+    """Test the Frigate 0.18 recording export endpoints and payload."""
+    post_success = {"success": True, "message": "Post success"}
+    post_handler = AsyncMock(return_value=web.json_response(post_success))
+    version_handler = AsyncMock(return_value=web.Response(text="0.18.0"))
+
+    start_time = datetime.datetime.strptime(
+        "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    end_time = datetime.datetime.strptime(
+        "2023-09-23 18:11:22", "%Y-%m-%d %H:%M:%S"
+    ).timestamp()
+    server = await start_frigate_server(
+        aiohttp_server,
+        [
+            web.get("/api/version", version_handler),
+            web.post(
+                f"/{endpoint}/front_door/start/{start_time}/end/{end_time}",
+                post_handler,
+            ),
+        ],
+    )
+
+    frigate_client = FrigateApiClient(str(server.make_url("/")), aiohttp_session)
+    assert (
+        await frigate_client.async_export_recording(
+            "front_door",
+            playback_factor,
+            start_time,
+            end_time,
+        )
+        == post_success
+    )
+    request = post_handler.call_args.args[0]
+    assert version_handler.await_count == 1
+    assert request.path == f"/{endpoint}/front_door/start/{start_time}/end/{end_time}"
+    assert dict(await request.post()) == {}
 
 
 async def test_async_review_summarize(
