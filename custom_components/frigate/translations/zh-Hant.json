@@ -1,0 +1,62 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "您用來存取 Frigate 的網址（例如 `http://frigate:5000/`）\n\n如果您使用的是 HassOS 與附加元件，網址應為 `http://ccab4aaf-frigate:5000/`\n\nHome Assistant 需要能連線至連接埠 5000（API）與 8554/8555（RTSP、WebRTC），才能使用所有功能。\n\n此整合會建立感測器、攝影機與媒體瀏覽器功能。\n\n感測器：\n- 用來監控 Frigate 效能的統計資料\n- 所有區域與攝影機的物件計數\n\n攝影機：\n- 每台攝影機最後偵測到物件的影像攝影機\n- 支援串流的攝影機實體\n\n媒體瀏覽器：\n- 附縮圖的豐富介面，可瀏覽事件片段\n- 豐富的介面，可依月份、日期、攝影機、時間瀏覽全天候錄影\n\nAPI：\n- 通知 API，提供可公開存取的端點，用於通知中的圖片",
+        "data": {
+          "url": "URL",
+          "validate_ssl": "驗證 SSL",
+          "username": "使用者名稱（選填）",
+          "password": "密碼（選填）",
+          "auth_mode": "驗證模式"
+        },
+        "data_description": {
+          "auth_mode": "「Frigate 登入」使用 Frigate 原生的使用者名稱／密碼登入。「HTTP Basic Auth」會在每個請求中以 Basic Authorization 標頭傳送使用者名稱／密碼（適用於在 Frigate 前端強制使用 Basic Auth 的反向代理）。「Bearer token」會在每個請求中以靜態 Bearer Authorization 標頭傳送密碼（使用者名稱會被忽略）；適用於預期使用靜態權杖的反向代理。"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "連線失敗",
+      "invalid_url": "無效的 URL",
+      "basic_auth_missing_credentials": "HTTP Basic Auth 需要同時輸入使用者名稱與密碼",
+      "bearer_auth_missing_token": "Bearer token 驗證需要在密碼欄位中輸入權杖"
+    },
+    "abort": {
+      "already_configured": "裝置已設定"
+    }
+  },
+  "selector": {
+    "auth_mode": {
+      "options": {
+        "login": "Frigate 登入",
+        "basic": "HTTP Basic Auth",
+        "bearer": "Bearer token"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "enable_webrtc": "使用 Frigate 原生 WebRTC 支援",
+          "rtsp_url_template": "RTSP URL 範本（請參閱說明文件）",
+          "media_browser_enable": "啟用媒體瀏覽器",
+          "notification_proxy_enable": "啟用未經驗證的通知事件代理",
+          "notification_proxy_expire_after_seconds": "經過指定秒數後，不再允許未經驗證的通知存取（0＝永不）"
+        }
+      }
+    },
+    "abort": {
+      "only_advanced_options": "進階模式已停用，且僅有進階選項"
+    }
+  },
+  "entity": {
+    "select": {
+      "profile": {
+        "state": {
+          "none": "基本設定"
+        }
+      }
+    }
+  }
+}
