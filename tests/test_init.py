@@ -25,7 +25,11 @@ from custom_components.frigate.const import (
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_URL
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_registry as er,
+    issue_registry as ir,
+)
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.loader import async_get_integration
 
@@ -148,6 +152,25 @@ async def test_entry_async_get_config_fail(hass: HomeAssistant) -> None:
 
     config_entry = await setup_mock_frigate_config_entry(hass, client=client)
     assert config_entry.state == ConfigEntryState.SETUP_RETRY
+
+
+async def test_entry_mqtt_not_available(hass: HomeAssistant) -> None:
+    """Test setup retries and raises a repair issue when MQTT is not set up."""
+
+    with patch(
+        "custom_components.frigate.mqtt.async_wait_for_mqtt_client",
+        return_value=False,
+    ):
+        config_entry = await setup_mock_frigate_config_entry(hass)
+    assert config_entry.state == ConfigEntryState.SETUP_RETRY
+    assert ir.async_get(hass).async_get_issue(DOMAIN, "mqtt_not_available")
+
+    await hass.config_entries.async_unload(config_entry.entry_id)
+    config_entry = await setup_mock_frigate_config_entry(
+        hass, config_entry=config_entry
+    )
+    assert config_entry.state == ConfigEntryState.LOADED
+    assert not ir.async_get(hass).async_get_issue(DOMAIN, "mqtt_not_available")
 
 
 async def test_entry_async_get_version_incompatible(hass: HomeAssistant) -> None:

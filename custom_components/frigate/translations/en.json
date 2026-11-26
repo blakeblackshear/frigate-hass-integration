@@ -50,6 +50,12 @@
       "only_advanced_options": "Advanced mode is disabled and there are only advanced options"
     }
   },
+  "issues": {
+    "mqtt_not_available": {
+      "title": "MQTT is not set up",
+      "description": "Frigate needs the MQTT integration to receive events from the Frigate server. Set up MQTT with the same broker Frigate uses. Frigate will recover on its own."
+    }
+  },
   "entity": {
     "select": {
       "profile": {
