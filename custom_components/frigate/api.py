@@ -318,7 +318,7 @@ class FrigateApiClient:
         frigate_version = AwesomeVersion(version.split("-")[0])
         endpoint = "api/export"
         data = {"playback": playback_factor, "name": name}
-        if frigate_version >= AwesomeVersion("0.18"):
+        if frigate_version >= AwesomeVersion("0.18.0"):
             if playback_factor == "timelapse_25x":
                 endpoint = "api/export/custom"
             data = {"name": name} if name is not None else {}

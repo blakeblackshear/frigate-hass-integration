@@ -339,10 +339,14 @@ async def test_async_export_recording(
     """Test async_export_recording."""
 
     post_success = {"success": True, "message": "Post success"}
-    post_handler = AsyncMock(return_value=web.json_response(post_success))
     version_handler = AsyncMock(return_value=web.Response(text="0.17.0"))
 
     playback_factor = "Realtime"
+
+    async def post_handler(request: web.Request) -> web.Response:
+        assert await request.json() == {"playback": playback_factor, "name": None}
+        return web.json_response(post_success)
+
     start_time = datetime.datetime.strptime(
         "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
     ).timestamp()
@@ -367,15 +371,15 @@ async def test_async_export_recording(
         )
         == post_success
     )
-    assert post_handler.called
     assert version_handler.await_count == 1
 
 
 @pytest.mark.parametrize(
-    ("playback_factor", "endpoint"),
+    ("playback_factor", "endpoint", "name"),
     [
-        ("Realtime", "api/export"),
-        ("timelapse_25x", "api/export/custom"),
+        ("Realtime", "api/export", None),
+        ("timelapse_25x", "api/export/custom", None),
+        ("timelapse_25x", "api/export/custom", "Front door timelapse"),
     ],
 )
 async def test_async_export_recording_frigate_018(
@@ -383,11 +387,15 @@ async def test_async_export_recording_frigate_018(
     aiohttp_server: Any,
     playback_factor: str,
     endpoint: str,
+    name: str | None,
 ) -> None:
     """Test the Frigate 0.18 recording export endpoints and payload."""
     post_success = {"success": True, "message": "Post success"}
-    post_handler = AsyncMock(return_value=web.json_response(post_success))
     version_handler = AsyncMock(return_value=web.Response(text="0.18.0"))
+
+    async def post_handler(request: web.Request) -> web.Response:
+        assert await request.json() == ({"name": name} if name is not None else {})
+        return web.json_response(post_success)
 
     start_time = datetime.datetime.strptime(
         "2023-09-23 13:33:44", "%Y-%m-%d %H:%M:%S"
@@ -413,13 +421,11 @@ async def test_async_export_recording_frigate_018(
             playback_factor,
             start_time,
             end_time,
+            name=name,
         )
         == post_success
     )
-    request = post_handler.call_args.args[0]
     assert version_handler.await_count == 1
-    assert request.path == f"/{endpoint}/front_door/start/{start_time}/end/{end_time}"
-    assert dict(await request.post()) == {}
 
 
 async def test_async_review_summarize(
