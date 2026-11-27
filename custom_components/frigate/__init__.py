@@ -30,7 +30,6 @@ from homeassistant.components.mqtt.subscription import (
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    ATTR_MODEL,
     CONF_HOST,
     CONF_PASSWORD,
     CONF_URL,
@@ -65,6 +64,7 @@ from .const import (
     ATTR_COORDINATOR,
     ATTR_END_TIME,
     ATTR_LLM_UNREGISTER,
+    ATTR_MODEL,
     ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
     ATTR_WS_REVIEW_PROXY,
