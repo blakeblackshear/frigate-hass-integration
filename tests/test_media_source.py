@@ -664,20 +664,44 @@ async def test_async_resolve_media(
         target_media_player="media_player.kitchen",
     )
 
-    # Convert from HA local timezone to UTC.
+    # The hour is in HA's local timezone; it is requested by timestamp.
     info = await system_info.async_get_system_info(hass)
-    date = datetime.datetime(2021, 5, 30, 15, 46, 8, 0, datetime.timezone.utc) - (
-        datetime.datetime.now(
-            await async_get_time_zone(info.get("timezone", "utc"))
-        ).utcoffset()
-        or datetime.timedelta()
+    start = int(
+        datetime.datetime(
+            2021,
+            5,
+            30,
+            15,
+            tzinfo=await async_get_time_zone(info.get("timezone", "utc")),
+        ).timestamp()
     )
 
     assert media == PlayMedia(
         url=(
-            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/"
-            + date.strftime("%Y-%m/%d/%H")
-            + "/front_door/utc/index.m3u8"
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/front_door"
+            f"/start/{start}/end/{start + 3600}/index.m3u8"
+        ),
+        mime_type="application/x-mpegURL",
+    )
+
+    # A half-hour timezone: 15:00-16:00 IST is 09:30-10:30 UTC, which no whole
+    # UTC hour covers.
+    await hass.config.async_set_time_zone("Asia/Kolkata")
+    media = await media_source.async_resolve_media(
+        hass,
+        (
+            f"{const.URI_SCHEME}{DOMAIN}/{TEST_FRIGATE_INSTANCE_ID}"
+            "/recordings/front_door/2021-05-30/15/46.08.mp4"
+        ),
+        target_media_player="media_player.kitchen",
+    )
+    start = int(
+        datetime.datetime(2021, 5, 30, 9, 30, tzinfo=datetime.timezone.utc).timestamp()
+    )
+    assert media == PlayMedia(
+        url=(
+            f"/api/frigate/{TEST_FRIGATE_INSTANCE_ID}/vod/front_door"
+            f"/start/{start}/end/{start + 3600}/index.m3u8"
         ),
         mime_type="application/x-mpegURL",
     )

@@ -19,6 +19,7 @@ from titlecase import titlecase
 import voluptuous as vol
 
 from custom_components.frigate.config_flow import get_config_entry_title
+from homeassistant.components import mqtt
 from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.subscription import (
     EntitySubscription,
@@ -43,7 +44,12 @@ from homeassistant.core import (
     valid_entity_id,
 )
 from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
-from homeassistant.helpers import device_registry as dr, entity_registry as er, llm
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_registry as er,
+    issue_registry as ir,
+    llm,
+)
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.typing import ConfigType
@@ -51,7 +57,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
-from .api import FrigateApiClient, FrigateApiClientError
+from .api import AUTH_MODE_LOGIN, FrigateApiClient, FrigateApiClientError
 from .const import (
     ATTR_CLIENT,
     ATTR_CONFIG,
@@ -62,6 +68,7 @@ from .const import (
     ATTR_START_TIME,
     ATTR_WS_EVENT_PROXY,
     ATTR_WS_REVIEW_PROXY,
+    CONF_AUTH_MODE,
     CONF_CAMERA_STATIC_IMAGE_HEIGHT,
     CONF_RTMP_URL_TEMPLATE,
     CONF_VALIDATE_SSL,
@@ -338,12 +345,26 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
+    if not await mqtt.async_wait_for_mqtt_client(hass):
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            "mqtt_not_available",
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key="mqtt_not_available",
+            learn_more_url="https://www.home-assistant.io/integrations/mqtt/",
+        )
+        raise ConfigEntryNotReady("The MQTT integration is not set up")
+    ir.async_delete_issue(hass, DOMAIN, "mqtt_not_available")
+
     client = FrigateApiClient(
         str(entry.data.get(CONF_URL)),
         async_get_clientsession(hass),
         entry.data.get(CONF_USERNAME),
         entry.data.get(CONF_PASSWORD),
         entry.data.get(CONF_VALIDATE_SSL, True),
+        entry.data.get(CONF_AUTH_MODE, AUTH_MODE_LOGIN),
     )
     coordinator = FrigateDataUpdateCoordinator(hass, client=client)
     await coordinator.async_config_entry_first_refresh()

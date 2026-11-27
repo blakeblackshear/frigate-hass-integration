@@ -47,6 +47,7 @@ class FrigateProfileSelect(FrigateMQTTEntity, SelectEntity):
     """Frigate Profile Select class."""
 
     _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "profile"
 
     def __init__(
         self,

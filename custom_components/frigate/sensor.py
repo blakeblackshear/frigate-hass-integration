@@ -155,6 +155,13 @@ async def async_setup_entry(
         elif key == "detectors":
             for name in value.keys():
                 entities.append(DetectorSpeedSensor(coordinator, entry, name))
+                detector = value[name]
+                if detector.get("temperature") is not None and not coordinator.data.get(
+                    "service", {}
+                ).get("temperatures"):
+                    entities.append(
+                        DeviceTempSensor(coordinator, entry, name, source="detectors")
+                    )
         elif key == "gpu_usages":
             for name in value.keys():
                 entities.append(GpuLoadSensor(coordinator, entry, name))
@@ -909,9 +916,11 @@ class DeviceTempSensor(
         coordinator: FrigateDataUpdateCoordinator,
         config_entry: ConfigEntry,
         name: str,
+        source: str = "service",
     ) -> None:
         """Construct a CoralTempSensor."""
         self._name = name
+        self._source = source
         FrigateEntity.__init__(self, config_entry)
         CoordinatorEntity.__init__(self, coordinator)
         self._attr_entity_registry_enabled_default = False
@@ -943,11 +952,18 @@ class DeviceTempSensor(
     def native_value(self) -> float | None:
         """Return the value of the sensor."""
         if self.coordinator.data:
-            data = (
-                self.coordinator.data.get("service", {})
-                .get("temperatures", {})
-                .get(self._name, 0.0)
-            )
+            if self._source == "detectors":
+                data = (
+                    self.coordinator.data.get("detectors", {})
+                    .get(self._name, {})
+                    .get("temperature")
+                )
+            else:
+                data = (
+                    self.coordinator.data.get("service", {})
+                    .get("temperatures", {})
+                    .get(self._name)
+                )
             try:
                 return float(data)
             except (TypeError, ValueError):
