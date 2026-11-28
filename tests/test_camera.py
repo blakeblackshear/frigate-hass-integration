@@ -90,7 +90,7 @@ async def test_frigate_camera_setup(
     assert source == "rtsp://example.com:8554/front_door"
 
     aioclient_mock.get(
-        "http://example.com/api/front_door/latest.jpg?h=277",
+        "http://example.com/api/front_door/latest.jpg?height=277",
         content=b"data-277",
     )
 
@@ -123,7 +123,7 @@ async def test_frigate_camera_setup_birdseye(
     assert source == "rtsp://example.com:8554/birdseye"
 
     aioclient_mock.get(
-        "http://example.com/api/birdseye/latest.jpg?h=299",
+        "http://example.com/api/birdseye/latest.jpg?height=299",
         content=b"data-299",
     )
 
@@ -161,7 +161,7 @@ async def test_frigate_camera_setup_webrtc(
     assert source == "rtsp://example.com:8554/front_door"
 
     aioclient_mock.get(
-        "http://example.com/api/front_door/latest.jpg?h=277",
+        "http://example.com/api/front_door/latest.jpg?height=277",
         content=b"data-277",
     )
 
@@ -253,7 +253,7 @@ async def test_frigate_camera_setup_birdseye_webrtc(
     assert source == "rtsp://example.com:8554/birdseye"
 
     aioclient_mock.get(
-        "http://example.com/api/birdseye/latest.jpg?h=299",
+        "http://example.com/api/birdseye/latest.jpg?height=299",
         content=b"data-299",
     )
 
@@ -334,7 +334,7 @@ async def test_frigate_camera_image_height(
     await setup_mock_frigate_config_entry(hass, client=client)
 
     aioclient_mock.get(
-        "http://example.com/api/front_door/latest.jpg?h=1000",
+        "http://example.com/api/front_door/latest.jpg?height=1000",
         content=b"data-1000",
     )
 
@@ -353,6 +353,38 @@ async def test_frigate_camera_image_height(
     assert image.content == b"data-no-height"
 
 
+@pytest.mark.parametrize(
+    "camera,entity_id",
+    [
+        ("front_door", TEST_CAMERA_FRONT_DOOR_ENTITY_ID),
+        ("birdseye", TEST_CAMERA_BIRDSEYE_ENTITY_ID),
+    ],
+)
+async def test_frigate_camera_image_height_before_0_15(
+    hass: HomeAssistant,
+    aioclient_mock: Any,
+    camera: str,
+    entity_id: str,
+) -> None:
+    """Ensure Frigate before 0.15 is sent the h parameter."""
+
+    config: dict[str, Any] = copy.deepcopy(TEST_CONFIG)
+    config["version"] = "0.14.1"
+    config["birdseye"] = {"restream": True}
+    client = create_mock_frigate_client()
+    client.async_get_config = AsyncMock(return_value=config)
+    await setup_mock_frigate_config_entry(hass, client=client)
+
+    aioclient_mock.get(
+        f"http://example.com/api/{camera}/latest.jpg?h=1000",
+        content=b"data-1000",
+    )
+
+    image = await async_get_image(hass, entity_id, height=1000)
+    assert image
+    assert image.content == b"data-1000"
+
+
 async def test_frigate_camera_birdseye_image_height(
     hass: HomeAssistant,
     aioclient_mock: Any,
@@ -366,7 +398,7 @@ async def test_frigate_camera_birdseye_image_height(
     await setup_mock_frigate_config_entry(hass, client=client)
 
     aioclient_mock.get(
-        "http://example.com/api/birdseye/latest.jpg?h=1000",
+        "http://example.com/api/birdseye/latest.jpg?height=1000",
         content=b"data-1000",
     )
 
