@@ -101,7 +101,7 @@ async def async_setup_entry(
             for cam_name, camera_config in frigate_config["cameras"].items()
         ]
         + (
-            [birdseye_type(entry, frigate_client)]
+            [birdseye_type(entry, frigate_client, frigate_config)]
             if frigate_config.get("birdseye", {}).get("restream", False)
             else []
         )
@@ -154,6 +154,18 @@ async def async_setup_entry(
         SERVICE_END_EVENT,
         supports_response=SupportsResponse.OPTIONAL,
     )
+
+
+def _latest_frame_query(
+    frigate_config: dict[str, Any], height: int | None
+) -> dict[str, int]:
+    """Get the query parameters to request latest.jpg at the given height."""
+    if height is None or height <= 0:
+        return {}
+    # Frigate 0.15 renamed the "h" parameter to "height".
+    if verify_frigate_version(frigate_config, "0.15"):
+        return {"height": height}
+    return {"h": height}
 
 
 class FrigateCamera(
@@ -384,7 +396,7 @@ class FrigateCamera(
         image_url = str(
             URL(self._url)
             / f"api/{self._cam_name}/latest.jpg"
-            % ({"h": height} if height is not None and height > 0 else {})
+            % _latest_frame_query(self._frigate_config, height)
         )
 
         headers = await self._client.get_auth_headers()
@@ -507,9 +519,11 @@ class BirdseyeCamera(FrigateEntity, Camera):
         self,
         config_entry: ConfigEntry,
         frigate_client: FrigateApiClient,
+        frigate_config: dict[str, Any],
     ) -> None:
         """Initialize the birdseye camera."""
         self._client = frigate_client
+        self._frigate_config = frigate_config
         self._cam_name = "birdseye"
         FrigateEntity.__init__(self, config_entry)
         Camera.__init__(self)
@@ -576,7 +590,7 @@ class BirdseyeCamera(FrigateEntity, Camera):
         image_url = str(
             URL(self._url)
             / f"api/{self._cam_name}/latest.jpg"
-            % ({"h": height} if height is not None and height > 0 else {})
+            % _latest_frame_query(self._frigate_config, height)
         )
 
         headers = await self._client.get_auth_headers()
